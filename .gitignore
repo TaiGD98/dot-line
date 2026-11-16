@@ -1,0 +1,9 @@
+node_modules
+dist
+.DS_Store
+*.log
+_site
+docs/.vitepress/dist
+docs/.vitepress/cache
+.pages
+dist-editor/

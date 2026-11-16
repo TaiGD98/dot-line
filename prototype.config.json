@@ -1,0 +1,8 @@
+{
+  "title": "Dot Line",
+  "tagline": "A one-tap puzzle where you send each dot along its line to its partner without bumping into other dots",
+  "repo": "TaiGD98/dot-line",
+  "pagesUrl": "https://taigd98.github.io/dot-line",
+  "basePath": "/dot-line",
+  "devPort": 8080
+}

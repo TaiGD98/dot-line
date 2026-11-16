@@ -1,0 +1,360 @@
+// Editor storage: a folder on disk (File System Access API, Chrome/Edge) or browser storage
+// (IndexedDB). Both expose the same tiny file API; level, version, draft and collection logic
+// sits on top once.
+//
+// <root>/
+//   levels/<id>.json                level
+//   levels/<id>.png                 source image used by the generator (optional)
+//   levels/.versions/<id>/<rev>.json  3 most recent saved versions
+//   drafts/current.json             autosaved draft of the open level
+//   collections.json                collection list
+//   collections/<name>/NNN_<id>.json  numbered copies in play order
+import { Level, parseLevel } from '../core/level';
+
+export interface Files {
+    kind: 'folder' | 'browser';
+    label: string;
+    read(path: string): Promise<string | null>;
+    readBlob(path: string): Promise<Blob | null>;
+    write(path: string, data: string | Blob): Promise<void>;
+    remove(path: string): Promise<void>;
+    /** File names (not dirs) directly inside `dir`. */
+    list(dir: string): Promise<string[]>;
+    removeDir(dir: string): Promise<void>;
+}
+
+// ---------- IndexedDB helpers ----------
+
+function idb(): Promise<IDBDatabase> {
+    return new Promise((resolve, reject) => {
+        const req = indexedDB.open('dotline-editor', 1);
+        req.onupgradeneeded = () => {
+            req.result.createObjectStore('files');
+            req.result.createObjectStore('kv');
+        };
+        req.onsuccess = () => resolve(req.result);
+        req.onerror = () => reject(req.error);
+    });
+}
+
+async function tx<T>(store: string, mode: IDBTransactionMode, fn: (s: IDBObjectStore) => IDBRequest<T>): Promise<T> {
+    const db = await idb();
+    return new Promise((resolve, reject) => {
+        const req = fn(db.transaction(store, mode).objectStore(store));
+        req.onsuccess = () => resolve(req.result);
+        req.onerror = () => reject(req.error);
+    });
+}
+
+export const kvGet = <T>(key: string) => tx<T | undefined>('kv', 'readonly', (s) => s.get(key) as IDBRequest<T | undefined>);
+export const kvSet = (key: string, v: unknown) => tx('kv', 'readwrite', (s) => s.put(v, key));
+
+export class BrowserFiles implements Files {
+    kind = 'browser' as const;
+    label = 'Browser storage';
+    async read(path: string) {
+        const v = await tx<unknown>('files', 'readonly', (s) => s.get(path));
+        if (v === undefined) return null;
+        return typeof v === 'string' ? v : await (v as Blob).text();
+    }
+    async readBlob(path: string) {
+        const v = await tx<unknown>('files', 'readonly', (s) => s.get(path));
+        return v instanceof Blob ? v : null;
+    }
+    async write(path: string, data: string | Blob) {
+        await tx('files', 'readwrite', (s) => s.put(data, path));
+    }
+    async remove(path: string) {
+        await tx('files', 'readwrite', (s) => s.delete(path));
+    }
+    async list(dir: string) {
+        const keys = (await tx<IDBValidKey[]>('files', 'readonly', (s) => s.getAllKeys())) as string[];
+        const pre = dir.endsWith('/') ? dir : `${dir}/`;
+        return keys.filter((k) => k.startsWith(pre) && !k.slice(pre.length).includes('/')).map((k) => k.slice(pre.length));
+    }
+    async removeDir(dir: string) {
+        const keys = (await tx<IDBValidKey[]>('files', 'readonly', (s) => s.getAllKeys())) as string[];
+        const pre = dir.endsWith('/') ? dir : `${dir}/`;
+        for (const k of keys) if (k.startsWith(pre)) await this.remove(k);
+    }
+}
+
+// ---------- Folder on disk ----------
+
+type DirHandle = FileSystemDirectoryHandle & {
+    queryPermission(o: { mode: string }): Promise<PermissionState>;
+    requestPermission(o: { mode: string }): Promise<PermissionState>;
+    values(): AsyncIterable<FileSystemHandle>;
+};
+
+export const folderSupported = () => 'showDirectoryPicker' in window;
+
+export class FolderFiles implements Files {
+    kind = 'folder' as const;
+    constructor(private root: DirHandle) {}
+    get label() {
+        return this.root.name;
+    }
+
+    static async pick(): Promise<FolderFiles> {
+        const root = (await (window as unknown as { showDirectoryPicker(o: object): Promise<DirHandle> }).showDirectoryPicker({ mode: 'readwrite' }));
+        await kvSet('folder', root);
+        return new FolderFiles(root);
+    }
+
+    /** Remembered folder; `needsPermission` means a click on Reconnect is required first. */
+    static async remembered(): Promise<{ files: FolderFiles; needsPermission: boolean } | null> {
+        const root = await kvGet<DirHandle>('folder');
+        if (!root) return null;
+        const state = await root.queryPermission({ mode: 'readwrite' });
+        return { files: new FolderFiles(root), needsPermission: state !== 'granted' };
+    }
+
+    async reconnect(): Promise<boolean> {
+        return (await this.root.requestPermission({ mode: 'readwrite' })) === 'granted';
+    }
+
+    private async dir(parts: string[], create: boolean): Promise<FileSystemDirectoryHandle | null> {
+        let d: FileSystemDirectoryHandle = this.root;
+        for (const p of parts) {
+            try {
+                d = await d.getDirectoryHandle(p, { create });
+            } catch {
+                return null;
+            }
+        }
+        return d;
+    }
+
+    private split(path: string) {
+        const parts = path.split('/').filter(Boolean);
+        return { dirs: parts.slice(0, -1), name: parts[parts.length - 1] };
+    }
+
+    async readBlob(path: string) {
+        const { dirs, name } = this.split(path);
+        const d = await this.dir(dirs, false);
+        if (!d) return null;
+        try {
+            return await (await d.getFileHandle(name)).getFile();
+        } catch {
+            return null;
+        }
+    }
+    async read(path: string) {
+        const b = await this.readBlob(path);
+        return b ? await b.text() : null;
+    }
+    async write(path: string, data: string | Blob) {
+        const { dirs, name } = this.split(path);
+        const d = (await this.dir(dirs, true))!;
+        const w = await (await d.getFileHandle(name, { create: true })).createWritable();
+        await w.write(data);
+        await w.close();
+    }
+    async remove(path: string) {
+        const { dirs, name } = this.split(path);
+        const d = await this.dir(dirs, false);
+        try {
+            await d?.removeEntry(name);
+        } catch {
+            /* already gone */
+        }
+    }
+    async list(dir: string) {
+        const d = (await this.dir(dir.split('/').filter(Boolean), false)) as DirHandle | null;
+        if (!d) return [];
+        const out: string[] = [];
+        for await (const e of d.values()) if (e.kind === 'file') out.push(e.name);
+        return out;
+    }
+    async removeDir(dir: string) {
+        const { dirs, name } = this.split(dir);
+        const d = await this.dir(dirs, false);
+        try {
+            await d?.removeEntry(name, { recursive: true });
+        } catch {
+            /* already gone */
+        }
+    }
+}
+
+// ---------- Levels, versions, drafts, collections ----------
+
+export const KEEP_VERSIONS = 3;
+
+export interface Collection {
+    name: string;
+    version: number;
+    levels: string[];
+}
+
+export interface Draft {
+    level: Level;
+    savedId: string | null;
+}
+
+const json = (v: unknown) => JSON.stringify(v, null, 2);
+
+export class Store {
+    constructor(public files: Files) {}
+
+    async levels(): Promise<Level[]> {
+        const out: Level[] = [];
+        for (const f of await this.files.list('levels')) {
+            if (!f.endsWith('.json')) continue;
+            try {
+                out.push(parseLevel(JSON.parse((await this.files.read(`levels/${f}`))!)));
+            } catch (e) {
+                console.warn(`Skipped levels/${f}:`, e);
+            }
+        }
+        return out.sort((a, b) => a.id.localeCompare(b.id, undefined, { numeric: true }));
+    }
+
+    async exists(id: string) {
+        return (await this.files.read(`levels/${id}.json`)) !== null;
+    }
+
+    async uniqueId(id: string): Promise<string> {
+        if (!(await this.exists(id))) return id;
+        let n = 2;
+        while (await this.exists(`${id}-${n}`)) n++;
+        return `${id}-${n}`;
+    }
+
+    /** Saves `level`; keeps the previous file as a version. `savedId` is the id it was loaded under. */
+    async save(level: Level, savedId: string | null, image?: Blob | null): Promise<Level> {
+        if (savedId && savedId !== level.id) await this.rename(savedId, level.id);
+        const prev = await this.files.read(`levels/${level.id}.json`);
+        if (prev) {
+            const old = parseLevel(JSON.parse(prev));
+            await this.files.write(`levels/.versions/${level.id}/${String(old.rev ?? 0).padStart(4, '0')}.json`, prev);
+            const vs = (await this.files.list(`levels/.versions/${level.id}`)).sort();
+            for (const v of vs.slice(0, Math.max(0, vs.length - KEEP_VERSIONS))) await this.files.remove(`levels/.versions/${level.id}/${v}`);
+        }
+        const saved = { ...level, rev: (level.rev ?? 0) + 1 };
+        if (image) {
+            await this.files.write(`levels/${level.id}.png`, image);
+            saved.source = { ...(saved.source ?? {}), image: `${level.id}.png` };
+        }
+        await this.files.write(`levels/${level.id}.json`, json(saved));
+        return saved;
+    }
+
+    async versions(id: string): Promise<Level[]> {
+        const out: Level[] = [];
+        for (const v of (await this.files.list(`levels/.versions/${id}`)).sort().reverse()) {
+            const t = await this.files.read(`levels/.versions/${id}/${v}`);
+            if (t) out.push(parseLevel(JSON.parse(t)));
+        }
+        return out;
+    }
+
+    image(id: string) {
+        return this.files.readBlob(`levels/${id}.png`);
+    }
+
+    /** Deletes the level file and its image; version history is kept. */
+    async remove(id: string) {
+        await this.files.remove(`levels/${id}.json`);
+        await this.files.remove(`levels/${id}.png`);
+    }
+
+    /** Moves a level to a new id: file, image, history and collection entries. */
+    async rename(oldId: string, newId: string) {
+        if (oldId === newId) return;
+        if (await this.exists(newId)) throw new Error(`Id "${newId}" already exists`);
+        const text = await this.files.read(`levels/${oldId}.json`);
+        if (text) await this.files.write(`levels/${newId}.json`, json({ ...JSON.parse(text), id: newId }));
+        const img = await this.image(oldId);
+        if (img) await this.files.write(`levels/${newId}.png`, img);
+        for (const v of await this.files.list(`levels/.versions/${oldId}`)) {
+            const t = await this.files.read(`levels/.versions/${oldId}/${v}`);
+            if (t) await this.files.write(`levels/.versions/${newId}/${v}`, json({ ...JSON.parse(t), id: newId }));
+        }
+        await this.files.removeDir(`levels/.versions/${oldId}`);
+        await this.remove(oldId);
+        const cols = await this.collections();
+        for (const c of cols) c.levels = c.levels.map((id) => (id === oldId ? newId : id));
+        await this.writeCollections(cols);
+    }
+
+    /** Imports level files; never overwrites (duplicate ids get -2, -3...). Returns new ids. */
+    async import(files: File[]): Promise<{ added: string[]; errors: string[] }> {
+        const added: string[] = [], errors: string[] = [];
+        for (const f of files) {
+            if (!f.name.endsWith('.json')) continue;
+            try {
+                const level = parseLevel(JSON.parse(await f.text()));
+                level.id = await this.uniqueId(level.id);
+                await this.files.write(`levels/${level.id}.json`, json(level));
+                added.push(level.id);
+            } catch (e) {
+                errors.push(`${f.name}: ${(e as Error).message}`);
+            }
+        }
+        return { added, errors };
+    }
+
+    async draft(): Promise<Draft | null> {
+        const t = await this.files.read('drafts/current.json');
+        try {
+            return t ? (JSON.parse(t) as Draft) : null;
+        } catch {
+            return null;
+        }
+    }
+
+    /** Autosaved draft; `image` is an unsaved source image (null removes it, undefined keeps it). */
+    async writeDraft(d: Draft | null, image?: Blob | null) {
+        if (!d) {
+            await this.files.remove('drafts/current.json');
+            await this.files.remove('drafts/current.png');
+            return;
+        }
+        await this.files.write('drafts/current.json', json(d));
+        if (image) await this.files.write('drafts/current.png', image);
+        else if (image === null) await this.files.remove('drafts/current.png');
+    }
+
+    draftImage() {
+        return this.files.readBlob('drafts/current.png');
+    }
+
+    async collections(): Promise<Collection[]> {
+        const t = await this.files.read('collections.json');
+        try {
+            return t ? ((JSON.parse(t).collections ?? []) as Collection[]) : [];
+        } catch {
+            return [];
+        }
+    }
+
+    writeCollections(cols: Collection[]) {
+        return this.files.write('collections.json', json({ collections: cols }));
+    }
+
+    static copyName(index: number, id: string) {
+        return `${String(index + 1).padStart(3, '0')}_${id}.json`;
+    }
+
+    async copyStatus(c: Collection): Promise<Set<string>> {
+        return new Set(await this.files.list(`collections/${c.name}`));
+    }
+
+    /** Writes collections.json and the numbered copies; `oldName` folder is removed after a rename. */
+    async saveCollection(all: Collection[], c: Collection, oldName: string | null) {
+        await this.writeCollections(all);
+        if (oldName && oldName !== c.name) await this.files.removeDir(`collections/${oldName}`);
+        await this.files.removeDir(`collections/${c.name}`);
+        let copied = 0;
+        for (let i = 0; i < c.levels.length; i++) {
+            const t = await this.files.read(`levels/${c.levels[i]}.json`);
+            if (!t) continue;
+            await this.files.write(`collections/${c.name}/${Store.copyName(i, c.levels[i])}`, t);
+            copied++;
+        }
+        return copied;
+    }
+}

@@ -77,6 +77,6 @@ Dây đã hoàn thành (Completed): `#6977C2`.
 - **Hệ thống 100 level** (bộ "Main", game chơi bộ này trước): xem [Level system](../guide/level-system) và `design/level-system.xlsx`.
 - **10 level mở đầu cũ** (bộ "Intro", chơi sau level 100): Ripples (hướng dẫn bấm), Flag (hướng dẫn va chạm), Kite (hướng dẫn pinch zoom), House, Fish, Sailboat, Umbrella, Rocket, Tree, Castle. Level 1–2 làm tay; level 3–10 tạo bằng generator v2 từ hình vẽ trong `tools/intro-levels.ts`. File level nằm trong `levels/`, thứ tự chơi là bộ "Intro" trong `collections.json`.
 - **Hướng dẫn:** level có trường `tutorial` hiện bàn tay chỉ vào hạt và dòng chữ (Tap a dot to send it home / Bumping costs a heart / Pinch to zoom); biến mất sau lần bấm hoặc zoom đầu tiên.
-- **Nhãn "Hard"** hiện trên tim khi độ khó của level từ 4 trở lên.
+- **Nhãn "Hard"** hiện trên tim ở các level vị trí khó của hệ thống level (`category: "hard"`); level không thuộc hệ thống thì hiện khi độ khó từ 4 trở lên.
 - Số cặp mỗi level, số màu, cách tăng độ khó qua các level: _TBD_.
 - Điều kiện để level giải được: luôn tồn tại một thứ tự gỡ dọn sạch được board. Cách kiểm tra (bằng tay hay bằng công cụ): _TBD_.

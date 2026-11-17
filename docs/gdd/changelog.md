@@ -4,13 +4,21 @@ Every published version stays playable at its own URL. The [landing page](https:
 
 ## latest (main) <Badge type="tip" text="Live" />
 
-- **Fix:** dots that only touch at the edge no longer count as a bump (hitbox = 85% of the two radii). Tapping the top of the sailboat's left sail no longer costs a heart.
-- **Editor fix:** generating with many pairs no longer leaves parts of the drawing without lines; pairs that can't be untangled are joined to their neighbour instead of removed.
-- **100-level system:** levels in blocks of 5 (relax, normal, hard, normal, normal from level 2), first really hard level at 19, 100 original drawings in `art/levels/`, difficulty score and design sheet `design/level-system.xlsx`.
-- Big dots only where a drawing marks them (accent or blocker).
-- Levels moved to `levels/` with an "Intro" collection, so the level editor can open and edit the game's levels.
+- No changes since v0.2.0.
 
 [Play latest](https://taigd98.github.io/dot-line/demo/)
+
+## v0.2.0
+
+- **100 levels:** played in blocks of 5 from level 2 (relax, normal, hard, normal, normal). Levels 4, 9 and 14 are a little harder than their block; from level 19 hard levels are really hard. Each level is a familiar picture (rainbow, ladder, wheel, bookshelf, spider web...), drawn as SVG in `art/levels/`.
+- **Tutorials:** level 1 tap, level 2 bumping costs a heart, level 8 pinch to zoom. Hard levels show the "Hard" label.
+- **Big dots** only as an accent or a blocker, at most one pair per level.
+- **Fix:** dots that only touch at the edge no longer count as a bump (hitbox = 85% of the two radii), e.g. the top of the sailboat's left sail.
+- **Level editor:** opens the game's own levels when you choose the project folder; generating with many pairs keeps the whole drawing (stuck pairs are joined instead of removed); a difficulty dial puts dots on crossing lines.
+- **Game Design Document:** difficulty score (pairs, blocking depth, trap share, colours) and the level system, also in `design/level-system.xlsx`.
+- The 10 earlier intro levels now come after level 100.
+
+[Play v0.2.0](https://taigd98.github.io/dot-line/v0.2.0/demo/) · [Docs v0.2.0](https://taigd98.github.io/dot-line/v0.2.0/docs/)
 
 ## v0.1.0
 
@@ -33,3 +41,4 @@ Every published version stays playable at its own URL. The [landing page](https:
 | 2026-11-16 | Imported GDD v0.2 (overview, core loop, rules, roadmap) |
 | 2026-11-16 | Dây ở lại với màu Completed; thêm bảng màu (3.7) |
 | 2026-11-17 | Released v0.1.0 |
+| 2026-11-17 | Released v0.2.0 |

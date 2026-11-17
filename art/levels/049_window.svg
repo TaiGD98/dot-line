@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" width="400" height="400" fill="none" stroke="#222" stroke-width="5" stroke-linecap="round" stroke-linejoin="round">
+  <!-- Level 49 · Window · hard. data-big="1" = pair with big dots. -->
+  <rect x="60" y="40" width="280" height="300"/>
+  <rect x="80" y="60" width="240" height="260"/>
+  <line x1="160" y1="60" x2="160" y2="320"/>
+  <line x1="240" y1="60" x2="240" y2="320"/>
+  <line x1="80" y1="147" x2="320" y2="147"/>
+  <line x1="80" y1="233" x2="320" y2="233"/>
+  <line x1="40" y1="360" x2="360" y2="360"/>
+  <line x1="60" y1="340" x2="40" y2="360"/>
+  <line x1="340" y1="340" x2="360" y2="360"/>
+  <path d="M80 60 C160 120 140 220 80 300"/>
+  <path d="M320 60 C240 120 260 220 320 300"/>
+  <line x1="80" y1="200" x2="128" y2="200"/>
+  <line x1="320" y1="200" x2="272" y2="200"/>
+</svg>

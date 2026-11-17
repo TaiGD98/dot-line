@@ -59,7 +59,8 @@ function svgStrokes(text: string): SourceStrokes {
                 if (cur.length > 2) {
                     const closed = Math.hypot(cur[0].x - cur[cur.length - 1].x, cur[0].y - cur[cur.length - 1].y) < step * 2.5 ||
                         ['polygon', 'rect', 'circle', 'ellipse'].includes(el.tagName.toLowerCase());
-                    out.push({ pts: cur, closed });
+                    const big = el.getAttribute('data-big') === '1' || (el.getAttribute('class') ?? '').split(/\s+/).includes('big');
+                    out.push({ pts: cur, closed, big });
                 }
                 cur = [];
             };

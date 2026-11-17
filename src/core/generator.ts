@@ -6,14 +6,15 @@
 // 2. X crossings never block (lines cross freely).
 // 3. Long strokes and closed loops are cut into several pairs, preferably at corners; at a cut
 //    two dots sit side by side. A closed loop with one cut is a single pair whose dots touch.
-// 4. Short stand-alone strokes become accent pairs with big dots.
+// 4. Big dots only where the drawing asks for them (SVG data-big="1"): an accent or a big blocker,
+//    never sprinkled everywhere.
 // 5. Touching dots get different colours.
 // Each call builds many random candidates, repairs blocking cycles so every candidate is
 // solvable, scores them against the target difficulty and returns the best few.
 import { Pair } from './level';
 import { PALETTE } from './palette';
 import { Pt, arcLengths, dist, distToPolyline, fitPath, pointAt, samplePath, simplify, slicePolyline } from './path';
-import { solve, SolveResult } from './solver';
+import { HIT_SCALE, solve, SolveResult } from './solver';
 import type { Stroke } from './trace';
 
 export type { Stroke };
@@ -30,6 +31,11 @@ export interface GenerateOptions {
     tries?: number;
     /** How many of the best candidates to return. */
     keep?: number;
+    /**
+     * 0..1: chance that a cut is placed where this line crosses another one, so a dot sits ON the
+     * other line and blocks it (turns an X crossing into a T). The main difficulty dial.
+     */
+    crossBlocks?: number;
 }
 
 export interface Candidate {
@@ -71,9 +77,12 @@ interface Line {
     len: number;
     closed: boolean;
     corners: number[];
+    big?: boolean;
+    /** Arc positions where another line crosses this one (filled by findCrossings). */
+    crossings: number[];
 }
 
-function toLine(pts: Pt[], closed: boolean): Line {
+function toLine(pts: Pt[], closed: boolean, big?: boolean): Line {
     const acc = arcLengths(pts);
     const len = acc[acc.length - 1];
     // Corners: direction change over ±12px above ~50 degrees.
@@ -85,7 +94,7 @@ function toLine(pts: Pt[], closed: boolean): Line {
         const cos = (v1.x * v2.x + v1.y * v2.y) / ((Math.hypot(v1.x, v1.y) * Math.hypot(v2.x, v2.y)) || 1);
         if (cos < 0.64 && (!corners.length || acc[i] - corners[corners.length - 1] > 25)) corners.push(acc[i]);
     }
-    return { pts, acc, len, closed, corners };
+    return { pts, acc, len, closed, corners, big, crossings: [] };
 }
 
 /** Source units -> world: world = (p - c) * k. The longest side of the drawing becomes `size`. */
@@ -106,9 +115,46 @@ export function prepareStrokes(strokes: Stroke[], size = 700): Line[] {
             if (s.closed && dist(w[0], w[w.length - 1]) > 0.5) w.push({ ...w[0] });
             const smooth = s.smooth ? samplePath(fitPath(simplify(w, Math.max(0.8, 1.2 * k)), 1.2), 4) : samplePath(w.map((p) => ({ x: p.x, y: p.y })), 4);
             if (s.closed) smooth[smooth.length - 1] = { ...smooth[0] };
-            return toLine(smooth, s.closed);
+            return toLine(smooth, s.closed, s.big);
         })
         .filter((l) => l.len >= 40);
+}
+
+/** Arc positions where lines cross each other (X crossings, away from line ends). Grid-bucketed. */
+function findCrossings(lines: Line[]) {
+    const cell = 24;
+    const grid = new Map<string, [number, number][]>();
+    lines.forEach((l, li) => {
+        for (let i = 1; i < l.pts.length; i++) {
+            const a = l.pts[i - 1], b = l.pts[i];
+            const k = `${Math.floor((a.x + b.x) / 2 / cell)},${Math.floor((a.y + b.y) / 2 / cell)}`;
+            (grid.get(k) ?? grid.set(k, []).get(k)!).push([li, i]);
+        }
+    });
+    const seen = new Set<string>();
+    for (const [key, list] of grid) {
+        const [cx, cy] = key.split(',').map(Number);
+        const near: [number, number][] = [];
+        for (let dx = -1; dx <= 1; dx++) for (let dy = -1; dy <= 1; dy++) near.push(...(grid.get(`${cx + dx},${cy + dy}`) ?? []));
+        for (const [la, ia] of list)
+            for (const [lb, ib] of near) {
+                if (la >= lb) continue;
+                const A = lines[la], B = lines[lb];
+                const p = A.pts[ia - 1], q = A.pts[ia], r = B.pts[ib - 1], t = B.pts[ib];
+                const d = (q.x - p.x) * (t.y - r.y) - (q.y - p.y) * (t.x - r.x);
+                if (Math.abs(d) < 1e-9) continue;
+                const u = ((r.x - p.x) * (t.y - r.y) - (r.y - p.y) * (t.x - r.x)) / d;
+                const v = ((r.x - p.x) * (q.y - p.y) - (r.y - p.y) * (q.x - p.x)) / d;
+                if (u < 0 || u > 1 || v < 0 || v > 1) continue;
+                const sa = A.acc[ia - 1] + u * (A.acc[ia] - A.acc[ia - 1]);
+                const sb = B.acc[ib - 1] + v * (B.acc[ib] - B.acc[ib - 1]);
+                const id = `${la}:${Math.round(sa / 8)}:${lb}:${Math.round(sb / 8)}`;
+                if (seen.has(id)) continue;
+                seen.add(id);
+                // Real crossings only (ends touching = T-junctions, handled separately).
+                if ((A.closed || (sa > 30 && sa < A.len - 30)) && (B.closed || (sb > 30 && sb < B.len - 30))) { A.crossings.push(sa); B.crossings.push(sb); }
+            }
+    }
 }
 
 interface Seg {
@@ -123,6 +169,8 @@ interface Seg {
     /** Segment index whose dot sits next to this end at a cut. */
     pa?: number;
     pb?: number;
+    /** Merged into its neighbour during repair. */
+    dead?: boolean;
 }
 
 function slice(l: Line, s0: number, s1: number): Pt[] {
@@ -149,20 +197,23 @@ function toPair(lines: Line[], g: Seg, id: string): Pair {
 function buildCandidate(lines: Line[], opt: GenerateOptions, rand: () => number): Candidate {
     const warnings: string[] = [];
     const R = () => 14 + Math.round(rand() * 4);
-    const minSeg = 70;
+    // Long enough pairs keep the drawing readable (many tiny pairs look like a dotted line).
+    const minSeg = 95;
     const total = Math.max(1, Math.round(opt.pairs));
 
     // 1. How many pairs per line (by length; closed loops at least one).
     const totalLen = lines.reduce((s, l) => s + l.len, 0);
     const maxFor = (l: Line) => Math.max(1, Math.floor(l.len / minSeg));
-    const counts = lines.map((l) => Math.min(maxFor(l), Math.max(1, Math.round((l.len / totalLen) * total * (0.8 + rand() * 0.4)))));
+    // A big-dot stroke stays one pair (its two big dots are the accent).
+    const maxFor2 = (l: Line) => (l.big ? 1 : maxFor(l));
+    const counts = lines.map((l) => Math.min(maxFor2(l), Math.max(1, Math.round((l.len / totalLen) * total * (0.8 + rand() * 0.4)))));
     let sum = counts.reduce((a, b) => a + b, 0);
     for (let guard = 0; sum !== total && guard < 2000; guard++) {
         const i = Math.floor(rand() * lines.length);
-        if (sum < total && counts[i] < maxFor(lines[i])) { counts[i]++; sum++; }
+        if (sum < total && counts[i] < maxFor2(lines[i])) { counts[i]++; sum++; }
         else if (sum > total && counts[i] > 1) { counts[i]--; sum--; }
         else if (sum > total && counts.every((c) => c <= 1)) break;
-        else if (sum < total && counts.every((c, k) => c >= maxFor(lines[k]))) break;
+        else if (sum < total && counts.every((c, k) => c >= maxFor2(lines[k]))) break;
     }
     if (sum < total) warnings.push(`The drawing only fits ${sum} pairs`);
     if (sum > total) warnings.push(`The drawing needs at least ${sum} pairs (one per line)`);
@@ -174,6 +225,9 @@ function buildCandidate(lines: Line[], opt: GenerateOptions, rand: () => number)
         const k = counts[li];
         const spacing = l.len / k;
         const pickCut = (target: number) => {
+            // Difficulty dial: put a dot right on a crossing line (the cut sits r+1 past the crossing).
+            const xs = l.crossings.filter((c) => Math.abs(c - target) < spacing * 0.45);
+            if (xs.length && rand() < (opt.crossBlocks ?? 0)) return xs[Math.floor(rand() * xs.length)] + (rand() < 0.5 ? 16 : -16);
             const near = l.corners.filter((c) => Math.abs(c - target) < spacing * 0.35);
             if (near.length && rand() < 0.7) return near[Math.floor(rand() * near.length)];
             return target + (rand() - 0.5) * spacing * 0.4;
@@ -198,8 +252,8 @@ function buildCandidate(lines: Line[], opt: GenerateOptions, rand: () => number)
                 const ra = i === 0 ? R() : rs[i - 1][1], rb = i === k - 1 ? R() : rs[i][0];
                 segs.push({ line: li, s0: bounds[i] + (i === 0 ? 0 : ra + 1), s1: bounds[i + 1] - (i === k - 1 ? 0 : rb + 1), ra, rb, pa: i > 0 ? first + i - 1 : undefined, pb: i < k - 1 ? first + i + 1 : undefined });
             }
-            // Short stand-alone stroke: accent pair with big dots.
-            if (k === 1 && l.len < 170) { const big = 24 + Math.round(rand() * 6); segs[segs.length - 1].ra = big; segs[segs.length - 1].rb = big; segs[segs.length - 1].accent = true; accents++; }
+            // Marked stroke (data-big): one pair with big dots, as an accent or a big blocker.
+            if (l.big) { const big = 24 + Math.round(rand() * 6); segs[segs.length - 1].ra = big; segs[segs.length - 1].rb = big; segs[segs.length - 1].accent = true; accents++; }
         }
     });
 
@@ -272,7 +326,10 @@ function buildCandidate(lines: Line[], opt: GenerateOptions, rand: () => number)
     }
 
     // 5. Repair blocking cycles so the level is always solvable.
-    let pairs = segs.map((g, i) => toPair(lines, g, `p${i + 1}`));
+    // Pair ids are p<segment index + 1> while repairing, renumbered at the end.
+    const build = () => segs.flatMap((g, i) => (g.dead ? [] : [toPair(lines, g, `p${i + 1}`)]));
+    const segOf = (id: string) => segs[+id.slice(1) - 1];
+    let pairs = build();
     let sim = solve({ pairs } as never);
     for (let iter = 0; iter < 10 && !sim.solvable; iter++) {
         const stuck = new Set(sim.stuck);
@@ -284,24 +341,66 @@ function buildCandidate(lines: Line[], opt: GenerateOptions, rand: () => number)
             for (const Y of pairs) {
                 if (Y.id === id || !stuck.has(Y.id)) continue;
                 for (const e of ['a', 'b'] as const) {
-                    if (distToPolyline(Y[e], xl) >= Y[e].r + rx) continue;
-                    const g = segs[+Y.id.slice(1) - 1];
+                    if (distToPolyline(Y[e], xl) >= (Y[e].r + rx) * HIT_SCALE) continue;
+                    const g = segOf(Y.id);
                     const step = (Y[e].r + rx) * 2 + 6;
-                    // Prefer sliding the cut (keeps the drawing whole); else shrink the dot; else shorten.
+                    // Prefer sliding the cut (keeps the drawing whole); else shrink the dot; else shorten a little.
                     if (shiftCut(g, e, rand() < 0.5 ? step : -step) || shiftCut(g, e, rand() < 0.5 ? -step : step)) continue;
-                    if (e === 'a' ? g.ra > 11 : g.rb > 11) { if (e === 'a') g.ra = 11; else g.rb = 11; continue; }
-                    retract(g, e, Y[e].r + 6);
+                    if (!g.accent && (e === 'a' ? g.ra > 11 : g.rb > 11)) { if (e === 'a') g.ra = 11; else g.rb = 11; continue; }
+                    if (iter < 5) retract(g, e, Y[e].r + 6);
                 }
             }
         }
-        pairs = segs.map((g, i) => toPair(lines, g, `p${i + 1}`));
+        pairs = build();
         sim = solve({ pairs } as never);
     }
+    // Still stuck (dense drawings, many pairs): merge a stuck pair with the next pair on the same
+    // line (remove the cut). Fewer pairs, but the drawing stays whole.
+    let merged = 0;
+    const mergeWithNext = (i: number): boolean => {
+        const g = segs[i], j = g.pb;
+        if (j === undefined || j === i || segs[j].dead) return false;
+        const o = segs[j], len = lines[g.line].len;
+        let s1 = o.s1;
+        while (lines[g.line].closed && s1 <= g.s1) s1 += len;
+        g.s1 = s1; g.rb = o.rb; g.snapB = o.snapB; g.pb = o.pb;
+        o.dead = true;
+        if (o.pb !== undefined && segs[o.pb].pa === j) segs[o.pb].pa = i;
+        if (g.pb === i) { g.pb = undefined; g.pa = undefined; } // a closed line is now one pair
+        merged++;
+        return true;
+    };
+    // Pairs squeezed so short that their own two dots touch: join them to a neighbour.
+    for (let pass = 0; pass < 3; pass++) {
+        let did = false;
+        segs.forEach((g, i) => {
+            if (g.dead) return;
+            const pts = segPoints(lines, g);
+            if (dist(pts[0], pts[pts.length - 1]) >= g.ra + g.rb + 2) return;
+            if (mergeWithNext(i) || (g.pa !== undefined && !segs[g.pa].dead && segs[g.pa].pb === i && mergeWithNext(g.pa))) did = true;
+        });
+        if (!did) break;
+    }
+    pairs = build();
+    sim = solve({ pairs } as never);
+    for (let iter = 0; iter < 30 && !sim.solvable; iter++) {
+        let did = false;
+        for (const id of sim.stuck) {
+            const i = +id.slice(1) - 1, g = segs[i];
+            if (g.dead) continue;
+            if (mergeWithNext(i) || (g.pa !== undefined && !segs[g.pa].dead && segs[g.pa].pb === i && mergeWithNext(g.pa))) did = true;
+        }
+        if (!did) break;
+        pairs = build();
+        sim = solve({ pairs } as never);
+    }
+    if (merged) warnings.push(`Joined ${merged} pair(s) into their neighbours to keep the level solvable`);
     if (!sim.solvable) {
         warnings.push(`Dropped ${sim.stuck.length} pair(s) that kept blocking each other`);
-        pairs = pairs.filter((p) => !sim.stuck.includes(p.id)).map((p, i) => ({ ...p, id: `p${i + 1}` }));
-        sim = solve({ pairs } as never);
+        pairs = pairs.filter((p) => !sim.stuck.includes(p.id));
     }
+    pairs = pairs.map((p, i) => ({ ...p, id: `p${i + 1}` }));
+    sim = solve({ pairs } as never);
 
     colourPairs(pairs, opt.colors, rand);
     // Last resort for dots that still touch: shrink them.
@@ -309,7 +408,7 @@ function buildCandidate(lines: Line[], opt: GenerateOptions, rand: () => number)
         for (const ea of ['a', 'b'] as const)
             for (let b = 0; b < pairs.length; b++)
                 for (const eb of ['a', 'b'] as const) {
-                    if (a === b && ea === eb) continue;
+                    if (a === b) continue; // a pair's own dots are handled above
                     const d1 = pairs[a][ea], d2 = pairs[b][eb];
                     const over = d1.r + d2.r + 1 - dist(d1, d2);
                     if (over > 0) { d1.r = Math.max(8, Math.floor(d1.r - over / 2 - 0.5)); d2.r = Math.max(8, Math.floor(d2.r - over / 2 - 0.5)); }
@@ -356,6 +455,7 @@ function colourPairs(pairs: Pair[], m: number, rand: () => number) {
 export function generate(strokes: Stroke[], opt: GenerateOptions): Candidate[] {
     const lines = prepareStrokes(strokes, opt.size ?? 700);
     if (!lines.length) return [];
+    findCrossings(lines);
     const base = opt.seed ?? Date.now();
     const out: Candidate[] = [];
     const tries = opt.tries ?? 24;

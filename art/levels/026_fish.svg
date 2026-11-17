@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" width="400" height="400" fill="none" stroke="#222" stroke-width="5" stroke-linecap="round" stroke-linejoin="round">
+  <!-- Level 26 · Fish · normal. data-big="1" = pair with big dots. -->
+  <ellipse cx="180" cy="200" rx="140" ry="90"/>
+  <polyline points="318 200 390 140 390 260 318 200"/>
+  <circle cx="100" cy="180" r="14"/>
+  <path d="M160.3 134.2 C172.1 144.3 180 170.6 180 200 C180 229.4 172.1 255.7 160.3 265.8"/>
+  <polyline points="190 111 230 60 260 115"/>
+  <polyline points="200 289 230 330 255 287"/>
+</svg>

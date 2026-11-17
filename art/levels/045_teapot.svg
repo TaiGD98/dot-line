@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" width="400" height="400" fill="none" stroke="#222" stroke-width="5" stroke-linecap="round" stroke-linejoin="round">
+  <!-- Level 45 · Teapot · normal. data-big="1" = pair with big dots. -->
+  <ellipse cx="200" cy="250" rx="130" ry="100"/>
+  <path d="M120 160 C120 143.4 155.8 130 200 130 C244.2 130 280 143.4 280 160"/>
+  <line x1="120" y1="160" x2="280" y2="160"/>
+  <circle cx="200" cy="115" r="14"/>
+  <path d="M75 230 C30 220 20 170 40 150"/>
+  <path d="M325 210 C390 200 390 300 320 290"/>
+</svg>

@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" width="400" height="400" fill="none" stroke="#222" stroke-width="5" stroke-linecap="round" stroke-linejoin="round">
+  <!-- Level 50 · Backpack · normal. data-big="1" = pair with big dots. -->
+  <path d="M90 370 L90 150 C90 90 310 90 310 150 L310 370 Z"/>
+  <path d="M90 170 C140 210 260 210 310 170"/>
+  <rect x="130" y="260" width="140" height="90"/>
+  <line x1="130" y1="290" x2="270" y2="290"/>
+  <path d="M155 95 C155 72.9 175.1 55 200 55 C224.9 55 245 72.9 245 95"/>
+  <line x1="200" y1="190" x2="200" y2="210"/>
+</svg>

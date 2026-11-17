@@ -4,7 +4,11 @@ Every published version stays playable at its own URL. The [landing page](https:
 
 ## latest (main) <Badge type="tip" text="Live" />
 
-- No changes since v0.1.0.
+- **Fix:** dots that only touch at the edge no longer count as a bump (hitbox = 85% of the two radii). Tapping the top of the sailboat's left sail no longer costs a heart.
+- **Editor fix:** generating with many pairs no longer leaves parts of the drawing without lines; pairs that can't be untangled are joined to their neighbour instead of removed.
+- **100-level system:** levels in blocks of 5 (relax, normal, hard, normal, normal from level 2), first really hard level at 19, 100 original drawings in `art/levels/`, difficulty score and design sheet `design/level-system.xlsx`.
+- Big dots only where a drawing marks them (accent or blocker).
+- Levels moved to `levels/` with an "Intro" collection, so the level editor can open and edit the game's levels.
 
 [Play latest](https://taigd98.github.io/dot-line/demo/)
 

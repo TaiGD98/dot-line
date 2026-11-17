@@ -61,6 +61,7 @@ export default defineConfig({
                         { text: 'Getting Started', link: '/guide/getting-started' },
                         { text: 'Deployment', link: '/guide/deployment' },
                         { text: 'Level editor (spec)', link: '/guide/editor' },
+                        { text: 'Level system (100 levels)', link: '/guide/level-system' },
                         { text: 'Game Design Document →', link: '/gdd/' }
                     ]
                 }

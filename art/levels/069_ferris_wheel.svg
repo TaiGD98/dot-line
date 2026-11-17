@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" width="400" height="400" fill="none" stroke="#222" stroke-width="5" stroke-linecap="round" stroke-linejoin="round">
+  <!-- Level 69 · Ferris wheel · hard. data-big="1" = pair with big dots. -->
+  <circle cx="200" cy="170" r="140"/>
+  <circle cx="200" cy="170" r="22"/>
+  <circle cx="200" cy="170" r="70"/>
+  <circle cx="200" cy="170" r="105"/>
+  <line x1="222" y1="170" x2="340" y2="170"/>
+  <line x1="215.6" y1="185.6" x2="299" y2="269"/>
+  <line x1="200" y1="192" x2="200" y2="310"/>
+  <line x1="184.4" y1="185.6" x2="101" y2="269"/>
+  <line x1="178" y1="170" x2="60" y2="170"/>
+  <line x1="184.4" y1="154.4" x2="101" y2="71"/>
+  <line x1="200" y1="148" x2="200" y2="30"/>
+  <line x1="215.6" y1="154.4" x2="299" y2="71"/>
+  <polyline points="340 170 326 188 354 188 340 170"/>
+  <polyline points="299 269 285 287 313 287 299 269"/>
+  <polyline points="200 310 186 328 214 328 200 310"/>
+  <polyline points="101 269 87 287 115 287 101 269"/>
+  <polyline points="60 170 46 188 74 188 60 170"/>
+  <polyline points="101 71 87 89 115 89 101 71"/>
+  <polyline points="200 30 186 48 214 48 200 30"/>
+  <polyline points="299 71 285 89 313 89 299 71"/>
+  <line x1="200" y1="192" x2="110" y2="390"/>
+  <line x1="200" y1="192" x2="290" y2="390"/>
+  <line x1="143" y1="300" x2="257" y2="300"/>
+  <line x1="60" y1="390" x2="340" y2="390"/>
+</svg>

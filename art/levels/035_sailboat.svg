@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" width="400" height="400" fill="none" stroke="#222" stroke-width="5" stroke-linecap="round" stroke-linejoin="round">
+  <!-- Level 35 · Sailboat · normal. data-big="1" = pair with big dots. -->
+  <polyline points="60 300 340 300 300 350 100 350 60 300"/>
+  <line x1="200" y1="300" x2="200" y2="40"/>
+  <polyline points="200 50 320 270 200 270"/>
+  <polyline points="200 80 90 270 200 270"/>
+  <polyline points="200 40 240 50 200 62"/>
+  <path d="M20 375 C50 367 80 383 110 375 C140 367 170 383 200 375 C230 367 260 383 290 375 C320 367 350 383 380 375"/>
+  <path d="M40 395 C61.3 389 82.7 401 104 395 C125.3 389 146.7 401 168 395 C189.3 389 210.7 401 232 395 C253.3 389 274.7 401 296 395 C317.3 389 338.7 401 360 395"/>
+</svg>

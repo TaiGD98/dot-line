@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" width="400" height="400" fill="none" stroke="#222" stroke-width="5" stroke-linecap="round" stroke-linejoin="round">
+  <!-- Level 41 · House · normal. data-big="1" = pair with big dots. -->
+  <rect x="80" y="180" width="240" height="200"/>
+  <polyline points="60 190 200 60 340 190"/>
+  <polyline points="170 380 170 290 230 290 230 380"/>
+  <rect x="240" y="210" width="60" height="50"/>
+  <line x1="270" y1="210" x2="270" y2="260"/>
+  <line x1="240" y1="235" x2="300" y2="235"/>
+  <polyline points="250 100 250 60 280 60 280 128"/>
+</svg>

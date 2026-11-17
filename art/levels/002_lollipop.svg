@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" width="400" height="400" fill="none" stroke="#222" stroke-width="5" stroke-linecap="round" stroke-linejoin="round">
+  <!-- Level 2 · Lollipop · relax. data-big="1" = pair with big dots. -->
+  <circle cx="200" cy="150" r="100"/>
+  <path d="M255 150 C255 174.9 238.3 196.7 214.2 203.1 C190.2 209.6 164.8 199.1 152.4 177.5 C139.9 155.9 143.5 128.7 161.1 111.1 C178.7 93.5 205.9 89.9 227.5 102.4"/>
+  <line data-big="1" x1="200" y1="250" x2="200" y2="380"/>
+</svg>

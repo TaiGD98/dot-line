@@ -1,15 +1,18 @@
-// Builds the original intro levels (src/levels/*.json) from simple vector drawings, using the
+// Builds the original intro levels (levels/<id>.json + the "Intro" collection) from simple vector drawings, using the
 // same generator as the editor. Run: npm run levels:intro
 // Drawings are made of strokes in a 0..400 box; a stroke that ends exactly on another stroke
 // becomes a T-junction (its dot sits on that line and blocks it).
-import { writeFileSync, readdirSync, unlinkSync } from 'fs';
+import { existsSync, mkdirSync, readFileSync, readdirSync, unlinkSync, writeFileSync } from 'fs';
 import { generate } from '../src/core/generator';
 import { Level, Pair, dataChecks, newLevel } from '../src/core/level';
 import { fitPath, Pt } from '../src/core/path';
 import { solve } from '../src/core/solver';
 import type { Stroke } from '../src/core/trace';
 
-const OUT = `${process.cwd()}/src/levels/`; // run from the project root (npm run levels:intro)
+// Same layout as the level editor's folder storage (choose the project folder in the editor).
+const ROOT = `${process.cwd()}/`; // run from the project root (npm run levels:intro)
+const OUT = `${ROOT}levels/`;
+const COLLECTION = 'Intro';
 type P = [number, number];
 const pt = ([x, y]: P): Pt => ({ x, y });
 const line = (...ps: P[]): Stroke => ({ pts: densify(ps.map(pt)), closed: false });
@@ -119,7 +122,9 @@ const specs: Spec[] = [
     }
 ];
 
-for (const f of readdirSync(OUT)) if (f.endsWith('.json')) unlinkSync(OUT + f);
+mkdirSync(OUT, { recursive: true });
+const ids: string[] = [];
+const json = (v: unknown) => JSON.stringify(v, null, 2) + '\n';
 for (const sp of specs) {
     const L = newLevel(sp.file.replace(/^\d+_/, ''), sp.name);
     L.difficulty = sp.difficulty;
@@ -134,7 +139,20 @@ for (const sp of specs) {
     }
     const res = solve(L);
     const warn = dataChecks(L).filter((c) => c.level !== 'ok');
-    writeFileSync(`${OUT}${sp.file}.json`, JSON.stringify(L, null, 2) + '\n');
+    writeFileSync(`${OUT}${L.id}.json`, json(L));
+    ids.push(L.id);
     console.log(sp.file.padEnd(14), `${L.pairs.length} pairs`.padEnd(9), `solvable=${res.solvable}`, `open=${res.openAtStart}`, `rounds=${res.rounds}`, warn.map((w) => w.text).join('; '));
     if (!res.solvable) process.exitCode = 1;
 }
+
+// Play order: the "Intro" collection (as the editor's Organiser saves it), keeping other collections.
+const colFile = `${ROOT}collections.json`;
+const cols: { name: string; version: number; levels: string[] }[] = existsSync(colFile) ? JSON.parse(readFileSync(colFile, 'utf8')).collections ?? [] : [];
+const others = cols.filter((c) => c.name !== COLLECTION);
+const prev = cols.find((c) => c.name === COLLECTION);
+writeFileSync(colFile, json({ collections: [{ name: COLLECTION, version: prev?.version ?? 1, levels: ids }, ...others] }));
+const colDir = `${ROOT}collections/${COLLECTION}/`;
+mkdirSync(colDir, { recursive: true });
+for (const f of readdirSync(colDir)) unlinkSync(colDir + f);
+ids.forEach((id, i) => writeFileSync(`${colDir}${String(i + 1).padStart(3, '0')}_${id}.json`, json(JSON.parse(readFileSync(`${OUT}${id}.json`, 'utf8')))));
+console.log(`Wrote ${ids.length} levels to levels/ and the "${COLLECTION}" collection.`);

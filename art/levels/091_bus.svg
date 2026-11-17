@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" width="400" height="400" fill="none" stroke="#222" stroke-width="5" stroke-linecap="round" stroke-linejoin="round">
+  <!-- Level 91 · Bus · normal. data-big="1" = pair with big dots. -->
+  <rect x="30" y="120" width="340" height="170"/>
+  <rect x="50" y="140" width="55" height="55"/>
+  <rect x="120" y="140" width="55" height="55"/>
+  <rect x="190" y="140" width="55" height="55"/>
+  <rect x="260" y="140" width="55" height="55"/>
+  <rect x="320" y="140" width="35" height="120"/>
+  <line x1="30" y1="230" x2="320" y2="230"/>
+  <circle cx="100" cy="300" r="35"/>
+  <circle cx="290" cy="300" r="35"/>
+  <circle cx="100" cy="300" r="12"/>
+  <circle cx="290" cy="300" r="12"/>
+</svg>

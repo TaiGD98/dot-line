@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" width="400" height="400" fill="none" stroke="#222" stroke-width="5" stroke-linecap="round" stroke-linejoin="round">
+  <!-- Level 6 · Open book · normal. data-big="1" = pair with big dots. -->
+  <path d="M200 110 C150 80 80 80 30 100 L30 330 C80 310 150 310 200 340 Z"/>
+  <path d="M200 110 C250 80 320 80 370 100 L370 330 C320 310 250 310 200 340"/>
+  <line x1="60" y1="150" x2="170" y2="155"/>
+  <line x1="60" y1="200" x2="170" y2="205"/>
+  <line x1="60" y1="250" x2="170" y2="255"/>
+  <line x1="230" y1="155" x2="340" y2="150"/>
+  <line x1="230" y1="205" x2="340" y2="200"/>
+  <line x1="230" y1="255" x2="340" y2="250"/>
+</svg>

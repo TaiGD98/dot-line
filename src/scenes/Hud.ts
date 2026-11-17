@@ -3,6 +3,9 @@ import { BoardState, Game, HEARTS } from './Game';
 import { levels } from '../game/source';
 
 const FONT = 'Lilita, system-ui, sans-serif';
+
+/** "Hard" label: hard slots of the level system (category), else difficulty 4+. */
+const isHard = (l: { category?: string; difficulty?: number | null }) => (l.category ? l.category === 'hard' : (l.difficulty ?? 0) >= 4);
 const OUTLINE = '#26346e';
 
 /** HUD (GDD 3.6): pause, hearts, hint (AD), progress bar; plus the win / lose screens
@@ -41,10 +44,10 @@ export class Hud extends Phaser.Scene {
         this.game$.events.on('win', () => this.endScreen(true));
         this.game$.events.on('lose', () => this.endScreen(false));
         this.hard = this.add.text(w / 2, 34, 'Hard', { fontFamily: FONT, fontSize: '34px', color: '#a24bf0', stroke: '#ffffff', strokeThickness: 6 }).setOrigin(0.5).setVisible(false);
-        this.game$.events.on('loaded', () => { this.closeOverlay(); this.startTutorial(); this.hard.setVisible((this.game$.current.difficulty ?? 0) >= 4); });
+        this.game$.events.on('loaded', () => { this.closeOverlay(); this.startTutorial(); this.hard.setVisible(isHard(this.game$.current)); });
         this.game$.events.on('tapped', () => { if (this.tut && this.tut.kind !== 'zoom') this.endTutorial(); });
         this.game$.events.on('zoomed', () => { if (this.tut?.kind === 'zoom') this.endTutorial(); });
-        if (this.game$.current) { this.startTutorial(); this.hard.setVisible((this.game$.current.difficulty ?? 0) >= 4); }
+        if (this.game$.current) { this.startTutorial(); this.hard.setVisible(isHard(this.game$.current)); }
         if (this.game$.sys.isActive() && levels.level()) this.updateState(this.game$.state());
     }
 

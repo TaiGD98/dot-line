@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" width="400" height="400" fill="none" stroke="#222" stroke-width="5" stroke-linecap="round" stroke-linejoin="round">
+  <!-- Level 87 · Sunflower · relax. data-big="1" = pair with big dots. -->
+  <circle cx="200" cy="150" r="55"/>
+  <polyline points="256.7 137.9 320 150 256.7 162.1"/>
+  <polyline points="255.2 167.9 303.9 210 243.1 188.8"/>
+  <polyline points="238.8 193.1 260 253.9 217.9 205.2"/>
+  <polyline points="212.1 206.7 200 270 187.9 206.7"/>
+  <polyline points="182.1 205.2 140 253.9 161.2 193.1"/>
+  <polyline points="156.9 188.8 96.1 210 144.8 167.9"/>
+  <polyline points="143.3 162.1 80 150 143.3 137.9"/>
+  <polyline points="144.8 132.1 96.1 90 156.9 111.2"/>
+  <polyline points="161.2 106.9 140 46.1 182.1 94.8"/>
+  <polyline points="187.9 93.3 200 30 212.1 93.3"/>
+  <polyline points="217.9 94.8 260 46.1 238.8 106.9"/>
+  <polyline points="243.1 111.2 303.9 90 255.2 132.1"/>
+  <line x1="200" y1="270" x2="200" y2="390"/>
+  <path d="M200 330 C150 290 100 300 80 320 C120 340 160 340 200 330"/>
+  <path d="M200 360 C250 320 300 330 320 350 C280 370 240 370 200 360"/>
+  <line data-big="1" x1="160" y1="150" x2="240" y2="150"/>
+</svg>

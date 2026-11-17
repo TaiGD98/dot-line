@@ -85,7 +85,7 @@ Bắt buộc: `schema`, `version`, `id`, `name`, `pairs` (mỗi cặp: `id`, `co
 4. **Nét ngắn đứng riêng** (dưới ~170 đơn vị) thành cặp điểm nhấn có hạt to.
 5. **Màu:** hạt nằm gần nhau của các cặp khác nhau tránh trùng màu, trong giới hạn M màu.
 
-**Cách chạy:** ảnh được dò thành đồ thị nét (giữ chỗ nối, nối các đoạn đi thẳng qua chỗ giao thành một nét), rồi editor tạo 24 phương án ngẫu nhiên. Mỗi phương án được sửa cho **luôn giải được**: hạt đè nhau thì lùi lại; vòng chặn thì ưu tiên **dời điểm cắt** dọc nét (giữ hình liền), sau đó thu nhỏ hạt, cuối cùng mới rút ngắn dây hoặc bỏ cặp (có báo dưới nút Generate). Các phương án được chấm điểm theo độ khó mục tiêu; editor hiện **3 phương án tốt nhất** để chọn, rồi bạn chỉnh tay.
+**Cách chạy:** ảnh được dò thành đồ thị nét (giữ chỗ nối, nối các đoạn đi thẳng qua chỗ giao thành một nét), rồi editor tạo 24 phương án ngẫu nhiên. Mỗi phương án được sửa cho **luôn giải được**: hạt đè nhau thì lùi lại; vòng chặn thì ưu tiên **dời điểm cắt** dọc nét (giữ hình liền), sau đó thu nhỏ hạt, rồi rút ngắn dây một chút. Nếu vẫn kẹt (hình nhỏ mà số cặp quá cao), cặp bị kẹt được **gộp với cặp liền kề trên cùng nét** (bỏ một điểm cắt): ít cặp hơn số yêu cầu nhưng hình luôn còn nguyên nét. Số cặp đã gộp được báo dưới nút Generate. Các phương án được chấm điểm theo độ khó mục tiêu; editor hiện **3 phương án tốt nhất** để chọn, rồi bạn chỉnh tay.
 
 **Mẹo vẽ SVG:** đừng để 2 nét chồng lên nhau (ví dụ 2 hình chữ nhật dùng chung cạnh): dây chồng nhau sẽ chặn lẫn nhau và generator phải bỏ bớt cặp.
 
@@ -112,6 +112,7 @@ Bắt buộc: `schema`, `version`, `id`, `name`, `pairs` (mỗi cặp: `id`, `co
 ## 3. Lưu dữ liệu và quản lý level
 
 - Nơi lưu: **folder trên máy** (File System Access API, chỉ Chrome/Edge) hoặc **Browser storage** để thử.
+- **Sửa level của game:** chọn chính folder project `dot-line` làm folder lưu. Game đọc `levels/*.json` và chơi theo thứ tự collection đầu tiên trong `collections.json` (bộ "Intro"), nên mọi lần Save trong editor là game thấy ngay (dev server tự tải lại). Lịch sử version (`levels/.versions/`) và bản nháp (`drafts/`) không được commit.
 - Mỗi level giữ **3 bản cũ gần nhất**; có bản nháp tự lưu.
 - Cấu trúc folder:
 

@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" width="400" height="400" fill="none" stroke="#222" stroke-width="5" stroke-linecap="round" stroke-linejoin="round">
+  <!-- Level 14 · Piano keys · hard. data-big="1" = pair with big dots. -->
+  <rect x="40" y="120" width="320" height="200"/>
+  <line x1="104" y1="120" x2="104" y2="320"/>
+  <line x1="168" y1="120" x2="168" y2="320"/>
+  <line x1="232" y1="120" x2="232" y2="320"/>
+  <line x1="296" y1="120" x2="296" y2="320"/>
+  <polyline points="88 120 88 225 120 225 120 120"/>
+  <polyline points="152 120 152 225 184 225 184 120"/>
+  <polyline points="280 120 280 225 312 225 312 120"/>
+  <line x1="40" y1="90" x2="360" y2="90"/>
+  <line x1="40" y1="90" x2="40" y2="120"/>
+  <line x1="360" y1="90" x2="360" y2="120"/>
+</svg>

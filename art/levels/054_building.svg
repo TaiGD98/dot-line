@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" width="400" height="400" fill="none" stroke="#222" stroke-width="5" stroke-linecap="round" stroke-linejoin="round">
+  <!-- Level 54 · Apartment · hard. data-big="1" = pair with big dots. -->
+  <rect x="90" y="40" width="220" height="340"/>
+  <line x1="90" y1="110" x2="310" y2="110"/>
+  <line x1="90" y1="170" x2="310" y2="170"/>
+  <line x1="90" y1="230" x2="310" y2="230"/>
+  <line x1="90" y1="290" x2="310" y2="290"/>
+  <rect x="115" y="75" width="50" height="25"/>
+  <rect x="235" y="75" width="50" height="25"/>
+  <rect x="115" y="135" width="50" height="25"/>
+  <rect x="235" y="135" width="50" height="25"/>
+  <rect x="115" y="195" width="50" height="25"/>
+  <rect x="235" y="195" width="50" height="25"/>
+  <rect x="115" y="255" width="50" height="25"/>
+  <rect x="235" y="255" width="50" height="25"/>
+  <polyline points="170 380 170 330 230 330 230 380"/>
+  <line x1="200" y1="40" x2="200" y2="10"/>
+  <line x1="185" y1="20" x2="215" y2="20"/>
+</svg>

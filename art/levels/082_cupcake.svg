@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" width="400" height="400" fill="none" stroke="#222" stroke-width="5" stroke-linecap="round" stroke-linejoin="round">
+  <!-- Level 82 · Cupcake · relax. data-big="1" = pair with big dots. -->
+  <polyline points="100 230 130 380 270 380 300 230 100 230"/>
+  <line x1="150" y1="230" x2="155" y2="380"/>
+  <line x1="200" y1="230" x2="200" y2="380"/>
+  <line x1="250" y1="230" x2="245" y2="380"/>
+  <path d="M90 230 C60 180 130 150 150 170 C150 120 250 120 250 170 C270 150 340 180 310 230 Z"/>
+  <path d="M150 170 C150 110 250 110 250 170"/>
+  <line data-big="1" x1="185" y1="100" x2="225" y2="45"/>
+</svg>

@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" width="400" height="400" fill="none" stroke="#222" stroke-width="5" stroke-linecap="round" stroke-linejoin="round">
+  <!-- Level 16 · Coffee cup · normal. data-big="1" = pair with big dots. -->
+  <polyline points="110 160 130 330 270 330 290 160 110 160"/>
+  <path d="M312.8 185.7 C334.3 189.5 350 208.2 350 230 C350 251.8 334.3 270.5 312.8 274.3"/>
+  <ellipse cx="200" cy="350" rx="150" ry="22"/>
+  <path d="M170 140 C150 110 190 90 170 50"/>
+  <path d="M230 140 C210 110 250 90 230 50"/>
+</svg>

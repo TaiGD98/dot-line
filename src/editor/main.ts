@@ -85,6 +85,7 @@ class App {
                     ? h('button', { class: reconnect ? '' : 'primary', onclick: () => this.pickFolder(box) }, 'Choose levels folder')
                     : h('p', { class: 'muted' }, 'Folders need Chrome or Edge.'),
                 h('button', { onclick: () => { box.remove(); setPref('storage', 'browser'); this.useFiles(new BrowserFiles()); } }, 'Use browser storage'),
+                h('p', { class: 'muted small' }, 'Tip: choose the dot-line project folder itself to edit the game\'s own levels (levels/ and collections.json); the game picks up every save.'),
                 h('p', { class: 'muted small' }, 'Browser storage keeps levels in this browser only. A folder keeps plain JSON files you can commit or share.')));
         document.body.append(box);
     }
@@ -270,7 +271,13 @@ class App {
         if (this.image) URL.revokeObjectURL(this.image.url);
         this.image = null;
         if (!id) return;
-        const blob = await this.store.image(id);
+        let blob = await this.store.image(id);
+        // Levels built from the art folder point at their SVG (e.g. art/levels/012_apple.svg).
+        const src = this.level.source?.image;
+        if (!blob && src && src.includes('/')) {
+            const b = await this.store.files.readBlob(src);
+            if (b) blob = new Blob([b], { type: src.endsWith('.svg') ? 'image/svg+xml' : 'image/png' });
+        }
         if (blob) await this.setImage(blob, false);
     }
 

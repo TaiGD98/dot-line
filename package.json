@@ -16,7 +16,10 @@
     "release:latest": "bash scripts/release.sh latest",
     "build:editor": "tsc --noEmit && vite build --config vite.editor.config.ts",
     "editor": "vite --open /editor/",
-    "levels:intro": "esbuild tools/intro-levels.ts --bundle --platform=node --format=esm --outfile=node_modules/.cache/intro-levels.mjs --log-level=warning && node node_modules/.cache/intro-levels.mjs"
+    "levels:intro": "esbuild tools/intro-levels.ts --bundle --platform=node --format=esm --outfile=node_modules/.cache/intro-levels.mjs --log-level=warning && node node_modules/.cache/intro-levels.mjs",
+    "art": "esbuild tools/export-art.ts --bundle --platform=node --format=esm --outfile=node_modules/.cache/export-art.mjs --log-level=warning && node node_modules/.cache/export-art.mjs",
+    "levels:build": "esbuild tools/build-levels.ts --bundle --platform=node --format=esm --outfile=node_modules/.cache/build-levels.mjs --log-level=warning && node node_modules/.cache/build-levels.mjs",
+    "art:measure": "esbuild tools/measure-art.ts --bundle --platform=node --format=esm --outfile=node_modules/.cache/measure-art.mjs --log-level=warning && node node_modules/.cache/measure-art.mjs"
   },
   "dependencies": {
     "phaser": "^4.2.1"

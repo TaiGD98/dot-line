@@ -2,13 +2,19 @@
 //
 // Tapping dot `a` sends it along the line to `b`. The move is blocked when the moving dot would
 // touch a dot of another uncleared pair: distance from that dot's centre to the line is below
-// the sum of the two radii. Lines never block. A pair is open if either of its dots can go.
+// HIT_SCALE x the sum of the two radii. Lines never block. A pair is open if either of its dots can go.
 // Clearing a pair only removes blockers, so a greedy "clear anything open" search decides
 // solvability exactly: the level is solvable iff repeatedly clearing open pairs empties it.
 import { Level, Pair } from './level';
 import { Pt, distToPolyline, samplePath } from './path';
 
 export type Side = 'a' | 'b';
+
+/**
+ * Hitbox = this share of the sum of the two radii. Below 1 so dots that only touch at the edge
+ * (e.g. two dots side by side at a cut) don't count as a bump; a dot sitting on a line still blocks.
+ */
+export const HIT_SCALE = 0.85;
 
 export class BlockModel {
     private lines = new Map<string, Pt[]>();
@@ -28,7 +34,7 @@ export class BlockModel {
         const out: string[] = [];
         for (const o of this.pairs) {
             if (o.id === pair.id || !alive.has(o.id)) continue;
-            if (distToPolyline(o.a, line) < r + o.a.r || distToPolyline(o.b, line) < r + o.b.r) out.push(o.id);
+            if (distToPolyline(o.a, line) < (r + o.a.r) * HIT_SCALE || distToPolyline(o.b, line) < (r + o.b.r) * HIT_SCALE) out.push(o.id);
         }
         return out;
     }

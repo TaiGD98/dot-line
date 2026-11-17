@@ -110,6 +110,8 @@ export interface Stroke {
     closed: boolean;
     /** Smooth before use (true for pixel-traced lines; vector strokes keep their exact shape). */
     smooth?: boolean;
+    /** Big dots on this stroke's pair (SVG: data-big="1"): an accent or a big blocker. */
+    big?: boolean;
 }
 
 /**

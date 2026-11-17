@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" width="400" height="400" fill="none" stroke="#222" stroke-width="5" stroke-linecap="round" stroke-linejoin="round">
+  <!-- Level 9 · Fence · hard. data-big="1" = pair with big dots. -->
+  <polyline points="78 360 78 110 100 80 122 110 122 360 78 360"/>
+  <polyline points="178 360 178 110 200 80 222 110 222 360 178 360"/>
+  <polyline points="278 360 278 110 300 80 322 110 322 360 278 360"/>
+  <line x1="122" y1="230" x2="278" y2="230"/>
+  <path d="M10 385 C25.8 379 41.7 391 57.5 385 C73.3 379 89.2 391 105 385 C120.8 379 136.7 391 152.5 385 C168.3 379 184.2 391 200 385 C215.8 379 231.7 391 247.5 385 C263.3 379 279.2 391 295 385 C310.8 379 326.7 391 342.5 385 C358.3 379 374.2 391 390 385"/>
+</svg>

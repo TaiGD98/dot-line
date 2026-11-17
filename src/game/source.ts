@@ -2,9 +2,24 @@
 // editor (postMessage) when opened from the editor's Play button (?editor=1).
 import { Level, parseLevel } from '../core/level';
 
-const bundled = Object.entries(import.meta.glob('../levels/*.json', { eager: true, import: 'default' }))
-    .sort(([a], [b]) => a.localeCompare(b))
-    .map(([, v]) => parseLevel(v));
+// Levels live in <project>/levels/ (the level editor's folder layout). Play order: the first
+// collection in collections.json (the editor's Organiser), then any other level by id.
+const files = import.meta.glob('/levels/*.json', { eager: true, import: 'default' });
+const colFile = Object.values(import.meta.glob('/collections.json', { eager: true, import: 'default' }))[0] as
+    | { collections?: { levels: string[] }[] }
+    | undefined;
+const all = Object.values(files).flatMap((v) => {
+    try {
+        return [parseLevel(v)];
+    } catch {
+        return [];
+    }
+});
+const order = colFile?.collections?.[0]?.levels ?? [];
+const bundled = [
+    ...order.map((id) => all.find((l) => l.id === id)).filter((l): l is Level => !!l),
+    ...all.filter((l) => !order.includes(l.id)).sort((a, b) => a.id.localeCompare(b.id, undefined, { numeric: true }))
+];
 
 export const fromEditor = new URLSearchParams(location.search).has('editor');
 

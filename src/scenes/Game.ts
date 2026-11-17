@@ -2,7 +2,7 @@ import * as Phaser from 'phaser';
 import { Level, Pair, levelBounds } from '../core/level';
 import { COMPLETED_LINE, colour, hexToInt } from '../core/palette';
 import { Pt, arcLengths, dist, pointAt } from '../core/path';
-import { BlockModel, Side } from '../core/solver';
+import { BlockModel, HIT_SCALE, Side } from '../core/solver';
 import { levels } from '../game/source';
 
 // ---- Tunables (GDD 3.2 / 3.6) ----
@@ -317,7 +317,7 @@ export class Game extends Phaser.Scene {
             const o = this.pair(id);
             const om = this.movers.get(id);
             if (om && om.open) continue;
-            for (const side of ['a', 'b'] as const) if (dist(pos, this.dotPos(o, side)) < r + o[side].r) return true;
+            for (const side of ['a', 'b'] as const) if (dist(pos, this.dotPos(o, side)) < (r + o[side].r) * HIT_SCALE) return true;
         }
         return false;
     }

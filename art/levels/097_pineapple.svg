@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" width="400" height="400" fill="none" stroke="#222" stroke-width="5" stroke-linecap="round" stroke-linejoin="round">
+  <!-- Level 97 · Pineapple · relax. data-big="1" = pair with big dots. -->
+  <ellipse cx="200" cy="260" rx="110" ry="130"/>
+  <line x1="91.2" y1="241.2" x2="233.7" y2="383.7"/>
+  <line x1="104.8" y1="194.8" x2="270.1" y2="360.1"/>
+  <line x1="129.9" y1="159.9" x2="295.2" y2="325.2"/>
+  <line x1="166.3" y1="136.3" x2="308.8" y2="278.8"/>
+  <line x1="91.2" y1="278.8" x2="233.7" y2="136.3"/>
+  <line x1="104.8" y1="325.2" x2="270.1" y2="159.9"/>
+  <line x1="129.9" y1="360.1" x2="295.2" y2="194.8"/>
+  <line x1="166.3" y1="383.7" x2="308.8" y2="241.2"/>
+  <polyline points="200 130 140 60 180 90 170 20 200 80 230 20 220 90 260 60 200 130"/>
+  <line data-big="1" x1="200" y1="80" x2="200" y2="20"/>
+</svg>

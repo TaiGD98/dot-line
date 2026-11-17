@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" width="400" height="400" fill="none" stroke="#222" stroke-width="5" stroke-linecap="round" stroke-linejoin="round">
+  <!-- Level 22 · Sun · relax. data-big="1" = pair with big dots. -->
+  <circle cx="200" cy="200" r="100"/>
+  <circle cx="165" cy="180" r="10"/>
+  <circle cx="235" cy="180" r="10"/>
+  <path d="M242.3 218.7 C235.8 234.5 218.9 245 200 245 C181.1 245 164.2 234.5 157.7 218.7"/>
+  <line x1="325" y1="200" x2="380" y2="200"/>
+  <line x1="288.4" y1="288.4" x2="327.3" y2="327.3"/>
+  <line x1="200" y1="325" x2="200" y2="380"/>
+  <line x1="111.6" y1="288.4" x2="72.7" y2="327.3"/>
+  <line x1="75" y1="200" x2="20" y2="200"/>
+  <line x1="111.6" y1="111.6" x2="72.7" y2="72.7"/>
+  <line x1="200" y1="75" x2="200" y2="20"/>
+  <line x1="288.4" y1="111.6" x2="327.3" y2="72.7"/>
+  <line data-big="1" x1="140" y1="220" x2="260" y2="220"/>
+</svg>

@@ -1,4 +1,4 @@
-# 2. Core loop <Badge type="warning" text="Coming soon" />
+# 2. Core loop <Badge type="tip" text="Live" />
 
 1. **Quan sát:** nhìn board, xem cặp nào có đường đi tới hạt kia mà không bị hạt của cặp khác chắn.
 2. **Tap:** chạm vào một hạt.

@@ -10,25 +10,14 @@
 
 Order of priority. Milestones are scope buckets, not dates.
 
-### M1: Prototype v0.1
+Kế hoạch ban đầu (M1 bản chơi đầu, M2 kích thước hạt và HUD, M3 editor và hint) đã xong trong v0.1.0, xem 4.1.
+
+### Tiếp theo
 | Item | Chapter |
 |---|---|
-| Board với các cặp hạt và dây, tap → di chuyển, va chạm và hủy, cặp vỡ, thắng màn | [Rules](./rules) |
-| Vài level làm tay | [Rules: Level](./rules#_3-8-level) |
-
-### M2: v0.2
-| Item | Chapter |
-|---|---|
-| Hạt nhiều kích thước, effect vỡ theo kích thước | [Rules](./rules) |
-| HUD (tim, tiến độ, pause) | [Rules: HUD](./rules#_3-6-hud-va-nut-theo-clip) |
-
-### M3: v0.3
-| Item | Chapter |
-|---|---|
-| Level editor (nếu cần), thêm level, hint | [Rules](./rules) |
-
-### Sau đó
-_TBD_
+| Chốt bảng mục tiêu độ khó cho generator và số cặp / số màu theo level | [Rules: Level](./rules#_3-8-level) |
+| Chơi thử trên điện thoại thật: tốc độ hạt, pinch zoom | [Rules](./rules) |
+| Obstacle (chưa chốt ý tưởng) | _TBD_ |
 
 ## 4.3 Known issues {#known-issues}
 

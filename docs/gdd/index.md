@@ -2,7 +2,7 @@
 
 **Dot Line** · Game Design Document · tracks build `latest` (see [Changelog](./changelog))
 
-This document describes what Dot Line is, how it plays, and why it is built the way it is. At this stage the GDD is the target design and the code has not caught up yet: features marked Coming soon are not in the game. Once a feature ships, its numbers come from the code.
+This document describes what Dot Line is, how it plays, and why it is built the way it is. Every number in it (timings, sizes, colours) comes from the current code. If the two disagree, the code is right and this document has a bug.
 
 ## How to read this document
 

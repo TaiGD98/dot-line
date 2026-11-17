@@ -13,6 +13,8 @@ export class Hud extends Phaser.Scene {
     private bar!: Phaser.GameObjects.Graphics;
     private label!: Phaser.GameObjects.Text;
     private overlay: Phaser.GameObjects.Container | null = null;
+    private hard!: Phaser.GameObjects.Text;
+    private tut: { kind: 'tap' | 'collision' | 'zoom'; ring: Phaser.GameObjects.Graphics; hand: Phaser.GameObjects.Text; text: Phaser.GameObjects.Text; t: number } | null = null;
 
     constructor() {
         super('Hud');
@@ -38,7 +40,11 @@ export class Hud extends Phaser.Scene {
         this.game$.events.on('state', (s: BoardState) => this.updateState(s));
         this.game$.events.on('win', () => this.endScreen(true));
         this.game$.events.on('lose', () => this.endScreen(false));
-        this.game$.events.on('loaded', () => this.closeOverlay());
+        this.hard = this.add.text(w / 2, 34, 'Hard', { fontFamily: FONT, fontSize: '34px', color: '#a24bf0', stroke: '#ffffff', strokeThickness: 6 }).setOrigin(0.5).setVisible(false);
+        this.game$.events.on('loaded', () => { this.closeOverlay(); this.startTutorial(); this.hard.setVisible((this.game$.current.difficulty ?? 0) >= 4); });
+        this.game$.events.on('tapped', () => { if (this.tut && this.tut.kind !== 'zoom') this.endTutorial(); });
+        this.game$.events.on('zoomed', () => { if (this.tut?.kind === 'zoom') this.endTutorial(); });
+        if (this.game$.current) { this.startTutorial(); this.hard.setVisible((this.game$.current.difficulty ?? 0) >= 4); }
         if (this.game$.sys.isActive() && levels.level()) this.updateState(this.game$.state());
     }
 
@@ -51,6 +57,45 @@ export class Hud extends Phaser.Scene {
         c.add([g]);
         c.setSize(90, 90).setInteractive({ useHandCursor: true }).on('pointerup', onClick);
         return c;
+    }
+
+    // ---------- tutorial (hand + caption) ----------
+
+    private startTutorial() {
+        this.endTutorial();
+        const kind = this.game$.current?.tutorial;
+        if (!kind) return;
+        const caption = { tap: 'Tap a dot to send it home', collision: 'Bumping costs a heart', zoom: 'Pinch to zoom' }[kind];
+        const ring = this.add.graphics().setDepth(5);
+        const hand = this.add.text(0, 0, '👆', { fontSize: '120px' }).setOrigin(0.3, 0.05).setDepth(6);
+        const text = this.add.text(this.scale.width / 2, this.scale.height * 0.9, caption, { fontFamily: FONT, fontSize: '64px', color: '#8a5a2b' }).setOrigin(0.5).setDepth(6);
+        this.tut = { kind, ring, hand, text, t: 0 };
+    }
+
+    private endTutorial() {
+        if (!this.tut) return;
+        this.tut.ring.destroy(); this.tut.hand.destroy(); this.tut.text.destroy();
+        this.tut = null;
+    }
+
+    update(_t: number, dt: number) {
+        const tut = this.tut;
+        if (!tut) return;
+        tut.t += dt / 1000;
+        const pulse = (Math.sin(tut.t * 5) + 1) / 2;
+        tut.ring.clear();
+        if (tut.kind === 'zoom') {
+            const cx = this.scale.width / 2, cy = this.scale.height * 0.55, spread = 40 + pulse * 70;
+            tut.hand.setPosition(cx + spread * 0.5, cy + spread * 0.4).setAngle(-20);
+            tut.ring.lineStyle(6, 0x8a5a2b, 0.35).strokeCircle(cx - spread * 0.4, cy - spread * 0.4, 26).strokeCircle(cx + spread * 0.4, cy + spread * 0.4, 26);
+            return;
+        }
+        const target = this.game$.tutorialTarget(tut.kind);
+        if (!target) { tut.hand.setVisible(false); return; }
+        const p = this.game$.toScreen(target);
+        tut.hand.setVisible(true).setPosition(p.x, p.y + 10 - pulse * 14);
+        tut.ring.lineStyle(5, 0xffffff, 0.9).strokeCircle(p.x, p.y, 44 + pulse * 10);
+        tut.ring.lineStyle(3, 0x8a5a2b, 0.25).strokeCircle(p.x, p.y, 44 + pulse * 10);
     }
 
     private updateState(s: BoardState) {

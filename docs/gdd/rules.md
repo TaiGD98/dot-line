@@ -77,5 +77,8 @@ Dây đã hoàn thành (Completed): `#6977C2`.
 ## 3.8 Level <Badge type="warning" text="Coming soon" />
 
 - Mỗi level là một hình vẽ ghép từ các cặp hạt và dây (ví dụ cái micro trong clip).
+- **10 level mở đầu** (hình vẽ gốc của Dot Line): Ripples (hướng dẫn bấm), Flag (hướng dẫn va chạm), Kite (hướng dẫn pinch zoom), House, Fish, Sailboat, Umbrella, Rocket, Tree, Castle. Level 1–2 làm tay; level 3–10 tạo bằng generator v2 từ hình vẽ trong `tools/intro-levels.ts` (`npm run levels:intro`).
+- **Hướng dẫn:** level có trường `tutorial` hiện bàn tay chỉ vào hạt và dòng chữ (Tap a dot to send it home / Bumping costs a heart / Pinch to zoom); biến mất sau lần bấm hoặc zoom đầu tiên.
+- **Nhãn "Hard"** hiện trên tim khi độ khó của level từ 4 trở lên.
 - Số cặp mỗi level, số màu, cách tăng độ khó qua các level: _TBD_.
 - Điều kiện để level giải được: luôn tồn tại một thứ tự gỡ dọn sạch được board. Cách kiểm tra (bằng tay hay bằng công cụ): _TBD_.

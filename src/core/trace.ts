@@ -104,3 +104,78 @@ export function chains(sk: Mask, minLength = 6): Pt[][] {
         .filter((c) => c.length >= minLength)
         .map((c) => c.map((i) => ({ x: i % w, y: (i / w) | 0 })));
 }
+
+export interface Stroke {
+    pts: Pt[];
+    closed: boolean;
+    /** Smooth before use (true for pixel-traced lines; vector strokes keep their exact shape). */
+    smooth?: boolean;
+}
+
+/**
+ * Joins traced chains into strokes: at each junction, chain ends that continue in the same
+ * direction (an X crossing, or the straight part of a T) are linked; an end with no partner
+ * stays a stroke end (the stem of a T). Chains linked into a ring become closed strokes.
+ */
+export function strokesFromChains(chs: Pt[][], joinRadius = 5): Stroke[] {
+    type End = { c: number; e: 0 | 1; p: Pt; dir: Pt };
+    const ends: End[] = [];
+    const dirAt = (c: Pt[], e: 0 | 1): Pt => {
+        const a = e === 0 ? c[0] : c[c.length - 1];
+        const k = Math.min(c.length - 1, 8);
+        const b = e === 0 ? c[k] : c[c.length - 1 - k];
+        const l = Math.hypot(b.x - a.x, b.y - a.y) || 1;
+        return { x: (b.x - a.x) / l, y: (b.y - a.y) / l };
+    };
+    chs.forEach((c, i) => {
+        ends.push({ c: i, e: 0, p: c[0], dir: dirAt(c, 0) });
+        ends.push({ c: i, e: 1, p: c[c.length - 1], dir: dirAt(c, 1) });
+    });
+    // Cluster ends that meet at the same junction.
+    const cluster = ends.map((_, i) => i);
+    const find = (i: number): number => (cluster[i] === i ? i : (cluster[i] = find(cluster[i])));
+    for (let i = 0; i < ends.length; i++)
+        for (let j = i + 1; j < ends.length; j++)
+            if (Math.hypot(ends[i].p.x - ends[j].p.x, ends[i].p.y - ends[j].p.y) <= joinRadius) cluster[find(i)] = find(j);
+    const groups = new Map<number, number[]>();
+    ends.forEach((_, i) => { const r = find(i); groups.set(r, [...(groups.get(r) ?? []), i]); });
+
+    // Link the most opposite directions first (straight continuation).
+    const link = new Map<number, number>();
+    for (const g of groups.values()) {
+        const cand: [number, number, number][] = [];
+        for (let a = 0; a < g.length; a++)
+            for (let b = a + 1; b < g.length; b++) {
+                const d = ends[g[a]].dir.x * ends[g[b]].dir.x + ends[g[a]].dir.y * ends[g[b]].dir.y;
+                if (d < -0.5) cand.push([d, g[a], g[b]]);
+            }
+        cand.sort((x, y) => x[0] - y[0]);
+        for (const [, a, b] of cand) if (!link.has(a) && !link.has(b)) { link.set(a, b); link.set(b, a); }
+    }
+
+    const endIndex = (c: number, e: 0 | 1) => c * 2 + e;
+    const used = new Uint8Array(chs.length);
+    const out: Stroke[] = [];
+    const walk = (startC: number, startE: 0 | 1): Stroke => {
+        const pts: Pt[] = [];
+        let c = startC, e = startE, closed = false;
+        for (;;) {
+            used[c] = 1;
+            const seq = e === 0 ? chs[c] : [...chs[c]].reverse();
+            pts.push(...(pts.length ? seq.slice(1) : seq));
+            const other = endIndex(c, e === 0 ? 1 : 0);
+            const nxt = link.get(other);
+            if (nxt === undefined) break;
+            const nc = ends[nxt].c, ne = ends[nxt].e;
+            if (used[nc]) { closed = nc === startC && ne === startE; break; }
+            c = nc; e = ne;
+        }
+        return { pts, closed, smooth: true };
+    };
+    for (let i = 0; i < ends.length; i++) {
+        const { c, e } = ends[i];
+        if (!used[c] && !link.has(i)) out.push(walk(c, e));
+    }
+    for (let c = 0; c < chs.length; c++) if (!used[c]) out.push(walk(c, 0));
+    return out;
+}

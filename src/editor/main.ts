@@ -1,17 +1,19 @@
 // Dot Line level editor: app shell, Editor tab (levels, details, canvas, generator, inspector),
 // storage choice, undo/redo, drafts and keyboard shortcuts. Organiser and Play live in their own files.
 import './editor.css';
-import { generate, suggest } from '../core/generator';
+import { Candidate, generate, strokeFrame, suggest } from '../core/generator';
 import { Check, DEFAULT_RADIUS, Level, Pair, dataChecks, newLevel, nextPairId, parseLevel } from '../core/level';
 import { PALETTE } from '../core/palette';
 import { smoothPath, translatePath } from '../core/path';
 import { SolveResult, solve } from '../core/solver';
-import { chains, maskFromRGBA, thin } from '../core/trace';
 import { Canvas, CanvasHost, Tool } from './canvas';
 import { clear, debounce, h, logo, pref, setPref } from './dom';
 import { Organiser } from './organiser';
 import { openPlay } from './play';
 import { BrowserFiles, FolderFiles, Store, folderSupported } from './store';
+import { isSvg, strokesFrom } from './sources';
+import { s as svgEl } from './dom';
+import { COMPLETED_LINE, colour } from '../core/palette';
 
 const GEN_SIZE = 700;
 
@@ -273,15 +275,20 @@ class App {
     }
 
     private async setImage(blob: Blob, pending: boolean) {
-        const bmp = await createImageBitmap(blob);
         if (this.image) URL.revokeObjectURL(this.image.url);
-        this.image = { blob, url: URL.createObjectURL(blob), w: bmp.width, h: bmp.height, pending };
-        return bmp;
+        const url = URL.createObjectURL(blob);
+        const img = new Image();
+        img.src = url;
+        try { await img.decode(); } catch { /* size falls back below */ }
+        this.image = { blob, url, w: img.naturalWidth || 1000, h: img.naturalHeight || 1000, pending };
     }
 
     private overlay() {
         const out: ReturnType<CanvasHost['overlay']> = {};
-        if (this.image && this.showImage) {
+        const rect = this.level.source?.rect;
+        if (this.image && this.showImage && rect) {
+            out.image = { url: this.image.url, ...rect, opacity: 0.3 };
+        } else if (this.image && this.showImage) {
             const k = GEN_SIZE / Math.max(this.image.w, this.image.h);
             const w = this.image.w * k, hh = this.image.h * k;
             out.image = { url: this.image.url, x: -w / 2, y: -hh / 2, w, h: hh, opacity: document.documentElement.dataset.theme === 'light' ? 0.3 : 0.3 };
@@ -365,13 +372,17 @@ class App {
             field('Id', idInput),
             field('Status', select(['WIP', 'PROD', 'ARCHIVE'], this.level.status ?? 'WIP', (v) => set(() => { this.level.status = v as Level['status']; }))),
             field('Difficulty', select(['none', '1', '2', '3', '4', '5'], this.level.difficulty ? String(this.level.difficulty) : 'none', (v) => set(() => { this.level.difficulty = v === 'none' ? null : +v; }))),
-            field('Category', h('input', { value: this.level.category ?? '', onchange: (e: Event) => set(() => { this.level.category = (e.target as HTMLInputElement).value; }) })));
+            field('Category', h('input', { value: this.level.category ?? '', onchange: (e: Event) => set(() => { this.level.category = (e.target as HTMLInputElement).value; }) })),
+            field('Tutorial', select(['none', 'tap', 'collision', 'zoom'], this.level.tutorial ?? 'none', (v) => set(() => { if (v === 'none') delete this.level.tutorial; else this.level.tutorial = v as Level['tutorial']; }))));
     }
 
     // ---------- generator ----------
 
-    private genOpts = { pairs: 14, colors: 4, difficulty: 2 };
+    private genOpts = { pairs: 20, colors: 7, difficulty: 3 };
     private genNote = h('div', { class: 'muted small' });
+    private candidates: Candidate[] = [];
+    private chosen = 0;
+    private genRect: { x: number; y: number; w: number; h: number } | null = null;
 
     private renderGenerator() {
         clear(this.genPanel);
@@ -379,51 +390,71 @@ class App {
         const sug = suggest(this.genOpts.difficulty);
         const num = (key: 'pairs' | 'colors', min: number, max: number) =>
             h('input', { type: 'number', min, max, value: this.genOpts[key], class: 'num-input', onchange: (e: Event) => { this.genOpts[key] = Math.max(min, Math.min(max, +(e.target as HTMLInputElement).value || min)); } });
-        const thumb = this.image ? h('img', { src: this.image.url, class: 'thumb' }) : h('div', { class: 'thumb empty' }, 'No image');
-        this.genPanel.append(...[
-            h('div', { class: 'gen-head', onclick: () => { setPref('genOpen', !open); this.renderGenerator(); } }, h('b', {}, 'Generate from image'), h('span', { class: 'muted' }, open ? '▾' : '▸')),
-            open ? h('div', { class: 'gen-row' },
-                h('label', { class: 'thumb-btn', title: 'Choose a line-art image (dark lines on a light background)' }, thumb,
-                    h('input', { type: 'file', accept: 'image/*', hidden: true, onchange: async (e: Event) => {
-                        const f = (e.target as HTMLInputElement).files?.[0];
-                        if (!f) return;
-                        await this.setImage(f, true);
-                        this.markDirty();
-                        this.renderGenerator(); this.canvas.render();
-                    } })),
-                h('label', { class: 'field' }, h('span', {}, 'Pairs'), num('pairs', 1, 200)),
-                h('label', { class: 'field' }, h('span', {}, 'Colours'), num('colors', 1, PALETTE.length)),
-                h('label', { class: 'field' }, h('span', {}, 'Target difficulty'), select(['1', '2', '3', '4', '5'], String(this.genOpts.difficulty), (v) => { this.genOpts.difficulty = +v; this.renderGenerator(); })),
-                h('div', { class: 'suggest', title: 'Placeholder rule until the real one is decided (spec: TBD)' },
-                    h('span', {}, `Suggested: ${sug.pairs} pairs, ${sug.colors} colours `), h('span', { class: 'tbd' }, 'rule TBD'),
-                    h('button', { onclick: () => { this.genOpts.pairs = sug.pairs; this.genOpts.colors = sug.colors; this.renderGenerator(); } }, 'Use')),
-                h('button', { class: 'accent', onclick: () => this.runGenerator() }, 'Generate'),
-                h('span', { class: 'ok small' }, '✓ always solvable'),
-                this.genNote) : null].filter((x): x is HTMLDivElement => !!x));
+        const thumb = this.image ? h('img', { src: this.image.url, class: 'thumb' }) : h('div', { class: 'thumb empty' }, 'PNG / SVG');
+        const head = h('div', { class: 'gen-head', onclick: () => { setPref('genOpen', !open); this.renderGenerator(); } }, h('b', {}, 'Generate from a drawing'), h('span', { class: 'muted' }, open ? '▾' : '▸'));
+        this.genPanel.append(head);
+        if (!open) return;
+        this.genPanel.append(h('div', { class: 'gen-row' },
+            h('label', { class: 'thumb-btn', title: 'Line art: PNG/JPG with dark lines on a light background, or an SVG (recommended: exact lines)' }, thumb,
+                h('input', { type: 'file', accept: 'image/png,image/jpeg,image/webp,image/svg+xml,.svg', hidden: true, onchange: async (e: Event) => {
+                    const f = (e.target as HTMLInputElement).files?.[0];
+                    if (!f) return;
+                    await this.setImage(f, true);
+                    this.candidates = [];
+                    this.markDirty();
+                    this.renderGenerator(); this.canvas.render();
+                } })),
+            h('label', { class: 'field' }, h('span', {}, 'Pairs'), num('pairs', 1, 300)),
+            h('label', { class: 'field' }, h('span', {}, 'Colours'), num('colors', 1, PALETTE.length)),
+            h('label', { class: 'field' }, h('span', {}, 'Target difficulty'), select(['1', '2', '3', '4', '5'], String(this.genOpts.difficulty), (v) => { this.genOpts.difficulty = +v; this.renderGenerator(); })),
+            h('div', { class: 'suggest', title: 'Placeholder rule until the real one is decided (spec: TBD)' },
+                h('span', {}, `Suggested: ${sug.pairs} pairs, ${sug.colors} colours `), h('span', { class: 'tbd' }, 'rule TBD'),
+                h('button', { onclick: () => { this.genOpts.pairs = sug.pairs; this.genOpts.colors = sug.colors; this.renderGenerator(); } }, 'Use')),
+            h('button', { class: 'accent', onclick: () => this.runGenerator() }, 'Generate'),
+            h('span', { class: 'ok small' }, '✓ always solvable')));
+        if (this.candidates.length) {
+            this.genPanel.append(h('div', { class: 'cands' },
+                h('span', { class: 'muted small' }, 'Pick a layout:'),
+                this.candidates.map((c, i) => h('button', { class: `cand${i === this.chosen ? ' on' : ''}`, title: `Score ${c.score.toFixed(2)} (lower is closer to the target difficulty)`, onclick: () => this.applyCandidate(i) },
+                    miniature(c), h('div', { class: 'small' }, `${c.pairs.length} pairs · ${c.sim.rounds} rounds · ${c.sim.openAtStart} open`)))));
+        }
+        this.genPanel.append(this.genNote);
     }
 
     private async runGenerator() {
-        if (!this.image) return this.setStatus('Choose an image first');
-        if (this.level.pairs.length && !confirm(`Replace the ${this.level.pairs.length} pairs of "${this.level.name}" with generated ones?`)) return;
-        const bmp = await createImageBitmap(this.image.blob);
-        const k = Math.min(1, 600 / Math.max(bmp.width, bmp.height));
-        const w = Math.round(bmp.width * k), hh = Math.round(bmp.height * k);
-        const cv = h('canvas', { width: w, height: hh }) as HTMLCanvasElement;
-        const ctx = cv.getContext('2d', { willReadFrequently: true })!;
-        ctx.fillStyle = '#fff';
-        ctx.fillRect(0, 0, w, hh);
-        ctx.drawImage(bmp, 0, 0, w, hh);
-        const lines = chains(thin(maskFromRGBA(ctx.getImageData(0, 0, w, hh).data, w, hh)), 8);
-        const res = generate(lines, w, hh, { pairs: this.genOpts.pairs, colors: this.genOpts.colors, size: GEN_SIZE, seed: Date.now() });
-        if (!res.pairs.length) return this.setStatus(res.warnings.join('; ') || 'Nothing generated');
+        if (!this.image) return this.setStatus('Choose a PNG/JPG line drawing or an SVG first');
+        if (this.level.pairs.length && !this.candidates.length && !confirm(`Replace the ${this.level.pairs.length} pairs of "${this.level.name}" with generated ones?`)) return;
+        this.setStatus('Generating…');
+        await new Promise((r) => setTimeout(r, 30));
+        try {
+            const src = await strokesFrom(this.image.blob);
+            if (!src.strokes.length) return this.setStatus('No lines found in the drawing');
+            const t0 = performance.now();
+            this.candidates = generate(src.strokes, { ...this.genOpts, size: GEN_SIZE, seed: Date.now(), tries: 24, keep: 3 });
+            if (!this.candidates.length) return this.setStatus('Nothing generated');
+            const f = strokeFrame(src.strokes, GEN_SIZE);
+            this.genRect = { x: r1(-f.cx * f.k), y: r1(-f.cy * f.k), w: r1(src.width * f.k), h: r1(src.height * f.k) };
+            this.applyCandidate(0);
+            const c = this.candidates[0];
+            this.genNote.textContent = `${src.strokes.length} line(s) in the drawing, ${c.stats.tJunctions} T-junction(s), ${c.stats.cuts} cut(s), ${c.stats.accents} accent pair(s). ${Math.round(performance.now() - t0)} ms.${c.warnings.length ? ' ' + c.warnings.join('. ') + '.' : ''} Generate again for new layouts.`;
+            this.setStatus(`Generated ${this.candidates.length} layouts from ${isSvg(this.image.blob) ? 'SVG' : 'image'}`);
+        } catch (e) {
+            this.setStatus(`Generate failed: ${(e as Error).message}`);
+        }
+    }
+
+    private applyCandidate(i: number) {
+        const c = this.candidates[i];
+        if (!c || !this.image) return;
+        this.chosen = i;
         this.begin();
-        this.level.pairs = res.pairs;
-        this.level.source = { image: `${this.level.id}.png`, pairs: this.genOpts.pairs, colors: this.genOpts.colors };
+        this.level.pairs = structuredClone(c.pairs);
+        this.level.source = { image: `${this.level.id}.${isSvg(this.image.blob) ? 'svg' : 'png'}`, rect: this.genRect ?? undefined, pairs: this.genOpts.pairs, colors: this.genOpts.colors, difficulty: this.genOpts.difficulty };
         this.image.pending = true;
         this.selection.clear();
         this.end(true);
         this.canvas.fit();
-        this.genNote.textContent = `${res.pairs.length} pairs (${res.linePairs} from the image, ${res.crossPairs} crossing) from ${lines.length} traced line(s).${res.warnings.length ? ` ${res.warnings.join('. ')}.` : ''} Press Generate again for another layout.`;
+        this.renderGenerator();
     }
 
     // ---------- inspector ----------
@@ -672,6 +703,23 @@ class App {
     radiusDefault() {
         return DEFAULT_RADIUS;
     }
+}
+
+const r1 = (v: number) => Math.round(v * 10) / 10;
+
+/** Small preview of a generated layout. */
+function miniature(c: Candidate) {
+    let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
+    for (const p of c.pairs) for (const q of [...p.path, p.a, p.b]) { x0 = Math.min(x0, q.x); y0 = Math.min(y0, q.y); x1 = Math.max(x1, q.x); y1 = Math.max(y1, q.y); }
+    const pad = 24, size = Math.max(x1 - x0, y1 - y0) + pad * 2;
+    const cx = (x0 + x1) / 2, cy = (y0 + y1) / 2;
+    return svgEl('svg', { viewBox: `${cx - size / 2} ${cy - size / 2} ${size} ${size}`, class: 'mini' },
+        c.pairs.map((p) => {
+            const col = colour(p.color)?.base ?? COMPLETED_LINE;
+            let d = `M${p.path[0].x} ${p.path[0].y}`;
+            for (let i = 1; i < p.path.length; i++) { const a = p.path[i - 1], b = p.path[i]; const o = a.out ?? a, n = b.in ?? b; d += ` C${o.x} ${o.y} ${n.x} ${n.y} ${b.x} ${b.y}`; }
+            return svgEl('g', {}, svgEl('path', { d, stroke: col, 'stroke-width': 6, fill: 'none' }), svgEl('circle', { cx: p.a.x, cy: p.a.y, r: p.a.r, fill: col }), svgEl('circle', { cx: p.b.x, cy: p.b.y, r: p.b.r, fill: col }));
+        }));
 }
 
 function select(options: string[], value: string, onChange: (v: string) => void) {

@@ -3,8 +3,8 @@
 ## 4.1 What exists today <Badge type="tip" text="Live" />
 
 - Project scaffold: Phaser 4 game, docs site and versioned web releases
-- Bản chơi đầu: tap → hạt chạy theo dây, va chạm mất tim, cặp vỡ (effect theo kích thước), dây Completed, thắng/thua, Hint (zoom 1.5x), pinch zoom tới 3x, 2 level mẫu
-- [Level editor](../guide/editor) tại `/editor/`
+- Bản chơi đầu: tap → hạt chạy theo dây, va chạm mất tim, cặp vỡ (effect theo kích thước), dây Completed, thắng/thua, Hint (zoom 1.5x), pinch zoom tới 3x, hướng dẫn 3 màn đầu, nhãn Hard, 10 level mở đầu
+- [Level editor](../guide/editor) tại `/editor/`, generator v2 (từ ảnh hoặc SVG, chọn 1 trong 3 phương án)
 
 ## 4.2 Roadmap <Badge type="warning" text="Coming soon" />
 

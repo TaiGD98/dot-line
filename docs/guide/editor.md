@@ -59,6 +59,8 @@ Editor chạy trong trình duyệt, là một trang riêng trong cùng project V
 }
 ```
 
+Trường tuỳ chọn: `tutorial` (`tap`, `collision`, `zoom`: game hiện bàn tay và dòng hướng dẫn), `source.rect` (vị trí ảnh gốc trong editor).
+
 Bắt buộc: `schema`, `version`, `id`, `name`, `pairs` (mỗi cặp: `id`, `color`, `a`, `b`, `path`). Điểm đầu và cuối của `path` trùng với tâm `a` và `b`. `source` chỉ có khi level được tạo từ ảnh.
 
 ### 1.3 Cảnh báo (Level checks)
@@ -71,19 +73,33 @@ Bắt buộc: `schema`, `version`, `id`, `name`, `pairs` (mỗi cặp: `id`, `co
 
 ## 2. Tạo level
 
-### 2.1 Generate từ hình ảnh
+### 2.1 Generate từ hình vẽ (generator v2)
 
-1. Designer đưa vào một ảnh line art: nét đen trên nền trắng, kiểu vẽ một nét liền (ví dụ viên kẹo).
-2. Editor **nhận diện chính xác** nét vẽ, kể cả đoạn xoắn và cong gắt, và chuyển thành đường cong.
-3. Editor cắt các đường thành **N cặp** (mỗi đoạn là một dây, 2 đầu là 2 hạt) và tô **M màu** từ bảng màu.
-4. **Đường giao nhau** do generator tự tạo thêm (không lấy từ ảnh), để tạo thế chặn nhau giữa các cặp.
-5. **Level tạo ra luôn giải được**: generator dùng bộ giải (mục 4) để kiểm tra, không đạt thì tạo lại.
+**Đầu vào:** ảnh line art (PNG/JPG, nét tối trên nền sáng) hoặc **file SVG** (khuyên dùng: nét chính xác, giữ góc nhọn). Với SVG, mỗi `path`, `line`, `polyline`, `polygon`, `rect`, `circle`, `ellipse` là một nét; nét kết thúc đúng trên một nét khác tạo thành chỗ chữ T.
 
-Đầu vào designer đặt: ảnh, số cặp N, số màu M. Editor **đề xuất** N và M theo độ khó mong muốn; quyết định cuối là của designer. Độ dài dây không giới hạn; cặp cùng màu được nằm gần nhau.
+**Luật thiết kế** (rút ra từ việc phân tích các level làm tay cùng thể loại):
 
-Quy tắc đề xuất N và M theo độ khó: _TBD_. Quy tắc tạm đang dùng: độ khó d (1–5) → `6 + 4d` cặp, `2 + d` màu.
+1. **Chữ T là cơ chế chặn chính.** Nét chi tiết kết thúc trên nét khác thì hạt của nó nằm trên nét đó, nên chi tiết phải gỡ trước, khung sau.
+2. **Chữ X không chặn.** Dây cắt chéo nhau thoải mái, chỉ để đánh lạc hướng.
+3. **Nét dài và vòng kín được cắt thành nhiều cặp**, ưu tiên cắt ở góc gấp. Ở chỗ cắt có 2 hạt nằm sát nhau. Vòng kín cắt 1 lần là một cặp có 2 hạt chạm nhau, hạt phải chạy trọn vòng.
+4. **Nét ngắn đứng riêng** (dưới ~170 đơn vị) thành cặp điểm nhấn có hạt to.
+5. **Màu:** hạt nằm gần nhau của các cặp khác nhau tránh trùng màu, trong giới hạn M màu.
 
-Cách generator tạo đường giao nhau: _TBD_. Quy tắc tạm đang dùng: khoảng 70% số cặp lấy từ nét trong ảnh, 30% là cặp "cắt ngang" nối 2 điểm trên 2 dây khác nhau bằng một đường cong. Mỗi cặp cắt ngang chỉ được giữ nếu level vẫn giải được. Nếu ảnh không đủ chỗ, editor tạo ít cặp hơn số yêu cầu và ghi rõ dưới nút Generate.
+**Cách chạy:** ảnh được dò thành đồ thị nét (giữ chỗ nối, nối các đoạn đi thẳng qua chỗ giao thành một nét), rồi editor tạo 24 phương án ngẫu nhiên. Mỗi phương án được sửa cho **luôn giải được**: hạt đè nhau thì lùi lại; vòng chặn thì ưu tiên **dời điểm cắt** dọc nét (giữ hình liền), sau đó thu nhỏ hạt, cuối cùng mới rút ngắn dây hoặc bỏ cặp (có báo dưới nút Generate). Các phương án được chấm điểm theo độ khó mục tiêu; editor hiện **3 phương án tốt nhất** để chọn, rồi bạn chỉnh tay.
+
+**Mẹo vẽ SVG:** đừng để 2 nét chồng lên nhau (ví dụ 2 hình chữ nhật dùng chung cạnh): dây chồng nhau sẽ chặn lẫn nhau và generator phải bỏ bớt cặp.
+
+**Quy tắc tạm** (_TBD_, sẽ thay khi có quyết định):
+
+| Độ khó d | Gợi ý số cặp | Gợi ý số màu | Số lượt tối thiểu mục tiêu | Tỉ lệ cặp mở lúc đầu mục tiêu |
+|---|---|---|---|---|
+| 1 | 6 | 3 | 1 + số cặp / 30 | 60% |
+| 2 | 12 | 5 | 2.4 + số cặp / 30 | 45% |
+| 3 | 20 | 7 | 3.8 + số cặp / 30 | 33% |
+| 4 | 32 | 9 | 5.2 + số cặp / 30 | 25% |
+| 5 | 48 | 11 | 6.6 + số cặp / 30 | 18% |
+
+Điểm phương án = 2 × |số lượt − mục tiêu| + 8 × |tỉ lệ mở − mục tiêu| + 0.3 × |số cặp − yêu cầu| + phạt khi phải rút ngắn dây. Hình vẽ ít chữ T thì khó đạt độ khó cao: độ khó đến từ cấu trúc hình vẽ.
 
 ### 2.2 Vẽ và chỉnh tay
 
@@ -136,6 +152,7 @@ Logo Athena (cam trên theme tối, đen trên theme sáng); tông màu theo m�
 | Câu hỏi | Trạng thái |
 |---|---|
 | Loại obstacle trong tương lai | _TBD_ |
+| Bảng mục tiêu độ khó của generator (mục 2.1) | _TBD_ (đang dùng quy tắc tạm) |
 | Quy tắc đề xuất số cặp / số màu theo độ khó | _TBD_ |
 | Cách generator tạo đường giao nhau | _TBD_ |
 | Cách tính độ khó từ kết quả mô phỏng | _TBD_ |

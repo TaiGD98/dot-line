@@ -112,6 +112,11 @@ export function fitPath(raw: Pt[], tolerance = 4): Anchor[] {
     if (out.length === 2) return out;
     for (let i = 0; i < out.length; i++) {
         const prev = out[Math.max(0, i - 1)], next = out[Math.min(out.length - 1, i + 1)];
+        // Sharp corner (> ~60 degrees): keep it sharp, no handles.
+        if (i > 0 && i < out.length - 1) {
+            const ax = out[i].x - prev.x, ay = out[i].y - prev.y, bx = next.x - out[i].x, by = next.y - out[i].y;
+            if ((ax * bx + ay * by) / ((Math.hypot(ax, ay) * Math.hypot(bx, by)) || 1) < 0.5) continue;
+        }
         const tx = (next.x - prev.x) / 6, ty = (next.y - prev.y) / 6;
         if (i > 0) out[i].in = { x: round(out[i].x - tx), y: round(out[i].y - ty) };
         if (i < out.length - 1) out[i].out = { x: round(out[i].x + tx), y: round(out[i].y + ty) };

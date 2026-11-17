@@ -15,7 +15,8 @@
     "release": "bash scripts/release.sh",
     "release:latest": "bash scripts/release.sh latest",
     "build:editor": "tsc --noEmit && vite build --config vite.editor.config.ts",
-    "editor": "vite --open /editor/"
+    "editor": "vite --open /editor/",
+    "levels:intro": "esbuild tools/intro-levels.ts --bundle --platform=node --format=esm --outfile=node_modules/.cache/intro-levels.mjs --log-level=warning && node node_modules/.cache/intro-levels.mjs"
   },
   "dependencies": {
     "phaser": "^4.2.1"

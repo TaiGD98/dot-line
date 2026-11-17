@@ -97,6 +97,28 @@ export class Game extends Phaser.Scene {
         if (l) this.loadLevel(l);
     }
 
+    /** Dot the tutorial hand points at: an open dot ('tap') or a dot that will bump ('collision'). */
+    tutorialTarget(kind: 'tap' | 'collision'): Pt | null {
+        const pairs = [...this.alive].map((id) => this.pair(id)).filter((p) => !this.movers.has(p.id));
+        if (kind === 'tap') {
+            for (const p of pairs) { const side = this.model.openSide(p, this.alive); if (side) return p[side]; }
+        } else {
+            for (const p of pairs) if (!this.model.isOpen(p, 'a', this.alive)) return p.a;
+            for (const p of pairs) if (!this.model.isOpen(p, 'b', this.alive)) return p.b;
+        }
+        return null;
+    }
+
+    /** World point -> game-canvas point (for HUD overlays). */
+    toScreen(p: Pt): Pt {
+        const cam = this.cameras.main;
+        return { x: (p.x - cam.worldView.x) * cam.zoom, y: (p.y - cam.worldView.y) * cam.zoom };
+    }
+
+    get current(): Level {
+        return this.level;
+    }
+
     state(): BoardState {
         return { hearts: this.hearts, cleared: this.level.pairs.length - this.alive.size, total: this.level.pairs.length, name: this.level.name, number: levels.levelNumber() };
     }
@@ -111,12 +133,14 @@ export class Game extends Phaser.Scene {
         if (!this.level) return;
         const cam = this.cameras.main;
         this.bounds = levelBounds(this.level, 50);
-        const availH = this.scale.height - HUD_HEIGHT - 40;
+        // Tutorial levels keep the bottom free for the caption.
+        const bottom = this.level.tutorial ? 300 : 40;
+        const availH = this.scale.height - HUD_HEIGHT - bottom;
         this.baseZoom = Math.min(this.scale.width / this.bounds.w, availH / this.bounds.h);
         cam.setZoom(this.baseZoom);
         // Centre the level in the area below the HUD.
         const cx = this.bounds.x + this.bounds.w / 2;
-        const cy = this.bounds.y + this.bounds.h / 2 - (HUD_HEIGHT - 40) / 2 / this.baseZoom;
+        const cy = this.bounds.y + this.bounds.h / 2 - (HUD_HEIGHT - bottom) / 2 / this.baseZoom;
         cam.centerOn(cx, cy);
     }
 
@@ -133,6 +157,7 @@ export class Game extends Phaser.Scene {
         const cam = this.cameras.main;
         const before = cam.getWorldPoint(screen.x, screen.y);
         cam.setZoom(Phaser.Math.Clamp(z, this.baseZoom, this.baseZoom * MAX_ZOOM));
+        if (Math.abs(cam.zoom - this.baseZoom) > 0.05 * this.baseZoom) this.events.emit('zoomed');
         cam.preRender();
         const after = cam.getWorldPoint(screen.x, screen.y);
         cam.scrollX += before.x - after.x;
@@ -226,6 +251,7 @@ export class Game extends Phaser.Scene {
             }
         }
         if (!best) return;
+        this.events.emit('tapped');
         const ln = this.lines.get(best.p.id)!;
         this.movers.set(best.p.id, {
             side: best.side,

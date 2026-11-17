@@ -235,8 +235,10 @@ export class Store {
         }
         const saved = { ...level, rev: (level.rev ?? 0) + 1 };
         if (image) {
-            await this.files.write(`levels/${level.id}.png`, image);
-            saved.source = { ...(saved.source ?? {}), image: `${level.id}.png` };
+            const ext = image.type === 'image/svg+xml' || (image as File).name?.toLowerCase().endsWith('.svg') ? 'svg' : 'png';
+            await this.files.remove(`levels/${level.id}.${ext === 'svg' ? 'png' : 'svg'}`);
+            await this.files.write(`levels/${level.id}.${ext}`, image);
+            saved.source = { ...(saved.source ?? {}), image: `${level.id}.${ext}` };
         }
         await this.files.write(`levels/${level.id}.json`, json(saved));
         return saved;
@@ -251,14 +253,19 @@ export class Store {
         return out;
     }
 
-    image(id: string) {
-        return this.files.readBlob(`levels/${id}.png`);
+    /** Source image of a level (PNG or SVG), typed so callers can tell them apart. */
+    async image(id: string): Promise<Blob | null> {
+        const png = await this.files.readBlob(`levels/${id}.png`);
+        if (png) return png.type ? png : new Blob([png], { type: 'image/png' });
+        const svg = await this.files.readBlob(`levels/${id}.svg`);
+        return svg ? new Blob([svg], { type: 'image/svg+xml' }) : null;
     }
 
     /** Deletes the level file and its image; version history is kept. */
     async remove(id: string) {
         await this.files.remove(`levels/${id}.json`);
         await this.files.remove(`levels/${id}.png`);
+        await this.files.remove(`levels/${id}.svg`);
     }
 
     /** Moves a level to a new id: file, image, history and collection entries. */
@@ -268,7 +275,7 @@ export class Store {
         const text = await this.files.read(`levels/${oldId}.json`);
         if (text) await this.files.write(`levels/${newId}.json`, json({ ...JSON.parse(text), id: newId }));
         const img = await this.image(oldId);
-        if (img) await this.files.write(`levels/${newId}.png`, img);
+        if (img) await this.files.write(`levels/${newId}.${img.type === 'image/svg+xml' ? 'svg' : 'png'}`, img);
         for (const v of await this.files.list(`levels/.versions/${oldId}`)) {
             const t = await this.files.read(`levels/.versions/${oldId}/${v}`);
             if (t) await this.files.write(`levels/.versions/${newId}/${v}`, json({ ...JSON.parse(t), id: newId }));
@@ -310,16 +317,20 @@ export class Store {
     async writeDraft(d: Draft | null, image?: Blob | null) {
         if (!d) {
             await this.files.remove('drafts/current.json');
-            await this.files.remove('drafts/current.png');
+            await this.files.remove('drafts/current.img');
             return;
         }
         await this.files.write('drafts/current.json', json(d));
-        if (image) await this.files.write('drafts/current.png', image);
-        else if (image === null) await this.files.remove('drafts/current.png');
+        if (image) {
+            await this.files.write('drafts/current.img', image);
+            await this.files.write('drafts/current.img.type', image.type || 'image/png');
+        } else if (image === null) await this.files.remove('drafts/current.img');
     }
 
-    draftImage() {
-        return this.files.readBlob('drafts/current.png');
+    async draftImage(): Promise<Blob | null> {
+        const b = await this.files.readBlob('drafts/current.img');
+        if (!b) return null;
+        return new Blob([b], { type: (await this.files.read('drafts/current.img.type')) ?? 'image/png' });
     }
 
     async collections(): Promise<Collection[]> {

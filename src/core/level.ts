@@ -29,7 +29,10 @@ export interface Level {
     category?: string;
     /** Save counter, bumped by the editor on each Save. */
     rev?: number;
-    source?: { image?: string; pairs?: number; colors?: number };
+    /** Generator input: the source image/SVG file, its world rectangle (for the editor overlay) and settings. */
+    source?: { image?: string; rect?: { x: number; y: number; w: number; h: number }; pairs?: number; colors?: number; difficulty?: number };
+    /** Tutorial shown by the game on this level. */
+    tutorial?: 'tap' | 'collision' | 'zoom';
     pairs: Pair[];
     /** Reserved for future obstacles (always empty for now). */
     obstacles: unknown[];

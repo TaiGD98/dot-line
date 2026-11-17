@@ -6,6 +6,7 @@ Every published version stays playable at its own URL. The [landing page](https:
 
 - Project scaffold.
 - Bản chơi đầu (core loop, HUD, thắng/thua) và level editor.
+- Generator v2 (đồ thị nét vẽ, chữ T, nhận SVG), hướng dẫn 3 màn đầu, nhãn Hard, 10 level mở đầu.
 
 [Play latest](https://taigd98.github.io/dot-line/demo/)
 

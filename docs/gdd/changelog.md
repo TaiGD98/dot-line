@@ -4,7 +4,13 @@ Every published version stays playable at its own URL. The [landing page](https:
 
 ## latest (main) <Badge type="tip" text="Live" />
 
-- No changes since v0.2.0.
+- **Striped dots:** after a bump, the bumping pair gets white stripes; striped dots bump for free (no heart). Other dots bumping into a striped dot still cost a heart and get striped.
+- **Ball feel:** moving dots stretch along their path and leave a fading trail; bumps make both dots wobble elastically.
+- **Cleared lines disappear** with their dots; the whole picture comes back only when the level is won.
+- No more screen shake on a bump (the dots' elastic wobble is the feedback).
+- **Glossy dots with soft drop shadows** (light from the top-left).
+- Dot speed tuned to 750 px/s (bumped dots return at 1020 px/s).
+- **Dev speed cheat** (⚙ speed, bottom left): change the dot speed live; Confirm writes it into the code on the local dev server.
 
 [Play latest](https://taigd98.github.io/dot-line/demo/)
 

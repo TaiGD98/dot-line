@@ -4,12 +4,9 @@ import { COMPLETED_LINE, colour, hexToInt } from '../core/palette';
 import { Pt, arcLengths, dist, pointAt } from '../core/path';
 import { BlockModel, HIT_SCALE, Side } from '../core/solver';
 import { levels } from '../game/source';
+import { tuning } from '../game/tuning';
 
 // ---- Tunables (GDD 3.2 / 3.6) ----
-/** Dot travel speed along its line, world px per second ("like the reference clip"; tune in play tests). */
-export const MOVE_SPEED = 1100;
-/** Speed when a blocked dot slides back to its start. */
-export const RETURN_SPEED = 1500;
 export const HEARTS = 3;
 export const MAX_ZOOM = 3;
 export const HINT_ZOOM = 1.5;
@@ -18,6 +15,15 @@ export const LINE_WIDTH = 7;
 const STEP = 4;
 /** Top band reserved for the HUD, in game px (780 x 1688 canvas). */
 export const HUD_HEIGHT = 230;
+
+/** Elastic wobble after a bump: decaying squash/stretch along `angle`. */
+interface Wobble {
+    t: number;
+    amp: number;
+    angle: number;
+}
+
+const TRAIL = 9;
 
 interface Mover {
     side: Side;
@@ -49,6 +55,12 @@ export class Game extends Phaser.Scene {
     private baseZoom = 1;
     private bounds = { x: 0, y: 0, w: 1, h: 1 };
     private nudge: { id: string; side: Side; s: number } | null = null;
+    /** Pairs that already bumped once (drawn with white stripes): their next bumps cost no heart. */
+    private marked = new Set<string>();
+    private wobbles = new Map<string, Wobble>();
+    /** 0..1: the finished picture (all lines) fades in once the level is won. */
+    private reveal = { a: 0 };
+    private trails = new Map<string, Pt[]>();
     private pinch: { d: number; zoom: number; mid: Pt; scroll: Pt } | null = null;
     private dragFrom: { x: number; y: number; scroll: Pt; moved: boolean } | null = null;
 
@@ -87,6 +99,11 @@ export class Game extends Phaser.Scene {
         this.hearts = HEARTS;
         this.over = false;
         this.nudge = null;
+        this.marked.clear();
+        this.wobbles.clear();
+        this.tweens.killTweensOf(this.reveal);
+        this.reveal.a = 0;
+        this.trails.clear();
         this.fit();
         this.emitState();
         this.events.emit('loaded');
@@ -283,33 +300,50 @@ export class Game extends Phaser.Scene {
         for (const [id, m] of [...this.movers]) {
             const p = this.pair(id);
             const total = m.acc[m.acc.length - 1];
+            this.pushTrail(id, pointAt(m.pts, m.acc, m.s));
             if (m.returning) {
-                m.s -= RETURN_SPEED * dt;
-                if (m.s <= 0) { this.movers.delete(id); if (this.hearts <= 0) this.lose(); }
+                m.s -= tuning.returnSpeed * dt;
+                if (m.s <= 0) { this.movers.delete(id); this.trails.delete(id); if (this.hearts <= 0) this.lose(); }
                 continue;
             }
             // Advance in small steps so a fast dot can't tunnel through a blocker.
-            let left = MOVE_SPEED * dt;
-            let hit = false;
+            let left = tuning.moveSpeed * dt;
+            let hit: { key: string; pos: Pt } | null = null;
             while (left > 0 && m.s < total) {
                 const step = Math.min(left, STEP);
                 m.s = Math.min(total, m.s + step);
                 left -= step;
-                if (!m.open && this.hits(p, m)) { hit = true; break; }
+                if (!m.open && (hit = this.hits(p, m))) break;
             }
             if (hit) {
                 m.returning = true;
-                this.hearts = Math.max(0, this.hearts - 1);
-                this.cameras.main.shake(140, 0.004);
+                const at = pointAt(m.pts, m.acc, m.s);
+                const angle = Math.atan2(hit.pos.y - at.y, hit.pos.x - at.x);
+                // Elastic bump on both dots.
+                this.wobbles.set(`${id}:${m.side}`, { t: 0, amp: 0.32, angle });
+                this.wobbles.set(hit.key, { t: 0, amp: 0.22, angle });
+                // Marked (striped) pairs bump for free; the first bump costs a heart and marks the pair.
+                if (!this.marked.has(id)) {
+                    this.hearts = Math.max(0, this.hearts - 1);
+                    if (navigator.vibrate && navigator.userActivation?.hasBeenActive) navigator.vibrate(30);
+                }
+                this.marked.add(id);
                 this.emitState();
-                if (navigator.vibrate && navigator.userActivation?.hasBeenActive) navigator.vibrate(30);
-            } else if (m.s >= total) this.clear(p, m.side);
+            } else if (m.s >= total) { this.trails.delete(id); this.clear(p, m.side); }
         }
+        for (const [k, w] of this.wobbles) { w.t += dt; if (w.t > 0.7) this.wobbles.delete(k); }
         this.draw();
     }
 
+    private pushTrail(id: string, p: Pt) {
+        const t = this.trails.get(id) ?? [];
+        t.push({ x: p.x, y: p.y });
+        if (t.length > TRAIL) t.shift();
+        this.trails.set(id, t);
+    }
+
     /** Blocked movers collide with any dot that has a hitbox (open pairs in motion have none). */
-    private hits(p: Pair, m: Mover): boolean {
+    private hits(p: Pair, m: Mover): { key: string; pos: Pt } | null {
         const pos = pointAt(m.pts, m.acc, m.s);
         const r = p[m.side].r;
         for (const id of this.alive) {
@@ -317,9 +351,12 @@ export class Game extends Phaser.Scene {
             const o = this.pair(id);
             const om = this.movers.get(id);
             if (om && om.open) continue;
-            for (const side of ['a', 'b'] as const) if (dist(pos, this.dotPos(o, side)) < (r + o[side].r) * HIT_SCALE) return true;
+            for (const side of ['a', 'b'] as const) {
+                const q = this.dotPos(o, side);
+                if (dist(pos, q) < (r + o[side].r) * HIT_SCALE) return { key: `${o.id}:${side}`, pos: q };
+            }
         }
-        return false;
+        return null;
     }
 
     private clear(p: Pair, from: Side) {
@@ -339,7 +376,9 @@ export class Game extends Phaser.Scene {
         this.emitState();
         if (!this.alive.size) {
             this.over = true;
-            this.time.delayedCall(450, () => this.events.emit('win'));
+            // Cleared lines are gone during play; the whole picture comes back once the level is won.
+            this.tweens.add({ targets: this.reveal, a: 1, duration: 700, delay: 250, ease: 'Sine.easeOut' });
+            this.time.delayedCall(1100, () => this.events.emit('win'));
         }
     }
 
@@ -354,19 +393,19 @@ export class Game extends Phaser.Scene {
     private draw() {
         const g = this.gfx;
         g.clear();
-        const stroke = (pts: Pt[], col: number, w = LINE_WIDTH) => {
+        const stroke = (pts: Pt[], col: number, w = LINE_WIDTH, alpha = 1) => {
             if (pts.length < 2) return;
-            g.lineStyle(w, col, 1);
+            g.lineStyle(w, col, alpha);
             g.beginPath();
             g.moveTo(pts[0].x, pts[0].y);
             for (let i = 1; i < pts.length; i++) g.lineTo(pts[i].x, pts[i].y);
             g.strokePath();
-            g.fillStyle(col, 1);
+            g.fillStyle(col, alpha);
             g.fillCircle(pts[0].x, pts[0].y, w / 2);
             g.fillCircle(pts[pts.length - 1].x, pts[pts.length - 1].y, w / 2);
         };
         const done = hexToInt(COMPLETED_LINE);
-        for (const p of this.level.pairs) if (!this.alive.has(p.id)) stroke(this.model.line(p.id), done);
+        if (this.reveal.a > 0) for (const p of this.level.pairs) if (!this.alive.has(p.id)) stroke(this.model.line(p.id), done, LINE_WIDTH, this.reveal.a);
         for (const id of this.alive) {
             const p = this.pair(id);
             const col = hexToInt(colour(p.color)?.base ?? COMPLETED_LINE);
@@ -377,18 +416,111 @@ export class Game extends Phaser.Scene {
                 stroke(rest, col);
             } else stroke(this.model.line(id), col);
         }
+        // Trails behind moving dots.
+        for (const [id, t] of this.trails) {
+            if (!this.alive.has(id)) continue;
+            const p = this.pair(id), m = this.movers.get(id);
+            const r = m ? p[m.side].r : p.a.r;
+            const col = hexToInt(colour(p.color)?.base ?? COMPLETED_LINE);
+            t.forEach((q, i) => {
+                const k = (i + 1) / (t.length + 1);
+                g.fillStyle(col, 0.28 * k);
+                g.fillCircle(q.x, q.y, r * (0.35 + 0.55 * k));
+            });
+        }
+        // Dots: soft drop shadows first (so they sit under every dot), then the glossy dots.
+        const dots: { pos: Pt; r: number; name: string; sx: number; sy: number; angle: number; striped: boolean }[] = [];
         for (const id of this.alive) {
             const p = this.pair(id);
-            const c = colour(p.color);
+            const m = this.movers.get(id);
             for (const side of ['a', 'b'] as const) {
-                const pos = this.dotPos(p, side), r = p[side].r;
-                g.fillStyle(hexToInt(c?.base ?? COMPLETED_LINE), 1);
-                g.fillCircle(pos.x, pos.y, r);
-                g.fillStyle(hexToInt(c?.gradient ?? '#ffffff'), 0.45);
-                g.fillCircle(pos.x - r * 0.12, pos.y - r * 0.14, r * 0.72);
-                g.fillStyle(hexToInt(c?.inner ?? '#ffffff'), 0.8);
-                g.fillCircle(pos.x - r * 0.3, pos.y - r * 0.32, r * 0.3);
+                let sx = 1, sy = 1, angle = 0;
+                if (m && m.side === side) {
+                    // Squash and stretch along the travel direction.
+                    const a = pointAt(m.pts, m.acc, m.s), b = pointAt(m.pts, m.acc, m.s + (m.returning ? -6 : 6));
+                    angle = Math.atan2(b.y - a.y, b.x - a.x);
+                    sx = 1.16; sy = 0.88;
+                }
+                const w = this.wobbles.get(`${id}:${side}`);
+                if (w) {
+                    const e = w.amp * Math.exp(-w.t * 7) * Math.cos(w.t * 38);
+                    if (!(m && m.side === side)) angle = w.angle;
+                    sx *= 1 - e; sy *= 1 + e;
+                }
+                dots.push({ pos: this.dotPos(p, side), r: p[side].r, name: p.color, sx, sy, angle, striped: this.marked.has(id) });
             }
         }
+        for (const d of dots) this.drawShadow(d.pos, d.r, d.sx, d.sy, d.angle);
+        for (const d of dots) this.drawDot(d.pos, d.r, d.name, d.sx, d.sy, d.angle, d.striped);
     }
+
+    /** Soft drop shadow below-right of a dot (light from the top-left). */
+    private drawShadow(pos: Pt, r: number, sx: number, sy: number, angle: number) {
+        const g = this.gfx;
+        g.save();
+        g.translateCanvas(pos.x + r * 0.14, pos.y + r * 0.3);
+        g.rotateCanvas(angle);
+        g.scaleCanvas(sx, sy);
+        g.fillStyle(0x3a2f20, 0.07);
+        g.fillCircle(0, 0, r * 1.12);
+        g.fillStyle(0x3a2f20, 0.12);
+        g.fillCircle(0, 0, r * 0.96);
+        g.restore();
+    }
+
+    /** A glossy dot, optionally squashed (sx, sy along `angle`) and striped (marked pair). */
+    private drawDot(pos: Pt, r: number, name: string, sx: number, sy: number, angle: number, striped: boolean) {
+        const g = this.gfx;
+        const c = colour(name);
+        const base = hexToInt(c?.base ?? COMPLETED_LINE);
+        g.save();
+        g.translateCanvas(pos.x, pos.y);
+        g.rotateCanvas(angle);
+        g.scaleCanvas(sx, sy);
+        // Lighting stays fixed in world space (light from the top-left): undo the rotation for offsets.
+        const local = (x: number, y: number) => ({ x: (x * Math.cos(-angle) - y * Math.sin(-angle)) / sx, y: (x * Math.sin(-angle) + y * Math.cos(-angle)) / sy });
+        const at = (fx: number, fy: number) => local(fx * r, fy * r);
+        // Body: dark rim, lit body shifted towards the light, soft glow.
+        g.fillStyle(shade(base, 0.62), 1);
+        g.fillCircle(0, 0, r);
+        let o = at(-0.08, -0.1);
+        g.fillStyle(base, 1);
+        g.fillCircle(o.x, o.y, r * 0.87);
+        o = at(-0.17, -0.2);
+        g.fillStyle(hexToInt(c?.gradient ?? '#ffffff'), 0.4);
+        g.fillCircle(o.x, o.y, r * 0.6);
+        if (striped) {
+            // White diagonal stripes (chords of the circle at 45 degrees in world space).
+            g.lineStyle(Math.max(2, r * 0.2), 0xffffff, 0.9);
+            const d = local(Math.SQRT1_2, Math.SQRT1_2), n = local(-Math.SQRT1_2, Math.SQRT1_2);
+            const dl = Math.hypot(d.x, d.y) || 1, nl = Math.hypot(n.x, n.y) || 1;
+            for (const k of [-0.55, 0, 0.55]) {
+                const h = Math.sqrt(1 - k * k) * r * 0.9;
+                const cx = (n.x / nl) * k * r, cy = (n.y / nl) * k * r;
+                g.beginPath();
+                g.moveTo(cx - (d.x / dl) * h, cy - (d.y / dl) * h);
+                g.lineTo(cx + (d.x / dl) * h, cy + (d.y / dl) * h);
+                g.strokePath();
+            }
+        }
+        // Gloss: broad soft highlight, sharp specular spot, and a faint bounce light at the bottom.
+        o = at(-0.3, -0.34);
+        g.fillStyle(hexToInt(c?.inner ?? '#ffffff'), 0.45);
+        g.fillCircle(o.x, o.y, r * 0.38);
+        g.fillStyle(0xffffff, 0.55);
+        g.fillCircle(o.x, o.y, r * 0.24);
+        o = at(-0.36, -0.4);
+        g.fillStyle(0xffffff, 0.95);
+        g.fillCircle(o.x, o.y, r * 0.12);
+        o = at(0.36, 0.42);
+        g.fillStyle(0xffffff, 0.22);
+        g.fillCircle(o.x, o.y, r * 0.16);
+        g.restore();
+    }
+}
+
+/** Multiply a 0xRRGGBB colour by f (0..1 darkens). */
+function shade(c: number, f: number): number {
+    const r = Math.round(((c >> 16) & 255) * f), g = Math.round(((c >> 8) & 255) * f), b = Math.round((c & 255) * f);
+    return (r << 16) | (g << 8) | b;
 }

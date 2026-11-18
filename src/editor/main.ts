@@ -121,13 +121,27 @@ class App {
     }
 
     private async pickFolder(box?: HTMLElement) {
+        let f: FolderFiles;
         try {
-            const f = await FolderFiles.pick();
-            box?.remove();
-            setPref('storage', 'folder');
+            f = await FolderFiles.pick();
+        } catch (e) {
+            if ((e as Error)?.name === 'AbortError') return; // picker cancelled
+            const msg = `Could not open the folder: ${(e as Error)?.message || e}`;
+            this.setStatus(msg);
+            alert(`${msg}\n\nUse Chrome or Edge, choose the dot-line project folder (the one that contains levels/) and allow "View and edit".`);
+            return;
+        }
+        box?.remove();
+        setPref('storage', 'folder');
+        try {
             await this.useFiles(f);
-        } catch {
-            /* picker cancelled */
+            const n = (await Store.chapters(f)).length;
+            if (!n) this.setStatus(`No levels found in "${f.label}": choose the dot-line project folder (the one that contains levels/), or its levels folder`);
+        } catch (e) {
+            console.error(e);
+            const msg = `Could not read the levels in "${f.label}": ${(e as Error)?.message || e}`;
+            this.setStatus(msg);
+            alert(msg);
         }
     }
 

@@ -14,3 +14,4 @@ levels/*/.versions/
 # Research-only reference levels (npm run levels:import-ref): never commit, never ship
 levels/*-ref/
 research/
+levels/.dotline-editor/

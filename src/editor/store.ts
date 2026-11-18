@@ -101,15 +101,40 @@ export const folderSupported = () => 'showDirectoryPicker' in window;
 
 export class FolderFiles implements Files {
     kind = 'folder' as const;
+    /**
+     * true when the chosen folder is the levels folder itself (chapter folders directly inside)
+     * rather than the project folder that contains levels/. Paths are mapped so both work.
+     */
+    private levelsOnly = false;
     constructor(private root: DirHandle) {}
     get label() {
-        return this.root.name;
+        return this.levelsOnly ? `${this.root.name} (levels folder)` : this.root.name;
+    }
+
+    /** Project folder (has levels/) or the levels folder itself (chapter folders / level files inside)? */
+    private async detect() {
+        const dirs: string[] = [];
+        let json = false;
+        for await (const e of this.root.values()) {
+            if (e.kind === 'directory') dirs.push(e.name);
+            else if (e.name.endsWith('.json') && e.name !== 'package.json' && e.name !== 'collections.json') json = true;
+        }
+        this.levelsOnly = !dirs.includes('levels') && (this.root.name === 'levels' || dirs.some((d) => /^chapter/i.test(d)) || json);
+        return this;
+    }
+
+    /** "levels/…" paths go straight into a chosen levels folder; the editor's own files into .dotline-editor/. */
+    private map(path: string): string {
+        if (!this.levelsOnly) return path;
+        if (path === 'levels') return '';
+        if (path.startsWith('levels/')) return path.slice(7);
+        return `.dotline-editor/${path}`;
     }
 
     static async pick(): Promise<FolderFiles> {
         const root = (await (window as unknown as { showDirectoryPicker(o: object): Promise<DirHandle> }).showDirectoryPicker({ mode: 'readwrite' }));
         await kvSet('folder', root);
-        return new FolderFiles(root);
+        return new FolderFiles(root).detect();
     }
 
     /** Remembered folder; `needsPermission` means a click on Reconnect is required first. */
@@ -117,11 +142,16 @@ export class FolderFiles implements Files {
         const root = await kvGet<DirHandle>('folder');
         if (!root) return null;
         const state = await root.queryPermission({ mode: 'readwrite' });
-        return { files: new FolderFiles(root), needsPermission: state !== 'granted' };
+        const files = new FolderFiles(root);
+        // Without permission the folder can't be read yet; detect() again after reconnecting.
+        if (state === 'granted') await files.detect();
+        return { files, needsPermission: state !== 'granted' };
     }
 
     async reconnect(): Promise<boolean> {
-        return (await this.root.requestPermission({ mode: 'readwrite' })) === 'granted';
+        const ok = (await this.root.requestPermission({ mode: 'readwrite' })) === 'granted';
+        if (ok) await this.detect();
+        return ok;
     }
 
     private async dir(parts: string[], create: boolean): Promise<FileSystemDirectoryHandle | null> {
@@ -142,7 +172,7 @@ export class FolderFiles implements Files {
     }
 
     async readBlob(path: string) {
-        const { dirs, name } = this.split(path);
+        const { dirs, name } = this.split(this.map(path));
         const d = await this.dir(dirs, false);
         if (!d) return null;
         try {
@@ -156,14 +186,14 @@ export class FolderFiles implements Files {
         return b ? await b.text() : null;
     }
     async write(path: string, data: string | Blob) {
-        const { dirs, name } = this.split(path);
+        const { dirs, name } = this.split(this.map(path));
         const d = (await this.dir(dirs, true))!;
         const w = await (await d.getFileHandle(name, { create: true })).createWritable();
         await w.write(data);
         await w.close();
     }
     async remove(path: string) {
-        const { dirs, name } = this.split(path);
+        const { dirs, name } = this.split(this.map(path));
         const d = await this.dir(dirs, false);
         try {
             await d?.removeEntry(name);
@@ -172,21 +202,21 @@ export class FolderFiles implements Files {
         }
     }
     async list(dir: string) {
-        const d = (await this.dir(dir.split('/').filter(Boolean), false)) as DirHandle | null;
+        const d = (await this.dir(this.map(dir).split('/').filter(Boolean), false)) as DirHandle | null;
         if (!d) return [];
         const out: string[] = [];
         for await (const e of d.values()) if (e.kind === 'file') out.push(e.name);
         return out;
     }
     async listDirs(dir: string) {
-        const d = (await this.dir(dir.split('/').filter(Boolean), false)) as DirHandle | null;
+        const d = (await this.dir(this.map(dir).split('/').filter(Boolean), false)) as DirHandle | null;
         if (!d) return [];
         const out: string[] = [];
         for await (const e of d.values()) if (e.kind === 'directory') out.push(e.name);
         return out;
     }
     async removeDir(dir: string) {
-        const { dirs, name } = this.split(dir);
+        const { dirs, name } = this.split(this.map(dir));
         const d = await this.dir(dirs, false);
         try {
             await d?.removeEntry(name, { recursive: true });

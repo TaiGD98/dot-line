@@ -51,6 +51,7 @@ export class Hud extends Phaser.Scene {
         this.scissors = { box: cut, ring };
         this.cutHint = this.add.text(w / 2, h - BOTTOM_HEIGHT - 40, 'Tap a line to cut it', { fontFamily: FONT, fontSize: '44px', color: '#ffffff', stroke: OUTLINE, strokeThickness: 8 }).setOrigin(0.5).setVisible(false);
         this.game$.events.on('cutting', (on: boolean) => this.showCutting(on));
+        this.game$.events.on('freebump', () => this.toast('Free this time!\nNext bump costs a heart'));
         for (let i = 0; i < HEARTS; i++) this.hearts.push(this.add.text(w / 2 + (i - 1) * 62, 90, '♥', { fontFamily: FONT, fontSize: '60px', color: '#e8333d' }).setOrigin(0.5));
         this.label = this.add.text(w / 2, 150, '', { fontFamily: FONT, fontSize: '28px', color: '#ffffff', stroke: OUTLINE, strokeThickness: 6 }).setOrigin(0.5);
         this.bar = this.add.graphics();
@@ -117,6 +118,13 @@ export class Hud extends Phaser.Scene {
         g.restore();
     }
 
+    /** Short message above the bottom band that fades out by itself. */
+    private toast(message: string) {
+        const t = this.add.text(this.scale.width / 2, this.scale.height - BOTTOM_HEIGHT - 120, message, { fontFamily: FONT, fontSize: '50px', color: '#ffffff', stroke: OUTLINE, strokeThickness: 9, align: 'center' }).setOrigin(0.5).setDepth(8).setScale(0.6);
+        this.tweens.add({ targets: t, scale: 1, duration: 220, ease: 'Back.easeOut' });
+        this.tweens.add({ targets: t, alpha: 0, y: t.y - 40, delay: 2200, duration: 500, onComplete: () => t.destroy() });
+    }
+
     /** Scissors armed: pulsing ring on the button and a caption above the bottom band. */
     private showCutting(on: boolean) {
         this.cutHint.setVisible(on);
@@ -145,7 +153,7 @@ export class Hud extends Phaser.Scene {
         this.endTutorial();
         const kind = this.game$.current?.tutorial;
         if (!kind) return;
-        const caption = { tap: 'Tap a dot to send it home', collision: 'Bumping costs a heart', zoom: 'Pinch to zoom' }[kind];
+        const caption = { tap: 'Tap a dot to send it home', collision: 'Blocked dots bounce back', zoom: 'Pinch to zoom' }[kind];
         const ring = this.add.graphics().setDepth(5);
         const hand = this.add.text(0, 0, '👆', { fontSize: '120px' }).setOrigin(0.3, 0.05).setDepth(6);
         const text = this.add.text(this.scale.width / 2, this.scale.height - BOTTOM_HEIGHT - 70, caption, { fontFamily: FONT, fontSize: '64px', color: theme().caption }).setOrigin(0.5).setDepth(6);

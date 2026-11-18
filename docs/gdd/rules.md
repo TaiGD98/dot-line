@@ -53,8 +53,8 @@ Bật trong **Settings** (nút Pause ở góc trên trái mở Settings, game t�
 
 ## 3.5 Thắng và thua <Badge type="tip" text="Live" />
 
-- **Thắng:** mọi cặp trên board đã biến mất → hình vẽ của level hiện lại từ tất cả các dây (màu Completed), rồi confetti và màn "Well Done!".
-- **Cảnh kết thúc:** khi chỉ còn 1 dây và bóng cuối đang chạy, lúc bóng sắp chạm bóng đích (còn khoảng 0,4 giây đường đi, hoặc 6 bán kính bóng) game chuyển **slow motion** (tốc độ 0,2) và camera **zoom 2,2 lần** vào điểm va chạm, đưa điểm đó ra giữa màn hình. Khi bóng nổ thì màn "Well Done!" bung ra ngay; phía sau, camera lùi về toàn cảnh trong lúc hình vẽ hiện lại.
+- **Thắng:** mọi cặp trên board đã biến mất → confetti và màn "Well Done!" (board để trống, không hiện lại hình vẽ phía sau).
+- **Cảnh kết thúc:** khi chỉ còn 1 dây và bóng cuối đang chạy, lúc bóng sắp chạm bóng đích (còn khoảng 0,4 giây đường đi, hoặc 6 bán kính bóng) game chuyển **slow motion** (tốc độ 0,2) và camera **zoom 2,2 lần** vào điểm va chạm, đưa điểm đó ra giữa màn hình. Khi bóng nổ thì màn "Well Done!" bung ra ngay.
 - **Kéo màn:** kéo được ở mọi mức zoom, kể cả nhỏ nhất.
 - **Thua:** mỗi lần va chạm mất 1 tim, mỗi level có 3 tim. Hết tim = thua màn. Màn thắng "Well Done!" (confetti, nút CONTINUE) và màn thua "Out of Hearts!" (nút RETRY) vẽ trong Phaser theo phong cách của skill `prototype-ui` (font Lilita One, tiêu đề gradient).
 
@@ -99,7 +99,7 @@ Dây đã hoàn thành (Completed): `#6977C2`.
 - Mỗi level là một hình vẽ ghép từ các cặp hạt và dây (ví dụ cái micro trong clip).
 - **Hệ thống 100 level** (bộ "Main", game chơi bộ này trước): xem [Level system](../guide/level-system) và `design/level-system.xlsx`.
 - **10 level mở đầu cũ** (bộ "Intro", chơi sau level 100): Ripples (hướng dẫn bấm), Flag (hướng dẫn va chạm), Kite (hướng dẫn pinch zoom), House, Fish, Sailboat, Umbrella, Rocket, Tree, Castle. Level 1–2 làm tay; level 3–10 tạo bằng generator v2 từ hình vẽ trong `tools/intro-levels.ts`. File level nằm trong `levels/`, thứ tự chơi là bộ "Intro" trong `collections.json`.
-- **Hướng dẫn:** level có trường `tutorial` hiện bàn tay chỉ vào hạt và dòng chữ (Tap a dot to send it home / Bumping costs a heart / Pinch to zoom); biến mất sau lần bấm hoặc zoom đầu tiên.
+- **Hướng dẫn:** level có trường `tutorial` hiện bàn tay chỉ vào hạt và dòng chữ (Tap a dot to send it home / Blocked dots bounce back / Pinch to zoom); biến mất sau lần bấm hoặc zoom đầu tiên. Ở level hướng dẫn va chạm (`collision`), **lần đụng đầu tiên không mất tim**, rồi hiện thông báo "Free this time! Next bump costs a heart".
 - **Nhãn "Hard"** hiện trên tim ở các level vị trí khó của hệ thống level (`category: "hard"`); level không thuộc hệ thống thì hiện khi độ khó từ 4 trở lên.
 - Số cặp mỗi level, số màu, cách tăng độ khó qua các level: _TBD_.
 - Điều kiện để level giải được: luôn tồn tại một thứ tự gỡ dọn sạch được board. Cách kiểm tra (bằng tay hay bằng công cụ): _TBD_.

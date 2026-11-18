@@ -77,8 +77,6 @@ export class Game extends Phaser.Scene {
     /** Pairs that already bumped once (drawn with white stripes): their next bumps cost no heart. */
     private marked = new Set<string>();
     private wobbles = new Map<string, Wobble>();
-    /** 0..1: the finished picture (all lines) fades in once the level is won. */
-    private reveal = { a: 0 };
     private trails = new Map<string, Pt[]>();
     private pinch: { d: number; zoom: number; mid: Pt; scroll: Pt } | null = null;
     private dragFrom: { x: number; y: number; scroll: Pt; moved: boolean } | null = null;
@@ -86,6 +84,8 @@ export class Game extends Phaser.Scene {
     private finale: { k: number } | null = null;
     /** Scissors booster armed: the next tap on a line removes that pair. */
     private cutting = false;
+    /** The collision tutorial level forgives its first bump (no heart lost). */
+    private freeBump = false;
 
     constructor() {
         super('Game');
@@ -131,9 +131,8 @@ export class Game extends Phaser.Scene {
         this.over = false;
         this.nudge = null;
         this.marked.clear();
+        this.freeBump = this.level.tutorial === 'collision';
         this.wobbles.clear();
-        this.tweens.killTweensOf(this.reveal);
-        this.reveal.a = 0;
         this.trails.clear();
         if (this.finale) this.tweens.killTweensOf(this.finale);
         this.finale = null;
@@ -408,7 +407,11 @@ export class Game extends Phaser.Scene {
                 this.wobbles.set(`${id}:${m.side}`, { t: 0, amp: 0.32, angle });
                 this.wobbles.set(hit.key, { t: 0, amp: 0.22, angle });
                 // Marked (striped) pairs bump for free; the first bump costs a heart and marks the pair.
-                if (!this.marked.has(id)) {
+                if (this.freeBump) {
+                    // Tutorial: the first bump is free (the HUD says the next one costs a heart).
+                    this.freeBump = false;
+                    this.events.emit('freebump');
+                } else if (!this.marked.has(id)) {
                     this.hearts = Math.max(0, this.hearts - 1);
                     if (navigator.vibrate && navigator.userActivation?.hasBeenActive) navigator.vibrate(30);
                 }
@@ -493,21 +496,14 @@ export class Game extends Phaser.Scene {
         this.emitState();
         if (!this.alive.size) {
             this.over = true;
-            // Cleared lines are gone during play; the whole picture comes back once the level is won.
-            this.tweens.add({ targets: this.reveal, a: 1, duration: 700, delay: 250, ease: 'Sine.easeOut' });
-            // After the slow-motion ending the end screen comes with the pop; otherwise after the picture.
+            // The board stays empty (no picture behind the end screen). After the slow-motion ending
+            // the end screen comes with the pop; otherwise once the splash has settled.
             if (this.finale) {
                 this.tweens.killTweensOf(this.finale);
                 this.finale.k = 1;
                 this.events.emit('win');
-                // Behind the end screen the camera eases back out to the whole picture.
-                const cam = this.cameras.main, b = this.bounds, bottom = BOTTOM_HEIGHT + (this.level.tutorial ? 150 : 20);
-                this.time.delayedCall(250, () => {
-                    cam.zoomTo(this.baseZoom, 700, 'Sine.easeInOut', true);
-                    cam.pan(b.x + b.w / 2, b.y + b.h / 2 - (HUD_HEIGHT - bottom) / 2 / this.baseZoom, 700, 'Sine.easeInOut', true);
-                });
             }
-            else this.time.delayedCall(1100, () => this.events.emit('win'));
+            else this.time.delayedCall(500, () => this.events.emit('win'));
         }
     }
 
@@ -533,8 +529,6 @@ export class Game extends Phaser.Scene {
             g.fillCircle(pts[0].x, pts[0].y, w / 2);
             g.fillCircle(pts[pts.length - 1].x, pts[pts.length - 1].y, w / 2);
         };
-        const done = hexToInt(COMPLETED_LINE);
-        if (this.reveal.a > 0) for (const p of this.level.pairs) if (!this.alive.has(p.id)) stroke(this.model.line(p.id), done, lineWidth(p), this.reveal.a);
         for (const id of this.alive) {
             const p = this.pair(id);
             const col = hexToInt(theme().lineOverride[p.color] ?? colour(p.color)?.base ?? COMPLETED_LINE);

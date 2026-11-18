@@ -10,7 +10,7 @@
   "pairs": [
     {
       "id": "p1",
-      "color": "pink",
+      "color": "purple",
       "a": {
         "x": -250,
         "y": 109.4,
@@ -222,7 +222,7 @@
     },
     {
       "id": "p2",
-      "color": "magenta",
+      "color": "crimson",
       "a": {
         "x": -187.5,
         "y": 109.4,
@@ -434,7 +434,7 @@
     },
     {
       "id": "p3",
-      "color": "light_blue",
+      "color": "magenta",
       "a": {
         "x": -125,
         "y": 109.4,

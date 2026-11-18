@@ -10,7 +10,7 @@
   "pairs": [
     {
       "id": "p1",
-      "color": "grey",
+      "color": "magenta",
       "a": {
         "x": 118.5,
         "y": -358.2,
@@ -606,7 +606,7 @@
     },
     {
       "id": "p2",
-      "color": "light_blue",
+      "color": "black",
       "a": {
         "x": 24.6,
         "y": -330.4,
@@ -842,7 +842,7 @@
     },
     {
       "id": "p3",
-      "color": "dark_green",
+      "color": "blue",
       "a": {
         "x": -81.5,
         "y": -381.2,
@@ -910,7 +910,7 @@
     },
     {
       "id": "p4",
-      "color": "grey",
+      "color": "blue",
       "a": {
         "x": 182.1,
         "y": -375.9,
@@ -1182,7 +1182,7 @@
     },
     {
       "id": "p5",
-      "color": "blue",
+      "color": "brown",
       "a": {
         "x": -159.8,
         "y": -364.2,
@@ -1238,7 +1238,7 @@
     },
     {
       "id": "p6",
-      "color": "magenta",
+      "color": "red",
       "a": {
         "x": 90.7,
         "y": -337,
@@ -1630,7 +1630,7 @@
     },
     {
       "id": "p7",
-      "color": "orange",
+      "color": "light_blue",
       "a": {
         "x": 358.1,
         "y": -348.9,
@@ -1710,7 +1710,7 @@
     },
     {
       "id": "p8",
-      "color": "yellow",
+      "color": "orange",
       "a": {
         "x": 307.4,
         "y": -345.8,
@@ -2182,7 +2182,7 @@
     },
     {
       "id": "p10",
-      "color": "black",
+      "color": "brown",
       "a": {
         "x": 154.4,
         "y": -330.4,
@@ -2286,7 +2286,7 @@
     },
     {
       "id": "p11",
-      "color": "blue",
+      "color": "yellow",
       "a": {
         "x": 182.9,
         "y": -299.7,
@@ -2342,7 +2342,7 @@
     },
     {
       "id": "p12",
-      "color": "green",
+      "color": "gold",
       "a": {
         "x": -158.3,
         "y": -238.2,
@@ -2698,7 +2698,7 @@
     },
     {
       "id": "p13",
-      "color": "magenta",
+      "color": "dark_green",
       "a": {
         "x": 141.5,
         "y": -249.3,
@@ -2754,7 +2754,7 @@
     },
     {
       "id": "p14",
-      "color": "dark_green",
+      "color": "crimson",
       "a": {
         "x": -92.2,
         "y": -215.2,
@@ -2834,7 +2834,7 @@
     },
     {
       "id": "p15",
-      "color": "yellow",
+      "color": "green",
       "a": {
         "x": 41.5,
         "y": -198.3,
@@ -2926,7 +2926,7 @@
     },
     {
       "id": "p16",
-      "color": "light_blue",
+      "color": "purple",
       "a": {
         "x": 79.9,
         "y": -161.4,
@@ -3066,7 +3066,7 @@
     },
     {
       "id": "p17",
-      "color": "orange",
+      "color": "dark_green",
       "a": {
         "x": -16.9,
         "y": -130.6,
@@ -3170,7 +3170,7 @@
     },
     {
       "id": "p18",
-      "color": "magenta",
+      "color": "black",
       "a": {
         "x": 53.5,
         "y": -112.6,
@@ -3274,7 +3274,7 @@
     },
     {
       "id": "p19",
-      "color": "black",
+      "color": "yellow",
       "a": {
         "x": -173.7,
         "y": -75.3,
@@ -3330,7 +3330,7 @@
     },
     {
       "id": "p20",
-      "color": "dark_green",
+      "color": "green",
       "a": {
         "x": -69.5,
         "y": -30.5,
@@ -3578,7 +3578,7 @@
     },
     {
       "id": "p21",
-      "color": "pink",
+      "color": "purple",
       "a": {
         "x": 181.3,
         "y": -28.3,
@@ -3754,7 +3754,7 @@
     },
     {
       "id": "p22",
-      "color": "blue",
+      "color": "red",
       "a": {
         "x": 127.6,
         "y": -6.1,
@@ -3858,7 +3858,7 @@
     },
     {
       "id": "p23",
-      "color": "orange",
+      "color": "crimson",
       "a": {
         "x": -123,
         "y": 139.9,
@@ -4154,7 +4154,7 @@
     },
     {
       "id": "p24",
-      "color": "green",
+      "color": "magenta",
       "a": {
         "x": 219.7,
         "y": 124.2,
@@ -4234,7 +4234,7 @@
     },
     {
       "id": "p25",
-      "color": "light_blue",
+      "color": "pink",
       "a": {
         "x": 167.5,
         "y": 182.9,
@@ -4290,7 +4290,7 @@
     },
     {
       "id": "p26",
-      "color": "green",
+      "color": "orange",
       "a": {
         "x": 217.4,
         "y": 271.5,

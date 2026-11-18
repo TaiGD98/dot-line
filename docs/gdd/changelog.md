@@ -4,15 +4,18 @@ Every published version stays playable at its own URL. The [landing page](https:
 
 ## latest (main) <Badge type="tip" text="Live" />
 
+- **Well Done screen:** no faded picture behind it any more (the board stays empty).
+- **Level 2 (bump tutorial):** the first bump is free; a message says the next one costs a heart. Caption: "Blocked dots bounce back".
+- **More colours, no white or grey:** the levels in the game (chapter 1 levels 1–2, chapter 5) were recoloured: up to 14 colours per level, near lines never share a colour.
 - **Play order (playlist):** the game plays level 1–2 of chapter 1 (with their tutorials), then chapter 5 from its level 1 (30 levels). Set in `src/game/playlist.ts`; the dev menu lists the playlist first, then every other level.
 - **Boosters at the bottom:** a bottom panel (in the background colour, over the board) holds the boosters: **Hint** (moved from the top right) and the new **Cut** (scissors): arm it, then tap a line or dot to remove that pair.
-- **Ending:** when the last dot is about to reach its partner the game goes into slow motion and the camera zooms in with the meeting point in the middle of the screen; the end screen comes with the pop, and the camera eases back out to the whole picture behind it.
+- **Ending:** when the last dot is about to reach its partner the game goes into slow motion and the camera zooms in with the meeting point in the middle of the screen; the end screen comes with the pop.
 - **Panning at any zoom:** the board can be dragged at the smallest zoom too (zooming out at the edge no longer leaves it stuck off-centre).
 - **No more white and grey:** they sank into the background. Levels that still use them get another colour when they are loaded (one no near line has).
 - **Dark theme:** switch between light and dark in Settings (the pause button); remembered in the browser.
 - **Striped dots:** after a bump, the bumping pair gets white stripes; striped dots bump for free (no heart). Other dots bumping into a striped dot still cost a heart and get striped.
 - **Ball feel:** moving dots stretch along their path and leave a fading trail; bumps make both dots wobble elastically.
-- **Cleared lines disappear** with their dots; the whole picture comes back only when the level is won.
+- **Cleared lines disappear** with their dots.
 - No more screen shake on a bump (the dots' elastic wobble is the feedback).
 - **Glossy dots with soft drop shadows** (light from the top-left).
 - **Accelerating dots:** a tapped dot starts at 500 px/s, reaches 750 px/s after 1 second and keeps accelerating the same way to the end of its line (bumped dots return at 1020 px/s).

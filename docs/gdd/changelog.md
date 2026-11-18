@@ -4,7 +4,7 @@ Every published version stays playable at its own URL. The [landing page](https:
 
 ## latest (main) <Badge type="tip" text="Live" />
 
-- No changes since v0.3.0.
+- **New level order:** chapter 5's levels 25–28 now come right after the two tutorials (LEVEL 3–6); the pinch-to-zoom tutorial moved with them to LEVEL 3. Pumpkin (now LEVEL 7) was reworked by hand (17 lines).
 
 [Play latest](https://taigd98.github.io/dot-line/demo/)
 

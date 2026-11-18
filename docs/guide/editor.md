@@ -185,6 +185,12 @@ Nếu hoa văn không đủ chỗ cho số dây yêu cầu, editor báo "Placed 
 - Thông tin mỗi level: **Name, Id, Status** (WIP / PROD / ARCHIVE), **Difficulty, Category**.
 - Tab **Organiser**: sắp level thành collection theo thứ tự chơi, có hộp thoại Add levels (Add all levels / Add selected levels, ô tìm kiếm, "N of M selected").
 - **Level nào vào game, theo thứ tự nào:** file `src/game/playlist.ts`. Mỗi dòng là `chapter/id` (một level) hoặc `chapter/*` (cả chapter theo thứ tự collection đầu tiên của nó, rồi các level còn lại theo id). Số LEVEL trong game là vị trí trong danh sách này. Hiện tại: level 1–2 của chapter 1 (có tutorial), rồi chapter 5. Danh sách rỗng thì game chơi mọi chapter theo thứ tự tên folder.
+- **Đưa level vừa sửa lên game trên web:** sửa level trong editor (đã chọn thư mục project), bấm **Save**, rồi chạy `npm run publish:levels` trong thư mục project. Lệnh này:
+  1. kiểm tra đang ở nhánh `main`, không thiếu commit nào từ GitHub, và chỉ có file trong `levels/` thay đổi (có file khác thay đổi thì dừng và liệt kê);
+  2. kiểm tra mọi level trong danh sách chơi: đọc được, không có cảnh báo ở Level checks, giải được (level nào hỏng thì dừng và báo tên level, LEVEL mấy);
+  3. commit các file level đã đổi, push lên GitHub và build lại bản mới nhất của trang web. Khoảng 1 phút sau game trên web có level mới.
+
+  `npm run publish:levels -- --dry-run` chỉ kiểm tra, không commit hay đưa gì lên web. Trên máy, `npm run dev` thì game ở http://localhost:8080/ tự tải lại mỗi lần Save (bắt đầu lại từ LEVEL 1).
 
 ## 4. Kiểm tra level (mức C)
 

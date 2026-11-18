@@ -4,6 +4,10 @@
       "name": "Main",
       "version": 1,
       "levels": [
+        "level-6",
+        "level-7",
+        "level-8",
+        "level-9",
         "c5-001-pumpkin",
         "c5-002-bunny",
         "c5-003-imaginary-flower",

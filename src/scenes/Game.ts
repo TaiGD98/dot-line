@@ -518,8 +518,10 @@ export class Game extends Phaser.Scene {
     private draw() {
         const g = this.gfx;
         g.clear();
-        const stroke = (pts: Pt[], col: number, w = LINE_WIDTH, alpha = 1) => {
+        const stroke = (pts: Pt[], col: number, w = LINE_WIDTH, alpha = 1, edge?: number) => {
             if (pts.length < 2) return;
+            // A line that would sink into the board gets a thin edge in its own darker / lighter tone.
+            if (edge !== undefined) stroke(pts, edge, w + 2.6, alpha);
             g.lineStyle(w, col, alpha);
             g.beginPath();
             g.moveTo(pts[0].x, pts[0].y);
@@ -531,20 +533,20 @@ export class Game extends Phaser.Scene {
         };
         for (const id of this.alive) {
             const p = this.pair(id);
-            const col = hexToInt(theme().lineOverride[p.color] ?? colour(p.color)?.base ?? COMPLETED_LINE);
+            const col = hexToInt(colour(p.color)?.base ?? COMPLETED_LINE), edge = lineEdge(p.color);
             const m = this.movers.get(id);
             if (m) {
                 // The line shortens behind the moving dot.
                 const rest = [pointAt(m.pts, m.acc, m.s), ...m.pts.filter((_, i) => m.acc[i] > m.s)];
-                stroke(rest, col, lineWidth(p));
-            } else stroke(this.model.line(id), col, lineWidth(p));
+                stroke(rest, col, lineWidth(p), 1, edge);
+            } else stroke(this.model.line(id), col, lineWidth(p), 1, edge);
         }
         // Trails behind moving dots.
         for (const [id, t] of this.trails) {
             if (!this.alive.has(id)) continue;
             const p = this.pair(id), m = this.movers.get(id);
             const r = m ? p[m.side].r : p.a.r;
-            const col = hexToInt(theme().lineOverride[p.color] ?? colour(p.color)?.base ?? COMPLETED_LINE);
+            const col = hexToInt(colour(p.color)?.base ?? COMPLETED_LINE);
             t.forEach((q, i) => {
                 const k = (i + 1) / (t.length + 1);
                 g.fillStyle(col, 0.28 * k);
@@ -597,7 +599,7 @@ export class Game extends Phaser.Scene {
     private drawDot(pos: Pt, r: number, name: string, sx: number, sy: number, angle: number, striped: boolean) {
         const g = this.gfx;
         const c = colour(name);
-        const base = hexToInt(theme().lineOverride[name] ?? c?.base ?? COMPLETED_LINE);
+        const base = hexToInt(c?.base ?? COMPLETED_LINE);
         g.save();
         g.translateCanvas(pos.x, pos.y);
         g.rotateCanvas(angle);
@@ -606,7 +608,8 @@ export class Game extends Phaser.Scene {
         const local = (x: number, y: number) => ({ x: (x * Math.cos(-angle) - y * Math.sin(-angle)) / sx, y: (x * Math.sin(-angle) + y * Math.cos(-angle)) / sy });
         const at = (fx: number, fy: number) => local(fx * r, fy * r);
         // Body: dark rim, lit body shifted towards the light, soft glow.
-        g.fillStyle(shade(base, 0.62), 1);
+        // Rim: the darkest key of the colour's shading ramp (VoxelMaterials _RampKey0).
+        g.fillStyle(c ? hexToInt(c.dark) : shade(base, 0.62), 1);
         g.fillCircle(0, 0, r);
         let o = at(-0.08, -0.1);
         g.fillStyle(base, 1);
@@ -642,6 +645,28 @@ export class Game extends Phaser.Scene {
         g.fillCircle(o.x, o.y, r * 0.16);
         g.restore();
     }
+}
+
+/** WCAG contrast ratio of two #RRGGBB colours. */
+function contrast(a: string, b: string): number {
+    const lum = (hex: string) => {
+        const f = (v: number) => (v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4);
+        const [r, g, b] = [1, 3, 5].map((i) => f(parseInt(hex.slice(i, i + 2), 16) / 255));
+        return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+    };
+    const x = lum(a), y = lum(b);
+    return (Math.max(x, y) + 0.05) / (Math.min(x, y) + 0.05);
+}
+
+/** Edge colour for a line that has too little contrast with the board (else undefined). */
+const edges = new Map<string, number | undefined>();
+function lineEdge(name: string): number | undefined {
+    const th = theme(), key = `${th.background}|${name}`;
+    if (edges.has(key)) return edges.get(key);
+    const c = colour(name);
+    const e = c && contrast(c.base, th.background) < 1.8 ? hexToInt(th.dark ? c.inner : c.dark) : undefined;
+    edges.set(key, e);
+    return e;
 }
 
 /** Multiply a 0xRRGGBB colour by f (0..1 darkens). */

@@ -10,7 +10,7 @@
   "pairs": [
     {
       "id": "p1",
-      "color": "magenta",
+      "color": "green",
       "a": {
         "x": 150.3,
         "y": -80.5,
@@ -222,7 +222,7 @@
     },
     {
       "id": "p2",
-      "color": "dark_green",
+      "color": "purple",
       "a": {
         "x": -150.3,
         "y": -116.4,
@@ -434,7 +434,7 @@
     },
     {
       "id": "p3",
-      "color": "light_blue",
+      "color": "lavender",
       "a": {
         "x": 83.3,
         "y": -98.5,
@@ -646,7 +646,7 @@
     },
     {
       "id": "p4",
-      "color": "blue",
+      "color": "magenta",
       "a": {
         "x": 0,
         "y": 53,
@@ -670,7 +670,7 @@
     },
     {
       "id": "x1",
-      "color": "red",
+      "color": "pink",
       "a": {
         "x": 0,
         "y": -285.2,
@@ -695,7 +695,7 @@
     },
     {
       "id": "t1",
-      "color": "crimson",
+      "color": "lime",
       "a": {
         "x": 0,
         "y": 188.1,

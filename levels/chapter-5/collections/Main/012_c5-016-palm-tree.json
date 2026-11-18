@@ -10,7 +10,7 @@
   "pairs": [
     {
       "id": "p1",
-      "color": "pink",
+      "color": "dark_green",
       "a": {
         "x": 333.3,
         "y": -876,
@@ -78,7 +78,7 @@
     },
     {
       "id": "p2",
-      "color": "black",
+      "color": "sky_blue",
       "a": {
         "x": 295.5,
         "y": -873.3,
@@ -206,7 +206,7 @@
     },
     {
       "id": "p3",
-      "color": "red",
+      "color": "orange_red",
       "a": {
         "x": 93.1,
         "y": -789.1,
@@ -274,7 +274,7 @@
     },
     {
       "id": "p4",
-      "color": "dark_green",
+      "color": "spring_green",
       "a": {
         "x": 132.7,
         "y": -808.2,
@@ -342,7 +342,7 @@
     },
     {
       "id": "p5",
-      "color": "red",
+      "color": "teal",
       "a": {
         "x": 305.4,
         "y": -814.1,
@@ -530,7 +530,7 @@
     },
     {
       "id": "p6",
-      "color": "pink",
+      "color": "maroon",
       "a": {
         "x": 502.8,
         "y": -777.8,
@@ -766,7 +766,7 @@
     },
     {
       "id": "p7",
-      "color": "magenta",
+      "color": "orange_red",
       "a": {
         "x": 374.6,
         "y": -749.2,
@@ -930,7 +930,7 @@
     },
     {
       "id": "p8",
-      "color": "yellow",
+      "color": "sky_blue",
       "a": {
         "x": 469,
         "y": -722.6,
@@ -1094,7 +1094,7 @@
     },
     {
       "id": "p9",
-      "color": "green",
+      "color": "cyan",
       "a": {
         "x": -16.6,
         "y": -640,
@@ -1174,7 +1174,7 @@
     },
     {
       "id": "p10",
-      "color": "blue",
+      "color": "teal",
       "a": {
         "x": -227.8,
         "y": -668.5,
@@ -1278,7 +1278,7 @@
     },
     {
       "id": "p11",
-      "color": "crimson",
+      "color": "red",
       "a": {
         "x": -265.5,
         "y": -672.5,
@@ -1358,7 +1358,7 @@
     },
     {
       "id": "p12",
-      "color": "orange",
+      "color": "brown",
       "a": {
         "x": -2.9,
         "y": -672.5,
@@ -1414,7 +1414,7 @@
     },
     {
       "id": "p13",
-      "color": "red",
+      "color": "orange_red",
       "a": {
         "x": 340.5,
         "y": -680.5,
@@ -1590,7 +1590,7 @@
     },
     {
       "id": "p14",
-      "color": "purple",
+      "color": "dark_green",
       "a": {
         "x": -410.3,
         "y": -665.9,
@@ -1646,7 +1646,7 @@
     },
     {
       "id": "p15",
-      "color": "magenta",
+      "color": "light_pink",
       "a": {
         "x": -442.4,
         "y": -648.9,
@@ -1702,7 +1702,7 @@
     },
     {
       "id": "p16",
-      "color": "yellow",
+      "color": "light_orange",
       "a": {
         "x": 159.3,
         "y": -643,
@@ -1782,7 +1782,7 @@
     },
     {
       "id": "p17",
-      "color": "yellow",
+      "color": "pink",
       "a": {
         "x": -142.3,
         "y": -632.7,
@@ -1850,7 +1850,7 @@
     },
     {
       "id": "p18",
-      "color": "dark_green",
+      "color": "teal",
       "a": {
         "x": -439.9,
         "y": -615.4,
@@ -2026,7 +2026,7 @@
     },
     {
       "id": "p19",
-      "color": "purple",
+      "color": "green",
       "a": {
         "x": -557.5,
         "y": -474.9,
@@ -2346,7 +2346,7 @@
     },
     {
       "id": "p20",
-      "color": "green",
+      "color": "light_pink",
       "a": {
         "x": 98.2,
         "y": -500.6,
@@ -2390,7 +2390,7 @@
     },
     {
       "id": "p21",
-      "color": "gold",
+      "color": "dark_blue",
       "a": {
         "x": -413.9,
         "y": -478.3,
@@ -2530,7 +2530,7 @@
     },
     {
       "id": "p22",
-      "color": "light_blue",
+      "color": "navy",
       "a": {
         "x": -230,
         "y": -510.4,
@@ -2586,7 +2586,7 @@
     },
     {
       "id": "p23",
-      "color": "crimson",
+      "color": "maroon",
       "a": {
         "x": -579.8,
         "y": -509.4,
@@ -3146,7 +3146,7 @@
     },
     {
       "id": "p24",
-      "color": "green",
+      "color": "turquoise",
       "a": {
         "x": -380.2,
         "y": -491.4,
@@ -3274,7 +3274,7 @@
     },
     {
       "id": "p25",
-      "color": "blue",
+      "color": "red",
       "a": {
         "x": 233,
         "y": -507.3,
@@ -3342,7 +3342,7 @@
     },
     {
       "id": "p26",
-      "color": "dark_green",
+      "color": "teal",
       "a": {
         "x": 378.9,
         "y": -485.2,
@@ -3410,7 +3410,7 @@
     },
     {
       "id": "p27",
-      "color": "light_blue",
+      "color": "pink",
       "a": {
         "x": -345.8,
         "y": -378.1,
@@ -3514,7 +3514,7 @@
     },
     {
       "id": "p28",
-      "color": "crimson",
+      "color": "brown",
       "a": {
         "x": 412.9,
         "y": -469,
@@ -3594,7 +3594,7 @@
     },
     {
       "id": "p29",
-      "color": "orange",
+      "color": "blue",
       "a": {
         "x": -46.1,
         "y": -437.1,
@@ -3662,7 +3662,7 @@
     },
     {
       "id": "p30",
-      "color": "black",
+      "color": "red",
       "a": {
         "x": -238.9,
         "y": -430.6,
@@ -3718,7 +3718,7 @@
     },
     {
       "id": "p31",
-      "color": "red",
+      "color": "dark_green",
       "a": {
         "x": -90.7,
         "y": -415.2,
@@ -3846,7 +3846,7 @@
     },
     {
       "id": "p32",
-      "color": "gold",
+      "color": "light_pink",
       "a": {
         "x": 73.9,
         "y": -427.7,
@@ -4042,7 +4042,7 @@
     },
     {
       "id": "p34",
-      "color": "dark_green",
+      "color": "dark_blue",
       "a": {
         "x": 285.2,
         "y": 4.2,
@@ -4362,7 +4362,7 @@
     },
     {
       "id": "p35",
-      "color": "pink",
+      "color": "blue",
       "a": {
         "x": -261.9,
         "y": -406.9,
@@ -4406,7 +4406,7 @@
     },
     {
       "id": "p36",
-      "color": "blue",
+      "color": "red",
       "a": {
         "x": 452.6,
         "y": -309.9,
@@ -4522,7 +4522,7 @@
     },
     {
       "id": "p37",
-      "color": "red",
+      "color": "navy",
       "a": {
         "x": 138.6,
         "y": -386.4,
@@ -4590,7 +4590,7 @@
     },
     {
       "id": "p38",
-      "color": "purple",
+      "color": "light_orange",
       "a": {
         "x": 278.7,
         "y": -364.9,
@@ -4694,7 +4694,7 @@
     },
     {
       "id": "p39",
-      "color": "orange",
+      "color": "navy",
       "a": {
         "x": 563.4,
         "y": -353.9,
@@ -4750,7 +4750,7 @@
     },
     {
       "id": "p40",
-      "color": "purple",
+      "color": "pink",
       "a": {
         "x": 492.2,
         "y": -338.7,
@@ -4914,7 +4914,7 @@
     },
     {
       "id": "p41",
-      "color": "brown",
+      "color": "spring_green",
       "a": {
         "x": -114.8,
         "y": -316.8,
@@ -5138,7 +5138,7 @@
     },
     {
       "id": "p42",
-      "color": "brown",
+      "color": "maroon",
       "a": {
         "x": 67.8,
         "y": -327.4,
@@ -5218,7 +5218,7 @@
     },
     {
       "id": "p43",
-      "color": "red",
+      "color": "cyan",
       "a": {
         "x": 20.5,
         "y": -235.8,
@@ -5334,7 +5334,7 @@
     },
     {
       "id": "p44",
-      "color": "blue",
+      "color": "brown",
       "a": {
         "x": -397.9,
         "y": -292.1,
@@ -5414,7 +5414,7 @@
     },
     {
       "id": "p45",
-      "color": "black",
+      "color": "light_pink",
       "a": {
         "x": 442.8,
         "y": -222.6,
@@ -5646,7 +5646,7 @@
     },
     {
       "id": "p47",
-      "color": "gold",
+      "color": "cyan",
       "a": {
         "x": 418.9,
         "y": -255.8,
@@ -5690,7 +5690,7 @@
     },
     {
       "id": "p48",
-      "color": "pink",
+      "color": "light_orange",
       "a": {
         "x": 174.8,
         "y": -240.8,
@@ -5914,7 +5914,7 @@
     },
     {
       "id": "p49",
-      "color": "magenta",
+      "color": "sky_blue",
       "a": {
         "x": -250.7,
         "y": -301.2,
@@ -6090,7 +6090,7 @@
     },
     {
       "id": "p50",
-      "color": "yellow",
+      "color": "navy",
       "a": {
         "x": -327.4,
         "y": -225.9,
@@ -6170,7 +6170,7 @@
     },
     {
       "id": "p51",
-      "color": "crimson",
+      "color": "orange_red",
       "a": {
         "x": -70.3,
         "y": -190.6,
@@ -6250,7 +6250,7 @@
     },
     {
       "id": "p52",
-      "color": "dark_green",
+      "color": "blue",
       "a": {
         "x": 603,
         "y": -169.1,
@@ -6462,7 +6462,7 @@
     },
     {
       "id": "p53",
-      "color": "magenta",
+      "color": "orange_red",
       "a": {
         "x": -410.5,
         "y": -180,
@@ -6674,7 +6674,7 @@
     },
     {
       "id": "p54",
-      "color": "orange",
+      "color": "light_pink",
       "a": {
         "x": 304.5,
         "y": -154.7,
@@ -6766,7 +6766,7 @@
     },
     {
       "id": "p55",
-      "color": "gold",
+      "color": "turquoise",
       "a": {
         "x": -333.7,
         "y": -189.5,
@@ -6906,7 +6906,7 @@
     },
     {
       "id": "p56",
-      "color": "yellow",
+      "color": "brown",
       "a": {
         "x": 330.3,
         "y": -123.9,
@@ -7070,7 +7070,7 @@
     },
     {
       "id": "p57",
-      "color": "brown",
+      "color": "light_orange",
       "a": {
         "x": 234.2,
         "y": -96.9,
@@ -7222,7 +7222,7 @@
     },
     {
       "id": "p58",
-      "color": "blue",
+      "color": "orange_red",
       "a": {
         "x": -14.8,
         "y": -84.8,
@@ -7278,7 +7278,7 @@
     },
     {
       "id": "p59",
-      "color": "light_blue",
+      "color": "sky_blue",
       "a": {
         "x": 211.7,
         "y": -56.2,
@@ -7454,7 +7454,7 @@
     },
     {
       "id": "p60",
-      "color": "black",
+      "color": "brown",
       "a": {
         "x": -432,
         "y": 57.8,
@@ -7678,7 +7678,7 @@
     },
     {
       "id": "p61",
-      "color": "green",
+      "color": "spring_green",
       "a": {
         "x": -20.6,
         "y": 44.2,
@@ -7902,7 +7902,7 @@
     },
     {
       "id": "p62",
-      "color": "black",
+      "color": "green",
       "a": {
         "x": 318.3,
         "y": 108,
@@ -8126,7 +8126,7 @@
     },
     {
       "id": "p63",
-      "color": "pink",
+      "color": "maroon",
       "a": {
         "x": -27.8,
         "y": 179.6,
@@ -8194,7 +8194,7 @@
     },
     {
       "id": "p64",
-      "color": "crimson",
+      "color": "green",
       "a": {
         "x": 75.2,
         "y": 181.5,
@@ -8370,7 +8370,7 @@
     },
     {
       "id": "p65",
-      "color": "light_blue",
+      "color": "dark_blue",
       "a": {
         "x": -37.6,
         "y": 142.9,
@@ -8450,7 +8450,7 @@
     },
     {
       "id": "p66",
-      "color": "blue",
+      "color": "red",
       "a": {
         "x": 85.5,
         "y": 292,
@@ -8650,7 +8650,7 @@
     },
     {
       "id": "p67",
-      "color": "orange",
+      "color": "pink",
       "a": {
         "x": -42.2,
         "y": 319.6,
@@ -8718,7 +8718,7 @@
     },
     {
       "id": "p68",
-      "color": "brown",
+      "color": "spring_green",
       "a": {
         "x": 120.7,
         "y": 413,
@@ -8930,7 +8930,7 @@
     },
     {
       "id": "p69",
-      "color": "dark_green",
+      "color": "cyan",
       "a": {
         "x": 83.6,
         "y": 435.2,
@@ -8986,7 +8986,7 @@
     },
     {
       "id": "p70",
-      "color": "magenta",
+      "color": "blue",
       "a": {
         "x": -23.6,
         "y": 504.4,
@@ -9270,7 +9270,7 @@
     },
     {
       "id": "p71",
-      "color": "purple",
+      "color": "brown",
       "a": {
         "x": -39.7,
         "y": 559.5,
@@ -9338,7 +9338,7 @@
     },
     {
       "id": "p72",
-      "color": "gold",
+      "color": "light_orange",
       "a": {
         "x": 115,
         "y": 616.4,
@@ -9478,7 +9478,7 @@
     },
     {
       "id": "p73",
-      "color": "brown",
+      "color": "red",
       "a": {
         "x": -49.7,
         "y": 642.2,
@@ -9630,7 +9630,7 @@
     },
     {
       "id": "p74",
-      "color": "black",
+      "color": "turquoise",
       "a": {
         "x": 9.4,
         "y": 690.7,
@@ -9698,7 +9698,7 @@
     },
     {
       "id": "p75",
-      "color": "orange",
+      "color": "turquoise",
       "a": {
         "x": -37.5,
         "y": 703,
@@ -9742,7 +9742,7 @@
     },
     {
       "id": "p76",
-      "color": "green",
+      "color": "light_pink",
       "a": {
         "x": 73.9,
         "y": 695.9,
@@ -9822,7 +9822,7 @@
     },
     {
       "id": "p77",
-      "color": "crimson",
+      "color": "pink",
       "a": {
         "x": 23.1,
         "y": 792.1,
@@ -9846,7 +9846,7 @@
     },
     {
       "id": "p78",
-      "color": "light_blue",
+      "color": "teal",
       "a": {
         "x": 52,
         "y": 827.5,
@@ -9914,7 +9914,7 @@
     },
     {
       "id": "p79",
-      "color": "light_blue",
+      "color": "dark_blue",
       "a": {
         "x": -150.4,
         "y": 775.7,
@@ -9958,7 +9958,7 @@
     },
     {
       "id": "p80",
-      "color": "brown",
+      "color": "light_orange",
       "a": {
         "x": -98.3,
         "y": 828,
@@ -10026,7 +10026,7 @@
     },
     {
       "id": "p81",
-      "color": "magenta",
+      "color": "dark_green",
       "a": {
         "x": 87.1,
         "y": 839.3,
@@ -10130,7 +10130,7 @@
     },
     {
       "id": "p82",
-      "color": "yellow",
+      "color": "maroon",
       "a": {
         "x": 85.5,
         "y": 876,

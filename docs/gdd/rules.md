@@ -71,28 +71,42 @@ Bật trong **Settings** (nút Pause ở góc trên trái mở Settings, game t�
 
 ## 3.7 Bảng màu <Badge type="tip" text="Live" />
 
-Nguồn: tài liệu DotPaint Concept. Mỗi màu có 3 sắc: **Base** (màu hạt và dây), **Gradient** và **Inner Light** (vẽ bóng của hạt).
+Nguồn: vật liệu `Voxel_*` của game Cube Blast (file `VoxelMaterials.json`). Mỗi màu có **Base** (`_BaseColor`: màu bóng và dây) và dải sáng tối `_RampKey`: **Dark** (nấc tối nhất: viền bóng), **Lit** (nấc gần 0,6: phần sáng của thân bóng) và **Light** (nấc sáng nhất: đốm sáng). White và Black không dùng vì bị chìm vào nền; level cũ có màu không còn trong bảng được đổi màu khi mở.
 
-| Tên | Base | Gradient | Inner Light |
-|---|---|---|---|
-| crimson | `#DA0561` | `#FF3B3B` | `#FF6738` |
-| blue | `#484EF6` | `#4F93FF` | `#56B0FF` |
-| magenta | `#E221CA` | `#FF77A7` | `#FF9CCE` |
-| light_blue | `#43C0FF` | `#8CFFF2` | `#EEF7FF` |
-| green | `#6BD234` | `#E2F016` | `#CCFFE6` |
-| yellow | `#FFC430` | `#E2F016` | `#F9F3A1` |
-| purple | `#9F54FA` | `#FB82EF` | `#FCA7F5` |
-| orange | `#FF772D` | `#FFA754` | `#FFC079` |
-| pink | `#FF80C4` | `#FFACAC` | `#FFC0C0` |
-| brown | `#AC6F6D` | `#E67775` | `#FF8C8A` |
-| dark_green | `#008D7F` | `#00D2BD` | `#00F3D7` |
-| red | `#FA3E3E` | `#FA692B` | `#FB904D` |
-| gold | `#D3BB7F` | `#FFEC83` | `#FFF7AF` |
-| black | `#494E68` | `#5C658F` | `#7B83AA` |
+| Tên | Base | Dark | Lit | Light |
+|---|---|---|---|---|
+| blue | `#1020EB` | `#270B73` | `#765DFF` | `#AC9BFF` |
+| brown | `#93592F` | `#5B2600` | `#8E4E2C` | `#E7A379` |
+| cyan | `#2AC5F2` | `#1575BE` | `#2DD1FF` | `#DAF7FF` |
+| dark_blue | `#0C3E7D` | `#042857` | `#1E65BE` | `#69ABFF` |
+| dark_green | `#0A4414` | `#003508` | `#0C821F` | `#34B94A` |
+| green | `#109616` | `#006314` | `#1FA125` | `#3EDE45` |
+| lavender | `#B671F3` | `#6F18B9` | `#DF99FF` | `#ECD5FF` |
+| light_green | `#B4F484` | `#357109` | `#9FF85F` | `#C3FF96` |
+| light_orange | `#FFA461` | `#E26C2E` | `#FFB88D` | `#FFD1B1` |
+| light_pink | `#FF97AF` | `#B02E4C` | `#FFB3A7` | `#FFF5F2` |
+| light_yellow | `#FDE372` | `#A89314` | `#EDE12C` | `#FFFDC6` |
+| lime | `#60E414` | `#2B6F00` | `#50EE1C` | `#ACF79B` |
+| magenta | `#F00DE7` | `#B20398` | `#FF36F7` | `#FFB3F6` |
+| maroon | `#73080A` | `#4B0002` | `#891518` | `#D44548` |
+| navy | `#0C1465` | `#001276` | `#197DFF` | `#C4EFFF` |
+| olive | `#936908` | `#6C4D00` | `#C8A930` | `#FFE99E` |
+| olive_green | `#63A729` | `#2B3C00` | `#6EA814` | `#C0EE98` |
+| orange | `#EC8C0F` | `#C88F25` | `#FFD896` | `#FFF0C9` |
+| orange_red | `#F35021` | `#B04009` | `#FF9B14` | `#FFF0A2` |
+| pink | `#FC547B` | `#892655` | `#FFA5C9` | `#FFEDF4` |
+| purple | `#820EE8` | `#450080` | `#811ED4` | `#E094FF` |
+| red | `#E5171B` | `#840005` | `#FF4063` | `#FF8F95` |
+| sky_blue | `#0E6FE8` | `#0036B9` | `#008BFF` | `#AEE2FF` |
+| spring_green | `#17E482` | `#006F4A` | `#69FFB8` | `#CBFFE7` |
+| teal | `#04778E` | `#004F5E` | `#10A2C3` | `#86F1FF` |
+| turquoise | `#13EDDB` | `#01707B` | `#00FFF2` | `#94FFF8` |
+| yellow | `#FDD201` | `#E98E3F` | `#FFED3D` | `#FFF9BF` |
+| yellow_green | `#A3F408` | `#527D00` | `#C8F72D` | `#E8FF70` |
 
-Dây đã hoàn thành (Completed): `#6977C2`.
+**Nền:** theme sáng `#F2EEE6`, theme tối `#1F2335`. Dây có độ tương phản với nền dưới 1,8 được vẽ thêm viền mảnh cùng tông: trên nền sáng là nấc Dark, trên nền tối là nấc Light.
 
-**Không dùng nữa:** grey (`#888888`) và white (`#D6E6E9`), vì bị chìm vào nền. Level cũ còn 2 màu này được đổi sang một màu khác khi mở (màu không trùng với dây nào ở gần).
+**Phối màu trong một level** (theo hướng dẫn phối màu: một màu chủ đạo, vài màu phụ, các màu cạnh nhau tương phản rõ): mỗi level chọn một kiểu phối trên bánh xe màu — bù nhau (2 hướng màu đối diện), bù tách đôi (1 màu và 2 màu hai bên màu đối diện) hoặc bộ ba (3 màu cách đều) — xoay tới một hướng ngẫu nhiên. Màu trong bảng nằm trong ±30° quanh mỗi hướng thuộc nhóm của hướng đó; level dùng càng nhiều màu trong các nhóm càng tốt (thường 10–20 màu), nhóm đầu tiên là màu chủ đạo và được dùng nhiều hơn một chút. Dây gần nhau hoặc cắt nhau không bao giờ trùng màu, và được ưu tiên ở hai nhóm khác nhau.
 
 ## 3.8 Level <Badge type="tip" text="Live" />
 

@@ -10,7 +10,7 @@
   "pairs": [
     {
       "id": "p1",
-      "color": "green",
+      "color": "yellow_green",
       "a": {
         "x": 363.8,
         "y": -197.4,
@@ -90,7 +90,7 @@
     },
     {
       "id": "p2",
-      "color": "orange",
+      "color": "purple",
       "a": {
         "x": -280.3,
         "y": 10.1,
@@ -158,7 +158,7 @@
     },
     {
       "id": "p3",
-      "color": "light_blue",
+      "color": "yellow",
       "a": {
         "x": -281.5,
         "y": 85.6,
@@ -226,7 +226,7 @@
     },
     {
       "id": "p4",
-      "color": "purple",
+      "color": "orange",
       "a": {
         "x": 95.8,
         "y": -337.9,
@@ -506,7 +506,7 @@
     },
     {
       "id": "p6",
-      "color": "magenta",
+      "color": "olive",
       "a": {
         "x": -115.8,
         "y": 194.9,
@@ -586,7 +586,7 @@
     },
     {
       "id": "p7",
-      "color": "red",
+      "color": "light_yellow",
       "a": {
         "x": -329.6,
         "y": 217.6,
@@ -630,7 +630,7 @@
     },
     {
       "id": "p8",
-      "color": "yellow",
+      "color": "light_green",
       "a": {
         "x": -301.5,
         "y": 121.3,
@@ -758,7 +758,7 @@
     },
     {
       "id": "p9",
-      "color": "brown",
+      "color": "lavender",
       "a": {
         "x": -196.5,
         "y": 340.1,
@@ -886,7 +886,7 @@
     },
     {
       "id": "p10",
-      "color": "gold",
+      "color": "lime",
       "a": {
         "x": 22.6,
         "y": 37.5,
@@ -1038,7 +1038,7 @@
     },
     {
       "id": "p11",
-      "color": "crimson",
+      "color": "blue",
       "a": {
         "x": 174.8,
         "y": -293.2,
@@ -1106,7 +1106,7 @@
     },
     {
       "id": "p12",
-      "color": "blue",
+      "color": "green",
       "a": {
         "x": -263.6,
         "y": 153.5,

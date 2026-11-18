@@ -1,5 +1,5 @@
 // Level file format (docs/guide/editor.md, section 1.2). Read directly by the game.
-import { PALETTE, RETIRED_COLOURS, colour } from './palette';
+import { PALETTE, colour } from './palette';
 import { Anchor, Pt, dist, samplePath } from './path';
 
 export const LEVEL_SCHEMA = 'dot-line-level';
@@ -85,11 +85,13 @@ export function parseLevel(data: unknown): Level {
 }
 
 /**
- * Gives every pair in a retired colour (white, grey) a palette colour that no line near it uses,
+ * Gives every pair in a colour that is not in the palette (white, grey, old names) a palette colour that no line near it uses,
  * preferring colours the level already has (so the number of colours stays the same).
  */
 export function retireColours(pairs: Pair[]): void {
-    const retired = new Set(RETIRED_COLOURS.map((c) => c.name));
+    // Anything that is not in the palette: retired colours and names from older palettes.
+    const inPalette = new Set(PALETTE.map((c) => c.name));
+    const retired = { has: (name: string) => !inPalette.has(name) };
     if (!pairs.some((p) => retired.has(p.color))) return;
     const GAP = 40;
     const lines = pairs.map((p) => samplePath(p.path, 8));

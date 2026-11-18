@@ -10,18 +10,21 @@ export interface Theme {
     progressFill: number;
     caption: string;
     version: string;
-    /** Palette colours too close to the background get a lighter stand-in. */
-    lineOverride: Record<string, string>;
+    /** Light board: low-contrast lines get an edge in their ramp's dark key; dark board: in its light key. */
+    dark: boolean;
 }
 
+// Boards chosen for the Voxel palette: a soft warm grey-white and a deep blue-grey. Neither is pure
+// white or black, so the light and the dark colours keep some contrast; the lines that still sink
+// get a thin edge (Game.lineEdge).
 const THEMES: Record<'light' | 'dark', Theme> = {
     light: {
-        background: '#fbfaf3', shadow: 0x3a2f20, shadowAlpha: [0.07, 0.12], progressTrack: 0xe5e2da, progressFill: 0xf6a26b,
-        caption: '#8a5a2b', version: '#b5b0a5', lineOverride: {}
+        background: '#F2EEE6', shadow: 0x3a2f20, shadowAlpha: [0.08, 0.14], progressTrack: 0xe0dbd0, progressFill: 0xf6a26b,
+        caption: '#8a5a2b', version: '#aaa395', dark: false
     },
     dark: {
-        background: '#171a24', shadow: 0x000000, shadowAlpha: [0.22, 0.38], progressTrack: 0x2c3142, progressFill: 0xf6a26b,
-        caption: '#f3c98b', version: '#5c6275', lineOverride: { black: '#7B83AA' }
+        background: '#1F2335', shadow: 0x000000, shadowAlpha: [0.24, 0.4], progressTrack: 0x323850, progressFill: 0xf6a26b,
+        caption: '#f3c98b', version: '#5c6275', dark: true
     }
 };
 

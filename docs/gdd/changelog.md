@@ -5,6 +5,8 @@ Every published version stays playable at its own URL. The [landing page](https:
 ## latest (main) <Badge type="tip" text="Live" />
 
 - **Well Done screen:** no faded picture behind it any more (the board stays empty).
+- **New colours:** dots and lines use the 28 colours of the Voxel materials (with their shading ramps for the dots' rim and gloss); new board colours for the light and dark themes; lines that would sink into the board get a thin edge in their own tone. Each level in the game is coloured with one colour scheme (complementary, split-complementary or triadic), as many of its colours as possible, near lines in different colours.
+- **Pinch-to-zoom tutorial on level 3** (Pumpkin): it ends after the first zoom.
 - **Level 2 (bump tutorial):** the first bump is free; a message says the next one costs a heart. Caption: "Blocked dots bounce back".
 - **More colours, no white or grey:** the levels in the game (chapter 1 levels 1–2, chapter 5) were recoloured: up to 14 colours per level, near lines never share a colour.
 - **Play order (playlist):** the game plays level 1–2 of chapter 1 (with their tutorials), then chapter 5 from its level 1 (30 levels). Set in `src/game/playlist.ts`; the dev menu lists the playlist first, then every other level.

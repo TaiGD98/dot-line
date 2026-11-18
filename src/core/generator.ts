@@ -493,17 +493,69 @@ export function nearPairs(pairs: Pair[], gap = NEAR_LINES): [number, number][] {
     return out;
 }
 
+/** Hue (0..360), lightness and saturation (0..1) of a #RRGGBB colour. */
+function hsl(hex: string) {
+    const r = parseInt(hex.slice(1, 3), 16) / 255, g = parseInt(hex.slice(3, 5), 16) / 255, b = parseInt(hex.slice(5, 7), 16) / 255;
+    const max = Math.max(r, g, b), min = Math.min(r, g, b), l = (max + min) / 2, d = max - min;
+    if (!d) return { h: 0, l, s: 0 };
+    const s = d / (1 - Math.abs(2 * l - 1));
+    const h = max === r ? ((g - b) / d + 6) % 6 : max === g ? (b - r) / d + 2 : (r - g) / d + 4;
+    return { h: h * 60, l, s };
+}
+const hueGap = (a: number, b: number) => { const d = Math.abs(a - b) % 360; return Math.min(d, 360 - d); };
+
+/** Colour schemes of the level colour guide: hues spread around the colour wheel. */
+export const COLOUR_SCHEMES = {
+    complementary: [0, 180],
+    split: [0, 150, 210],
+    triadic: [0, 120, 240]
+} as const;
+export type ColourScheme = keyof typeof COLOUR_SCHEMES;
+
+/**
+ * The colours of one level, after the colour guide: a scheme (complementary, split-complementary or
+ * triadic) turned to a random hue; every palette colour close to one of its hues (within 30°)
+ * belongs to that hue's group. The first group is the dominant colour. Up to `max` colours, taken
+ * from all groups in turn, closest to their hue first.
+ */
+export function levelColours(max: number, rand: () => number, scheme?: ColourScheme) {
+    const pick: ColourScheme = scheme ?? (['split', 'triadic', 'split', 'triadic', 'complementary'] as const)[Math.floor(rand() * 5)];
+    const turn = rand() * 360;
+    const hues = COLOUR_SCHEMES[pick].map((d) => (turn + d) % 360);
+    const all = PALETTE.map((c) => {
+        const { h } = hsl(c.base);
+        const gaps = hues.map((x) => hueGap(h, x));
+        const group = gaps.indexOf(Math.min(...gaps));
+        return { name: c.name, group, gap: gaps[group] };
+    });
+    const groups = hues.map((_, i) => all.filter((c) => c.group === i && c.gap <= 30).sort((a, b) => a.gap - b.gap));
+    // Always a few colours per group, even when the scheme lands between palette hues.
+    groups.forEach((g, i) => { if (g.length < 2) g.push(...all.filter((c) => c.group === i && !g.includes(c)).sort((a, b) => a.gap - b.gap).slice(0, 2 - g.length)); });
+    const size = groups.reduce((n, g) => n + g.length, 0);
+    const k = Math.max(1, Math.min(Math.round(max), size));
+    const names: string[] = [], group = new Map<string, number>();
+    for (let round = 0; names.length < k; round++)
+        for (let i = 0; i < groups.length && names.length < k; i++) {
+            const c = groups[i][round];
+            if (c) { names.push(c.name); group.set(c.name, i); }
+        }
+    return { scheme: pick, hues, names, group };
+}
+
 /**
  * Colours the pairs so that lines near each other never share a colour: lines that touch, cross or
- * run close together (neighbours along a stroke included). Most constrained line first; colours
- * are used evenly. Returns how many near pairs still share a colour (only with too few colours).
+ * run close together (neighbours along a stroke included). The colours come from one colour scheme
+ * (levelColours); near lines also prefer different hue groups (strong contrast), and the dominant
+ * group is used a little more. Most constrained line first. Returns how many near pairs still share
+ * a colour (only with too few colours).
  */
 export function colourPairs(pairs: Pair[], m: number, rand: () => number): number {
     const k = Math.max(1, Math.min(PALETTE.length, Math.round(m), pairs.length));
-    const names = PALETTE.map((c) => c.name).sort(() => rand() - 0.5).slice(0, k);
+    const { names, group } = levelColours(k, rand);
     const adj: number[][] = pairs.map(() => []);
     for (const [i, j] of nearPairs(pairs)) { adj[i].push(j); adj[j].push(i); }
     const used = new Map<string, number>(names.map((n) => [n, 0]));
+    const weight = (n: string) => (group.get(n) === 0 ? 1.5 : 1);
     const colour: (string | null)[] = pairs.map(() => null);
     const tie = pairs.map(() => rand());
     let clashes = 0;
@@ -520,7 +572,10 @@ export function colourPairs(pairs: Pair[], m: number, rand: () => number): numbe
         const count = (n: string) => around.filter((c) => c === n).length;
         const pool = free.length ? free : names.filter((n) => count(n) === Math.min(...names.map(count)));
         if (!free.length) clashes += count(pool[0]);
-        pool.sort((a, b) => used.get(a)! - used.get(b)! || rand() - 0.5);
+        // Balanced use (dominant group a little more), and a different hue group from the neighbours.
+        const sameGroup = (n: string) => around.filter((c) => group.get(c) === group.get(n)).length;
+        const score = new Map(pool.map((n) => [n, used.get(n)! / weight(n) + 0.6 * sameGroup(n) + rand() * 0.3]));
+        pool.sort((a, b) => score.get(a)! - score.get(b)!);
         colour[best] = pool[0];
         used.set(pool[0], used.get(pool[0])! + 1);
     }

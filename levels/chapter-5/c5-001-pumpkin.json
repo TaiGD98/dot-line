@@ -6,11 +6,12 @@
   "status": "WIP",
   "difficulty": 4,
   "category": "normal",
+  "tutorial": "zoom",
   "rev": 2,
   "pairs": [
     {
       "id": "p1",
-      "color": "blue",
+      "color": "navy",
       "a": {
         "x": 44.1,
         "y": -582.1,
@@ -174,7 +175,7 @@
     },
     {
       "id": "p2",
-      "color": "gold",
+      "color": "red",
       "a": {
         "x": 8,
         "y": -522.4,
@@ -722,7 +723,7 @@
     },
     {
       "id": "p3",
-      "color": "black",
+      "color": "cyan",
       "a": {
         "x": -5.4,
         "y": -453.8,
@@ -970,7 +971,7 @@
     },
     {
       "id": "p4",
-      "color": "crimson",
+      "color": "spring_green",
       "a": {
         "x": -5.4,
         "y": -490.6,
@@ -1086,7 +1087,7 @@
     },
     {
       "id": "p5",
-      "color": "dark_green",
+      "color": "pink",
       "a": {
         "x": -120.5,
         "y": -373.4,
@@ -1490,7 +1491,7 @@
     },
     {
       "id": "p6",
-      "color": "light_blue",
+      "color": "turquoise",
       "a": {
         "x": 111.8,
         "y": -373.4,
@@ -1870,7 +1871,7 @@
     },
     {
       "id": "p7",
-      "color": "purple",
+      "color": "orange_red",
       "a": {
         "x": 64.5,
         "y": -328.4,
@@ -1950,7 +1951,7 @@
     },
     {
       "id": "p8",
-      "color": "purple",
+      "color": "dark_blue",
       "a": {
         "x": -179.1,
         "y": -340.8,
@@ -2030,7 +2031,7 @@
     },
     {
       "id": "p9",
-      "color": "dark_green",
+      "color": "orange",
       "a": {
         "x": -0.5,
         "y": -315.1,
@@ -2146,7 +2147,7 @@
     },
     {
       "id": "p10",
-      "color": "pink",
+      "color": "navy",
       "a": {
         "x": -135.9,
         "y": -72.2,
@@ -2430,7 +2431,7 @@
     },
     {
       "id": "p11",
-      "color": "green",
+      "color": "dark_green",
       "a": {
         "x": 365.9,
         "y": -16.8,
@@ -2762,7 +2763,7 @@
     },
     {
       "id": "p12",
-      "color": "brown",
+      "color": "dark_blue",
       "a": {
         "x": -216.3,
         "y": -103.4,
@@ -2878,7 +2879,7 @@
     },
     {
       "id": "p13",
-      "color": "magenta",
+      "color": "maroon",
       "a": {
         "x": -244.4,
         "y": -76.1,
@@ -3186,7 +3187,7 @@
     },
     {
       "id": "p15",
-      "color": "blue",
+      "color": "teal",
       "a": {
         "x": 194.3,
         "y": -80.3,
@@ -3302,7 +3303,7 @@
     },
     {
       "id": "p16",
-      "color": "light_blue",
+      "color": "brown",
       "a": {
         "x": -22.8,
         "y": -23.9,
@@ -3346,7 +3347,7 @@
     },
     {
       "id": "p17",
-      "color": "black",
+      "color": "turquoise",
       "a": {
         "x": -35.4,
         "y": 82.5,
@@ -3414,7 +3415,7 @@
     },
     {
       "id": "p18",
-      "color": "crimson",
+      "color": "light_orange",
       "a": {
         "x": 236.9,
         "y": -91.1,
@@ -3578,7 +3579,7 @@
     },
     {
       "id": "p19",
-      "color": "orange",
+      "color": "brown",
       "a": {
         "x": 155.2,
         "y": -10.9,
@@ -3886,7 +3887,7 @@
     },
     {
       "id": "p20",
-      "color": "yellow",
+      "color": "teal",
       "a": {
         "x": -256.5,
         "y": 7.4,
@@ -3942,7 +3943,7 @@
     },
     {
       "id": "p21",
-      "color": "orange",
+      "color": "blue",
       "a": {
         "x": 44.5,
         "y": 80.3,
@@ -4022,7 +4023,7 @@
     },
     {
       "id": "p22",
-      "color": "brown",
+      "color": "dark_green",
       "a": {
         "x": 420.1,
         "y": 308.3,
@@ -4258,7 +4259,7 @@
     },
     {
       "id": "p23",
-      "color": "red",
+      "color": "blue",
       "a": {
         "x": -205.1,
         "y": 379.8,
@@ -4806,7 +4807,7 @@
     },
     {
       "id": "p24",
-      "color": "pink",
+      "color": "light_pink",
       "a": {
         "x": -163.8,
         "y": 464.5,
@@ -5342,7 +5343,7 @@
     },
     {
       "id": "p25",
-      "color": "magenta",
+      "color": "sky_blue",
       "a": {
         "x": -216.9,
         "y": 442.3,

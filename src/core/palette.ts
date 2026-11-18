@@ -19,18 +19,25 @@ export const PALETTE: PaletteColour[] = [
     { name: 'orange', base: '#FF772D', gradient: '#FFA754', inner: '#FFC079' },
     { name: 'pink', base: '#FF80C4', gradient: '#FFACAC', inner: '#FFC0C0' },
     { name: 'brown', base: '#AC6F6D', gradient: '#E67775', inner: '#FF8C8A' },
-    { name: 'grey', base: '#888888', gradient: '#CFC9BC', inner: '#E4E0D9' },
     { name: 'dark_green', base: '#008D7F', gradient: '#00D2BD', inner: '#00F3D7' },
     { name: 'red', base: '#FA3E3E', gradient: '#FA692B', inner: '#FB904D' },
     { name: 'gold', base: '#D3BB7F', gradient: '#FFEC83', inner: '#FFF7AF' },
-    { name: 'white', base: '#D6E6E9', gradient: '#FFFFFF', inner: '#FFFFFF' },
     { name: 'black', base: '#494E68', gradient: '#5C658F', inner: '#7B83AA' }
 ];
 
 /** Line colour once a pair is cleared. */
 export const COMPLETED_LINE = '#6977C2';
 
-const byName = new Map(PALETTE.map((c) => [c.name, c]));
+/**
+ * Colours no longer used: they sink into the background. Levels that still have them get another
+ * colour when they are loaded (retireColours in level.ts).
+ */
+export const RETIRED_COLOURS: PaletteColour[] = [
+    { name: 'grey', base: '#888888', gradient: '#CFC9BC', inner: '#E4E0D9' },
+    { name: 'white', base: '#D6E6E9', gradient: '#FFFFFF', inner: '#FFFFFF' }
+];
+
+const byName = new Map([...PALETTE, ...RETIRED_COLOURS].map((c) => [c.name, c]));
 
 export function colour(name: string): PaletteColour | undefined {
     return byName.get(name);

@@ -1,6 +1,6 @@
 // Turns a generator input file into strokes: traced line art (PNG/JPG) or an SVG drawing.
 import type { Stroke } from '../core/trace';
-import { chains, maskFromRGBA, strokesFromChains, thin } from '../core/trace';
+import { traceImage } from '../core/trace';
 import type { Pt } from '../core/path';
 
 export interface SourceStrokes {
@@ -26,7 +26,7 @@ async function imageStrokes(blob: Blob): Promise<SourceStrokes> {
     ctx.fillStyle = '#fff';
     ctx.fillRect(0, 0, w, h);
     ctx.drawImage(bmp, 0, 0, w, h);
-    const strokes = strokesFromChains(chains(thin(maskFromRGBA(ctx.getImageData(0, 0, w, h).data, w, h)), 8));
+    const strokes = traceImage(ctx.getImageData(0, 0, w, h).data, w, h);
     return { strokes, width: w, height: h };
 }
 
@@ -51,7 +51,9 @@ function svgStrokes(text: string): SourceStrokes {
         for (const el of svg.querySelectorAll<SVGGeometryElement>('path, line, polyline, polygon, rect, circle, ellipse')) {
             const total = el.getTotalLength();
             if (!(total > 0)) continue;
-            const step = Math.max(0.5, total / 1500);
+            // About 400 samples across the drawing's long side are plenty (lines are smoothed and
+            // resampled later); more only makes big files slow to read.
+            const step = Math.max(total / 1500, Math.max(w, hgt) / 400);
             const m = el.getCTM();
             let cur: Pt[] = [];
             let prev: Pt | null = null;

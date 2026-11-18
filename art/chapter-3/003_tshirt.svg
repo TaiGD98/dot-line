@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" width="400" height="400" fill="none" stroke="#222" stroke-width="5" stroke-linecap="round" stroke-linejoin="round">
+  <!-- Chapter 2 · level 3 · T-shirt · tutorial -->
+  <polyline points="130 60 40 110 80 190 120 165 120 370 280 370 280 165 320 190 360 110 270 60"/>
+  <path d="M270 60 C270 84.9 238.7 105 200 105 C161.3 105 130 84.9 130 60"/>
+  <rect x="220" y="150" width="40" height="45"/>
+</svg>

@@ -69,11 +69,63 @@ Bắt buộc: `schema`, `version`, `id`, `name`, `pairs` (mỗi cặp: `id`, `co
 - Hai hạt chồng lên nhau ngay từ đầu.
 - Màu không nằm trong bảng màu.
 - **Level không giải được:** không có thứ tự gỡ nào dọn sạch board.
+- Hạt nhỏ hơn mức nhỏ nhất (bán kính 11).
+- (Thông tin) **Cỡ hạt không đồng nhất:** một level chỉ có một cỡ hạt thường; chỉ bóng bự (to hơn hạt thường từ 1.15 lần) mới khác cỡ. Check liệt kê các cặp có hạt lệch cỡ.
 - (Thông tin) Những cặp đã có đường thông ngay từ đầu.
 
 ## 2. Tạo level
 
-### 2.1 Generate từ hình vẽ (generator v2)
+### 2.1 Generate từ hình vẽ: 2 phần độc lập
+
+Khung **Generate from a drawing** có 2 phần, mỗi phần một nút riêng. Hai phần **không ảnh hưởng nhau**: phần 1 chỉ thay các dây nền (base), phần 2 chỉ thay các dây cross (X/T). Bấm lại phần nào thì chỉ phần đó đổi.
+
+| Phần | Tham số | Kết quả |
+|---|---|---|
+| **1 · Fill the lines** | Pairs, Colours, Target difficulty | Các cặp chỉ nằm trên **nét của hình input** (dây nền). Các dây **gần nhau không trùng màu** (chạm, cắt, hoặc cách nhau dưới 40 px). |
+| **2 · Overlap pattern** | X cross, T cross (và kiểu hoa văn) | Các **dây cross** vẽ đè lên hình như hoa văn. Không bao giờ dời hay cắt dây nền. |
+
+**Tổng số dây của level = Pairs + X + T** (dòng "Target lines" trong khung hiện tổng này và số đang có). Kích thước hình khi generate tăng theo tổng số dây để hoa văn có chỗ.
+
+**Phần 2: luật của dây cross**
+
+- **X cross:** cắt qua ít nhất một dây khác, **cả 2 hạt nằm ở vùng trống**. Không chặn ai.
+- **T cross:** **một hạt nằm trên dây của cặp khác** (chặn dây đó), hạt còn lại ở vùng trống.
+- Không có dây cross nào mà cả 2 hạt đều nằm trên dây của cặp khác.
+- Các dây **cắt nhau hoặc chạm nhau không bao giờ cùng màu**; dây đối xứng nhau thì cùng màu khi được.
+- Dây cross được phép cắt hoặc đậu lên dây cross khác (T đậu trên T = chặn sâu hơn; mức này tăng theo Target difficulty).
+- Hai mục đích: **làm level khó hơn** (T) và **làm hình sinh động hơn** (X) mà **vẫn giữ shape gốc**. Kết quả phải như tô hoa văn cho tranh, không phải nét nguệch ngoạc: một kiểu nét lặp lại theo nhịp đều, đối xứng gương khi hình đối xứng.
+- Level luôn giải được: dây cross chỉ bị chặn bởi dây cross đậu trên nó.
+
+**Kiểu hoa văn (Pattern):** Auto (đưa ra vài kiểu để chọn), Fringe (nét ngắn vuông góc, cách đều dọc theo nét), Rays (nét hướng về tâm hình), Stripes (sọc ngang), Columns (sọc dọc), Diagonal (sọc chéo đối xứng). Nét có thể thẳng, cong nhẹ, móc câu hoặc lượn sóng.
+
+**Clear overlap** xoá mọi dây X/T. Trong Inspector, mục **Line type** cho đổi một dây vẽ tay thành Base / X cross / T cross (dây X/T sẽ bị thay khi bấm Generate overlap). Level checks báo: dây cắt nhau trùng màu, dây cross có cả 2 hạt trên dây khác, và số dây base + X + T.
+
+Nếu hoa văn không đủ chỗ cho số dây yêu cầu, editor báo "Placed N of M": giảm số dây, đổi kiểu hoa văn, hoặc tăng Pairs/X/T rồi Generate lines lại để hình to hơn. Nếu Generate lines lại khi đang có overlap, các dây overlap được giữ nguyên; editor báo nếu chúng không còn khớp với dây nền mới.
+
+#### Phần 1: chế độ Strokes (mặc định)
+
+Ô **Mode** có 2 chế độ:
+
+- **Strokes** (mới, mặc định): **mỗi nét của hình = một dây**, giữ nguyên hình. Đầu nét chạm nét khác thì thành hạt nằm **trên** nét đó (chặn nó); đầu nét ở chỗ trống là hạt tự do; hai đầu nét chạm nhau thì một đầu lùi lại cho 2 hạt nằm cạnh nhau. Chỉ nét kín hoặc rất dài (quá 1.7 lần cạnh hình) mới bị chia, và chỗ chia được chọn xa các giao điểm. Sau đó editor bỏ vòng chặn (lùi đầu dây rẻ nhất; hai dây chạy song song sát nhau thì bỏ dây ngắn hơn), rồi kéo nhẹ đầu tự do lên một dây ở phía trước nó để đạt mục tiêu: khoảng 1/3 dây mở từ đầu, ~1.3 lần chặn mỗi dây (theo Target difficulty). Số dây do hình quyết định; thiếu bao nhiêu so với Pairs thì thêm bằng phần 2.
+- **Cut contours** (cũ, generator v2): cắt các nét dài thành nhiều cặp nối tiếp.
+
+**Dây mượt, không gấp khúc:** nét lấy từ ảnh được làm mượt (bỏ răng cưa pixel và các bậc nhỏ ở giao điểm), mọi góc nhọn được bo tròn (bán kính khoảng 12 px), và đường Bezier của dây liên tục hướng ở mọi điểm neo. Đầu dây nối lên dây khác theo một cung tròn đi tiếp đúng hướng của nét, nên không có móc ở đầu dây; nét thò một đoạn ngắn qua dây khác thì được cắt ngay tại chỗ giao.
+
+**Cỡ hạt (ô Dot size):** mọi dây dày như nhau (5.1 px) và **mọi hạt thường của level có cùng một bán kính**, đặt ở ô **Dot size** (mặc định 16, nhỏ nhất 11). Hạt không tự thu nhỏ để vừa chỗ chật: khi hình có nét quá ngắn cho cỡ hạt này, editor **làm board to hơn** (×1.2 hoặc ×1.45, chỉ khi rõ ràng cần) thay vì làm hạt nhỏ đi; ghi chú dưới nút cho biết kích thước board đã dùng. Nét vẫn quá ngắn thì bị bỏ và được đếm trong ghi chú ("left out"). Muốn hạt to hoặc nhỏ hơn so với hình thì đổi Dot size rồi Generate lại. Cut contours và Generate overlap cũng dùng cỡ hạt này.
+
+**Bóng bự (ô Big dots, chỉ ở chế độ Strokes):** chi tiết **tròn hoặc gần tròn, kín, nhỏ** của hình (mắt, mũi, nút áo, quả châu) không thành dây mà thành một **bóng bự** đặt ngay tại đó. Quy tắc:
+
+- Chi tiết được tính khi bán kính của nó không quá 2.8 lần hạt thường; lớn hơn thì vẫn là dây vòng. Vòng có hình khác nằm bên trong (mặt đồng hồ) không tính; chi tiết nằm trong chi tiết lớn hơn (con ngươi trong mắt) gộp làm một; hai chi tiết quá sát nhau (hai lỗ mũi) gộp thành một bóng.
+- Bán kính bóng bự bằng bán kính chi tiết, ít nhất 1.5 lần hạt thường (chỗ chật thì xuống tới 1.15 lần).
+- **Có dây nối trong hình:** nét nào kết thúc tại chi tiết, hoặc chi tiết nằm dính trên một nét (quả châu treo trên cành), thì nét đó là dây của bóng bự: một đầu là bóng bự, đầu kia là hạt thường. Nét bị chia tại chỗ chi tiết dính vào; phần dài hơn mang bóng bự.
+- **Không có dây nối:** hai chi tiết thành **một cặp** (bóng bự + bóng bự) nối bằng một dây thẳng. Ưu tiên ghép hai chi tiết cùng cỡ nằm ngang hàng (hai mắt).
+- Chi tiết lẻ, không có gì để ghép: nối bằng một dây thẳng tới dây gần nhất (đầu kia là hạt thường nằm trên dây đó).
+- Đầu các dây khác nằm sát bóng bự bị lùi lại cho hạt nằm cạnh bóng bự.
+- Trong ảnh PNG, chỗ mực dày không phải hình tròn (chỗ nhiều nét gặp nhau, đầu nét cọ to) không bị nhận nhầm thành bóng bự.
+
+**Hình input tốt nhất cho chế độ Strokes:** SVG, mỗi nét một `<path>`; khoảng 2/3 đầu nét dừng **đúng trên** một nét khác (khoảng 20–40% chiều dài nét đó), còn lại dừng ở chỗ trống; ít khi hai đầu nét chạm nhau; hình kín vẽ bằng 2–4 nét chồng nhau; không có hai nét chạy song song sát nhau (gần hơn 2 đường kính hạt); mắt, mũi, nút vẽ thành hình tròn kín nhỏ để thành bóng bự; khung dọc (cao ≈ 1.3 × rộng). Tiêu chí đầy đủ: `research/image_requirement.md`.
+
+#### Phần 1: chế độ Cut contours (generator v2)
 
 **Đầu vào:** ảnh line art (PNG/JPG, nét tối trên nền sáng) hoặc **file SVG** (khuyên dùng: nét chính xác, giữ góc nhọn). Với SVG, mỗi `path`, `line`, `polyline`, `polygon`, `rect`, `circle`, `ellipse` là một nét; nét kết thúc đúng trên một nét khác tạo thành chỗ chữ T.
 
@@ -83,7 +135,7 @@ Bắt buộc: `schema`, `version`, `id`, `name`, `pairs` (mỗi cặp: `id`, `co
 2. **Chữ X không chặn.** Dây cắt chéo nhau thoải mái, chỉ để đánh lạc hướng.
 3. **Nét dài và vòng kín được cắt thành nhiều cặp**, ưu tiên cắt ở góc gấp. Ở chỗ cắt có 2 hạt nằm sát nhau. Vòng kín cắt 1 lần là một cặp có 2 hạt chạm nhau, hạt phải chạy trọn vòng.
 4. **Nét ngắn đứng riêng** (dưới ~170 đơn vị) thành cặp điểm nhấn có hạt to.
-5. **Màu:** hạt nằm gần nhau của các cặp khác nhau tránh trùng màu, trong giới hạn M màu.
+5. **Màu:** các dây gần nhau (chạm, cắt, hoặc cách nhau dưới 40 px) không trùng màu, trong giới hạn M màu; dây bị ràng buộc nhiều nhất được tô trước, các màu dùng đều nhau.
 
 **Cách chạy:** ảnh được dò thành đồ thị nét (giữ chỗ nối, nối các đoạn đi thẳng qua chỗ giao thành một nét), rồi editor tạo 24 phương án ngẫu nhiên. Mỗi phương án được sửa cho **luôn giải được**: hạt đè nhau thì lùi lại; vòng chặn thì ưu tiên **dời điểm cắt** dọc nét (giữ hình liền), sau đó thu nhỏ hạt, rồi rút ngắn dây một chút. Nếu vẫn kẹt (hình nhỏ mà số cặp quá cao), cặp bị kẹt được **gộp với cặp liền kề trên cùng nét** (bỏ một điểm cắt): ít cặp hơn số yêu cầu nhưng hình luôn còn nguyên nét. Số cặp đã gộp được báo dưới nút Generate. Các phương án được chấm điểm theo độ khó mục tiêu; editor hiện **3 phương án tốt nhất** để chọn, rồi bạn chỉnh tay.
 
@@ -112,23 +164,27 @@ Bắt buộc: `schema`, `version`, `id`, `name`, `pairs` (mỗi cặp: `id`, `co
 ## 3. Lưu dữ liệu và quản lý level
 
 - Nơi lưu: **folder trên máy** (File System Access API, chỉ Chrome/Edge) hoặc **Browser storage** để thử.
-- **Sửa level của game:** chọn chính folder project `dot-line` làm folder lưu. Game đọc `levels/*.json` và chơi theo thứ tự collection đầu tiên trong `collections.json` (bộ "Intro"), nên mọi lần Save trong editor là game thấy ngay (dev server tự tải lại). Lịch sử version (`levels/.versions/`) và bản nháp (`drafts/`) không được commit.
+- **Chapter:** mỗi folder trong `levels/` là một chapter riêng (level, lịch sử và collection riêng). Chọn chapter ở ô **Chapter** trên danh sách level; nút **+** bên cạnh tạo chapter mới (folder được tạo khi Save level đầu tiên). Organiser chỉ sắp level của chapter đang mở.
+- **Sửa level của game:** chọn chính folder project `dot-line` làm folder lưu. Game chơi các chapter theo thứ tự tên folder (`chapter-1`, `chapter-2`...); trong mỗi chapter theo collection đầu tiên trong `levels/<chapter>/collections.json`. Mọi lần Save trong editor là game thấy ngay (dev server tự tải lại). Lịch sử version (`.versions/`) và bản nháp (`drafts/`) không được commit.
+- Project cũ để level thẳng trong `levels/` (và `collections.json` ở gốc) vẫn mở được, hiện là chapter "levels/ (no chapter)".
 - Mỗi level giữ **3 bản cũ gần nhất**; có bản nháp tự lưu.
 - Cấu trúc folder:
 
 ```
 <folder gốc>/
-  levels/<id>.json                level
-  levels/<id>.png                 ảnh gốc dùng để generate (nếu có)
-  levels/.versions/<id>/          3 version gần nhất
-  drafts/current.json             bản nháp tự lưu
-  collections.json                danh sách collection
-  collections/<Tên>/NNN_<id>.json bản copy theo thứ tự chơi
+  levels/<chapter>/                     một folder = một chapter
+    <id>.json                           level
+    <id>.png | <id>.svg                 ảnh gốc dùng để generate (nếu có)
+    .versions/<id>/                     3 version gần nhất
+    collections.json                    danh sách collection của chapter
+    collections/<Tên>/NNN_<id>.json     bản copy theo thứ tự chơi
+  drafts/current.json                   bản nháp tự lưu (nhớ cả chapter)
 ```
 
 - Import không bao giờ ghi đè: trùng id thì đặt id mới (`-2`, `-3`...). Xoá có hỏi xác nhận. Đổi id thì file, lịch sử và collection chứa level đổi theo; id trống hoặc đã tồn tại bị từ chối.
 - Thông tin mỗi level: **Name, Id, Status** (WIP / PROD / ARCHIVE), **Difficulty, Category**.
 - Tab **Organiser**: sắp level thành collection theo thứ tự chơi, có hộp thoại Add levels (Add all levels / Add selected levels, ô tìm kiếm, "N of M selected").
+- **Level nào vào game, theo thứ tự nào:** file `src/game/playlist.ts`. Mỗi dòng là `chapter/id` (một level) hoặc `chapter/*` (cả chapter theo thứ tự collection đầu tiên của nó, rồi các level còn lại theo id). Số LEVEL trong game là vị trí trong danh sách này. Hiện tại: level 1–2 của chapter 1 (có tutorial), rồi chapter 5. Danh sách rỗng thì game chơi mọi chapter theo thứ tự tên folder.
 
 ## 4. Kiểm tra level (mức C)
 

@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" width="400" height="400" fill="none" stroke="#222" stroke-width="5" stroke-linecap="round" stroke-linejoin="round">
+  <!-- Chapter 2 · level 83 · Dragonfly · normal -->
+  <line x1="200" y1="110" x2="200" y2="380"/>
+  <circle cx="200" cy="85" r="25"/>
+  <ellipse cx="110" cy="150" rx="90" ry="30"/>
+  <ellipse cx="290" cy="150" rx="90" ry="30"/>
+  <ellipse cx="120" cy="210" rx="80" ry="25"/>
+  <ellipse cx="280" cy="210" rx="80" ry="25"/>
+  <circle cx="190" cy="80" r="6"/>
+  <circle cx="210" cy="80" r="6"/>
+</svg>

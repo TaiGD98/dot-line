@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" width="400" height="400" fill="none" stroke="#222" stroke-width="5" stroke-linecap="round" stroke-linejoin="round">
+  <!-- Chapter 2 · level 38 · Bird · normal -->
+  <ellipse cx="200" cy="220" rx="110" ry="70"/>
+  <circle cx="290" cy="150" r="45"/>
+  <polygon points="330 145 375 155 330 165"/>
+  <circle cx="300" cy="140" r="8"/>
+  <path d="M140 210 C170 170 230 170 250 230"/>
+  <polyline points="95 210 30 180 40 240 95 230"/>
+  <line x1="20" y1="330" x2="380" y2="330"/>
+  <line x1="190" y1="290" x2="180" y2="330"/>
+  <line x1="230" y1="290" x2="240" y2="330"/>
+</svg>

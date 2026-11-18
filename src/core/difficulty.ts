@@ -6,9 +6,9 @@ import { solve } from './solver';
 
 export const DIFFICULTY = {
     /** Pairs: more pairs = more to read and plan. Normalised over [min, max]. */
-    pairs: { weight: 0.3, min: 3, max: 45 },
+    pairs: { weight: 0.3, min: 3, max: 100 },
     /** Blocking depth: rounds needed when every open pair is cleared each round. */
-    depth: { weight: 0.3, min: 1, max: 6 },
+    depth: { weight: 0.3, min: 1, max: 12 },
     /** Trap share: share of dots that would bump something if tapped at the start; full marks at `max`. */
     traps: { weight: 0.3, min: 0, max: 0.6 },
     /** Colours: more colours make pairs harder to read. */

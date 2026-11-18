@@ -1,0 +1,1915 @@
+{
+  "generated": "2026-11-18",
+  "chapter": "chapter-3",
+  "levels": [
+    {
+      "level": 1,
+      "tier": "tutorial",
+      "lines": 3,
+      "depth": 1,
+      "open": 1,
+      "colours": 3,
+      "art": "heart",
+      "tutorial": "tap",
+      "id": "c3-001-heart",
+      "built": {
+        "lines": 3,
+        "depth": 1,
+        "open": 1,
+        "blocksPerLine": 0,
+        "colours": 3,
+        "score": 1
+      },
+      "warnings": []
+    },
+    {
+      "level": 2,
+      "tier": "tutorial",
+      "lines": 4,
+      "depth": 2,
+      "open": 0.5,
+      "colours": 4,
+      "art": "pear",
+      "tutorial": "collision",
+      "id": "c3-002-pear",
+      "built": {
+        "lines": 4,
+        "depth": 3,
+        "open": 0.5,
+        "blocksPerLine": 0,
+        "colours": 4,
+        "score": 33
+      },
+      "warnings": []
+    },
+    {
+      "level": 3,
+      "tier": "tutorial",
+      "lines": 6,
+      "depth": 3,
+      "open": 0.5,
+      "colours": 6,
+      "art": "tshirt",
+      "id": "c3-003-tshirt",
+      "built": {
+        "lines": 6,
+        "depth": 3,
+        "open": 0.5,
+        "blocksPerLine": 0.67,
+        "colours": 6,
+        "score": 35
+      },
+      "warnings": []
+    },
+    {
+      "level": 4,
+      "tier": "normal",
+      "lines": 12,
+      "depth": 4,
+      "open": 0.14136286848283985,
+      "colours": 11,
+      "art": "kite",
+      "id": "c3-004-kite",
+      "built": {
+        "lines": 12,
+        "depth": 5,
+        "open": 0.17,
+        "blocksPerLine": 1.33,
+        "colours": 11,
+        "score": 53
+      },
+      "warnings": []
+    },
+    {
+      "level": 5,
+      "tier": "normal",
+      "lines": 17,
+      "depth": 6,
+      "open": 0.21610463763851395,
+      "colours": 10,
+      "art": "star",
+      "id": "c3-005-star",
+      "built": {
+        "lines": 17,
+        "depth": 6,
+        "open": 0.24,
+        "blocksPerLine": 1.06,
+        "colours": 10,
+        "score": 56
+      },
+      "warnings": []
+    },
+    {
+      "level": 6,
+      "tier": "normal",
+      "lines": 20,
+      "depth": 10,
+      "open": 0.2007067356719806,
+      "colours": 10,
+      "art": "cupcake",
+      "id": "c3-006-cupcake",
+      "built": {
+        "lines": 20,
+        "depth": 9,
+        "open": 0.15,
+        "blocksPerLine": 1.35,
+        "colours": 10,
+        "score": 65
+      },
+      "warnings": []
+    },
+    {
+      "level": 7,
+      "tier": "normal",
+      "lines": 16,
+      "depth": 5,
+      "open": 0.13051748166022545,
+      "colours": 9,
+      "art": "pencil_cup",
+      "id": "c3-007-pencil-cup",
+      "built": {
+        "lines": 16,
+        "depth": 6,
+        "open": 0.19,
+        "blocksPerLine": 1.44,
+        "colours": 9,
+        "score": 55
+      },
+      "warnings": []
+    },
+    {
+      "level": 8,
+      "tier": "normal",
+      "lines": 17,
+      "depth": 10,
+      "open": 0.2525800164125344,
+      "colours": 9,
+      "art": "tractor",
+      "id": "c3-008-tractor",
+      "built": {
+        "lines": 17,
+        "depth": 9,
+        "open": 0.24,
+        "blocksPerLine": 1.24,
+        "colours": 9,
+        "score": 63
+      },
+      "warnings": []
+    },
+    {
+      "level": 9,
+      "tier": "normal",
+      "lines": 21,
+      "depth": 10,
+      "open": 0.144328417379756,
+      "colours": 10,
+      "art": "tv",
+      "id": "c3-009-tv",
+      "built": {
+        "lines": 21,
+        "depth": 9,
+        "open": 0.33,
+        "blocksPerLine": 0.81,
+        "colours": 10,
+        "score": 65
+      },
+      "warnings": []
+    },
+    {
+      "level": 10,
+      "tier": "hard",
+      "lines": 53,
+      "depth": 18,
+      "open": 0.2851455822277007,
+      "colours": 11,
+      "art": "spider_web",
+      "tutorial": "zoom",
+      "id": "c3-010-spider-web",
+      "built": {
+        "lines": 53,
+        "depth": 18,
+        "open": 0.28,
+        "blocksPerLine": 1.77,
+        "colours": 11,
+        "score": 84
+      },
+      "warnings": []
+    },
+    {
+      "level": 11,
+      "tier": "normal",
+      "lines": 12,
+      "depth": 6,
+      "open": 0.16477127093436691,
+      "colours": 10,
+      "art": "rainbow",
+      "id": "c3-011-rainbow",
+      "built": {
+        "lines": 12,
+        "depth": 6,
+        "open": 0.17,
+        "blocksPerLine": 1.42,
+        "colours": 10,
+        "score": 54
+      },
+      "warnings": []
+    },
+    {
+      "level": 12,
+      "tier": "normal",
+      "lines": 19,
+      "depth": 9,
+      "open": 0.16275681952241355,
+      "colours": 10,
+      "art": "donut",
+      "id": "c3-012-donut",
+      "built": {
+        "lines": 19,
+        "depth": 8,
+        "open": 0.21,
+        "blocksPerLine": 1.26,
+        "colours": 10,
+        "score": 62
+      },
+      "warnings": []
+    },
+    {
+      "level": 13,
+      "tier": "normal",
+      "lines": 21,
+      "depth": 8,
+      "open": 0.15721661849801727,
+      "colours": 9,
+      "art": "icecream",
+      "id": "c3-013-icecream",
+      "built": {
+        "lines": 21,
+        "depth": 8,
+        "open": 0.29,
+        "blocksPerLine": 1.48,
+        "colours": 9,
+        "score": 62
+      },
+      "warnings": []
+    },
+    {
+      "level": 14,
+      "tier": "normal",
+      "lines": 15,
+      "depth": 5,
+      "open": 0.2961713474555918,
+      "colours": 11,
+      "art": "glasses",
+      "id": "c3-014-glasses",
+      "built": {
+        "lines": 15,
+        "depth": 5,
+        "open": 0.33,
+        "blocksPerLine": 1.13,
+        "colours": 11,
+        "score": 54
+      },
+      "warnings": []
+    },
+    {
+      "level": 15,
+      "tier": "normal",
+      "lines": 15,
+      "depth": 5,
+      "open": 0.2607377297336466,
+      "colours": 11,
+      "art": "scissors",
+      "id": "c3-015-scissors",
+      "built": {
+        "lines": 15,
+        "depth": 5,
+        "open": 0.27,
+        "blocksPerLine": 1.53,
+        "colours": 11,
+        "score": 54
+      },
+      "warnings": []
+    },
+    {
+      "level": 16,
+      "tier": "hard",
+      "lines": 70,
+      "depth": 18,
+      "open": 0.35666307091748706,
+      "colours": 11,
+      "art": "building",
+      "id": "c3-016-building",
+      "built": {
+        "lines": 70,
+        "depth": 18,
+        "open": 0.36,
+        "blocksPerLine": 1.46,
+        "colours": 11,
+        "score": 90
+      },
+      "warnings": []
+    },
+    {
+      "level": 17,
+      "tier": "normal",
+      "lines": 14,
+      "depth": 4,
+      "open": 0.12,
+      "colours": 10,
+      "art": "gift",
+      "id": "c3-017-gift",
+      "built": {
+        "lines": 14,
+        "depth": 4,
+        "open": 0.43,
+        "blocksPerLine": 0.57,
+        "colours": 10,
+        "score": 48
+      },
+      "warnings": []
+    },
+    {
+      "level": 18,
+      "tier": "normal",
+      "lines": 18,
+      "depth": 6,
+      "open": 0.253530498837956,
+      "colours": 9,
+      "art": "snail",
+      "id": "c3-018-snail",
+      "built": {
+        "lines": 18,
+        "depth": 6,
+        "open": 0.28,
+        "blocksPerLine": 1.39,
+        "colours": 9,
+        "score": 55
+      },
+      "warnings": []
+    },
+    {
+      "level": 19,
+      "tier": "normal",
+      "lines": 22,
+      "depth": 8,
+      "open": 0.20045478682125079,
+      "colours": 11,
+      "art": "book",
+      "id": "c3-019-book",
+      "built": {
+        "lines": 22,
+        "depth": 8,
+        "open": 0.23,
+        "blocksPerLine": 1.09,
+        "colours": 11,
+        "score": 64
+      },
+      "warnings": []
+    },
+    {
+      "level": 20,
+      "tier": "normal",
+      "lines": 23,
+      "depth": 11,
+      "open": 0.2244291604939057,
+      "colours": 9,
+      "art": "shoe",
+      "id": "c3-020-shoe",
+      "built": {
+        "lines": 23,
+        "depth": 11,
+        "open": 0.3,
+        "blocksPerLine": 0.83,
+        "colours": 9,
+        "score": 70
+      },
+      "warnings": []
+    },
+    {
+      "level": 21,
+      "tier": "normal",
+      "lines": 18,
+      "depth": 6,
+      "open": 0.2719245865938549,
+      "colours": 11,
+      "art": "key",
+      "id": "c3-021-key",
+      "built": {
+        "lines": 18,
+        "depth": 6,
+        "open": 0.33,
+        "blocksPerLine": 1.06,
+        "colours": 11,
+        "score": 57
+      },
+      "warnings": []
+    },
+    {
+      "level": 22,
+      "tier": "very hard",
+      "lines": 87,
+      "depth": 19,
+      "open": 0.252332402079029,
+      "colours": 11,
+      "art": "ferris_wheel",
+      "id": "c3-022-ferris-wheel",
+      "built": {
+        "lines": 87,
+        "depth": 20,
+        "open": 0.25,
+        "blocksPerLine": 1.52,
+        "colours": 11,
+        "score": 95
+      },
+      "warnings": []
+    },
+    {
+      "level": 23,
+      "tier": "normal",
+      "lines": 15,
+      "depth": 7,
+      "open": 0.22765606473346622,
+      "colours": 9,
+      "art": "balloon",
+      "id": "c3-023-balloon",
+      "built": {
+        "lines": 15,
+        "depth": 7,
+        "open": 0.2,
+        "blocksPerLine": 1.2,
+        "colours": 9,
+        "score": 57
+      },
+      "warnings": []
+    },
+    {
+      "level": 24,
+      "tier": "hard",
+      "lines": 52,
+      "depth": 13,
+      "open": 0.3383390054159993,
+      "colours": 11,
+      "art": "cat",
+      "id": "c3-024-cat",
+      "built": {
+        "lines": 52,
+        "depth": 13,
+        "open": 0.31,
+        "blocksPerLine": 1.31,
+        "colours": 11,
+        "score": 84
+      },
+      "warnings": []
+    },
+    {
+      "level": 25,
+      "tier": "normal",
+      "lines": 21,
+      "depth": 7,
+      "open": 0.23243357559462502,
+      "colours": 11,
+      "art": "bucket",
+      "id": "c3-025-bucket",
+      "built": {
+        "lines": 21,
+        "depth": 7,
+        "open": 0.24,
+        "blocksPerLine": 1.33,
+        "colours": 11,
+        "score": 61
+      },
+      "warnings": []
+    },
+    {
+      "level": 26,
+      "tier": "hard",
+      "lines": 81,
+      "depth": 17,
+      "open": 0.23070783941601414,
+      "colours": 11,
+      "art": "bridge",
+      "id": "c3-026-bridge",
+      "built": {
+        "lines": 81,
+        "depth": 19,
+        "open": 0.22,
+        "blocksPerLine": 1.47,
+        "colours": 11,
+        "score": 93
+      },
+      "warnings": []
+    },
+    {
+      "level": 27,
+      "tier": "very hard",
+      "lines": 79,
+      "depth": 25,
+      "open": 0.2908683592880888,
+      "colours": 11,
+      "art": "basket",
+      "id": "c3-027-basket",
+      "built": {
+        "lines": 79,
+        "depth": 17,
+        "open": 0.33,
+        "blocksPerLine": 1.62,
+        "colours": 11,
+        "score": 93
+      },
+      "warnings": []
+    },
+    {
+      "level": 28,
+      "tier": "normal",
+      "lines": 22,
+      "depth": 7,
+      "open": 0.13523151804208644,
+      "colours": 10,
+      "art": "rocket",
+      "id": "c3-028-rocket",
+      "built": {
+        "lines": 22,
+        "depth": 7,
+        "open": 0.18,
+        "blocksPerLine": 1.5,
+        "colours": 10,
+        "score": 60
+      },
+      "warnings": []
+    },
+    {
+      "level": 29,
+      "tier": "normal",
+      "lines": 20,
+      "depth": 10,
+      "open": 0.18605822573311182,
+      "colours": 10,
+      "art": "bell",
+      "id": "c3-029-bell",
+      "built": {
+        "lines": 20,
+        "depth": 10,
+        "open": 0.2,
+        "blocksPerLine": 1.3,
+        "colours": 10,
+        "score": 68
+      },
+      "warnings": []
+    },
+    {
+      "level": 30,
+      "tier": "normal",
+      "lines": 12,
+      "depth": 6,
+      "open": 0.23345438007985478,
+      "colours": 10,
+      "art": "lollipop",
+      "id": "c3-030-lollipop",
+      "built": {
+        "lines": 12,
+        "depth": 6,
+        "open": 0.25,
+        "blocksPerLine": 1.33,
+        "colours": 10,
+        "score": 54
+      },
+      "warnings": []
+    },
+    {
+      "level": 31,
+      "tier": "normal",
+      "lines": 18,
+      "depth": 11,
+      "open": 0.2083255976778488,
+      "colours": 9,
+      "art": "anchor",
+      "id": "c3-031-anchor",
+      "built": {
+        "lines": 18,
+        "depth": 11,
+        "open": 0.22,
+        "blocksPerLine": 0.94,
+        "colours": 9,
+        "score": 69
+      },
+      "warnings": []
+    },
+    {
+      "level": 32,
+      "tier": "normal",
+      "lines": 19,
+      "depth": 6,
+      "open": 0.24508326734787336,
+      "colours": 11,
+      "art": "fish",
+      "id": "c3-032-fish",
+      "built": {
+        "lines": 19,
+        "depth": 6,
+        "open": 0.26,
+        "blocksPerLine": 1.11,
+        "colours": 11,
+        "score": 58
+      },
+      "warnings": []
+    },
+    {
+      "level": 33,
+      "tier": "normal",
+      "lines": 17,
+      "depth": 8,
+      "open": 0.17850379564680774,
+      "colours": 11,
+      "art": "moon",
+      "id": "c3-033-moon",
+      "built": {
+        "lines": 17,
+        "depth": 8,
+        "open": 0.18,
+        "blocksPerLine": 1.24,
+        "colours": 11,
+        "score": 62
+      },
+      "warnings": []
+    },
+    {
+      "level": 34,
+      "tier": "normal",
+      "lines": 19,
+      "depth": 7,
+      "open": 0.1930879749474905,
+      "colours": 11,
+      "art": "envelope",
+      "id": "c3-034-envelope",
+      "built": {
+        "lines": 19,
+        "depth": 7,
+        "open": 0.21,
+        "blocksPerLine": 1.42,
+        "colours": 11,
+        "score": 60
+      },
+      "warnings": []
+    },
+    {
+      "level": 35,
+      "tier": "normal",
+      "lines": 20,
+      "depth": 8,
+      "open": 0.19428118593967292,
+      "colours": 11,
+      "art": "sailboat",
+      "id": "c3-035-sailboat",
+      "built": {
+        "lines": 20,
+        "depth": 8,
+        "open": 0.25,
+        "blocksPerLine": 1.35,
+        "colours": 11,
+        "score": 63
+      },
+      "warnings": []
+    },
+    {
+      "level": 36,
+      "tier": "normal",
+      "lines": 22,
+      "depth": 11,
+      "open": 0.31916706794344296,
+      "colours": 9,
+      "art": "guitar",
+      "id": "c3-036-guitar",
+      "built": {
+        "lines": 22,
+        "depth": 11,
+        "open": 0.27,
+        "blocksPerLine": 1.5,
+        "colours": 9,
+        "score": 70
+      },
+      "warnings": []
+    },
+    {
+      "level": 37,
+      "tier": "hard",
+      "lines": 78,
+      "depth": 11,
+      "open": 0.2502816348224336,
+      "colours": 11,
+      "art": "castle_gate",
+      "id": "c3-037-castle-gate",
+      "built": {
+        "lines": 78,
+        "depth": 11,
+        "open": 0.26,
+        "blocksPerLine": 1.54,
+        "colours": 11,
+        "score": 89
+      },
+      "warnings": []
+    },
+    {
+      "level": 38,
+      "tier": "normal",
+      "lines": 27,
+      "depth": 11,
+      "open": 0.22509342195340165,
+      "colours": 10,
+      "art": "bird",
+      "id": "c3-038-bird",
+      "built": {
+        "lines": 27,
+        "depth": 11,
+        "open": 0.19,
+        "blocksPerLine": 1.33,
+        "colours": 10,
+        "score": 73
+      },
+      "warnings": []
+    },
+    {
+      "level": 39,
+      "tier": "normal",
+      "lines": 27,
+      "depth": 13,
+      "open": 0.21889463974751616,
+      "colours": 9,
+      "art": "jellyfish",
+      "id": "c3-039-jellyfish",
+      "built": {
+        "lines": 27,
+        "depth": 13,
+        "open": 0.22,
+        "blocksPerLine": 1.33,
+        "colours": 9,
+        "score": 74
+      },
+      "warnings": []
+    },
+    {
+      "level": 40,
+      "tier": "normal",
+      "lines": 27,
+      "depth": 9,
+      "open": 0.2043867439313149,
+      "colours": 11,
+      "art": "hot_air_balloon",
+      "id": "c3-040-hot-air-balloon",
+      "built": {
+        "lines": 27,
+        "depth": 9,
+        "open": 0.22,
+        "blocksPerLine": 1.37,
+        "colours": 11,
+        "score": 68
+      },
+      "warnings": []
+    },
+    {
+      "level": 41,
+      "tier": "hard",
+      "lines": 54,
+      "depth": 14,
+      "open": 0.3867025823218139,
+      "colours": 11,
+      "art": "window",
+      "id": "c3-041-window",
+      "built": {
+        "lines": 54,
+        "depth": 14,
+        "open": 0.39,
+        "blocksPerLine": 1.57,
+        "colours": 11,
+        "score": 85
+      },
+      "warnings": []
+    },
+    {
+      "level": 42,
+      "tier": "very hard",
+      "lines": 86,
+      "depth": 17,
+      "open": 0.18,
+      "colours": 11,
+      "art": "abacus",
+      "id": "c3-042-abacus",
+      "built": {
+        "lines": 86,
+        "depth": 17,
+        "open": 0.19,
+        "blocksPerLine": 1.47,
+        "colours": 11,
+        "score": 95
+      },
+      "warnings": []
+    },
+    {
+      "level": 43,
+      "tier": "normal",
+      "lines": 21,
+      "depth": 12,
+      "open": 0.22142168248251584,
+      "colours": 11,
+      "art": "teapot",
+      "id": "c3-043-teapot",
+      "built": {
+        "lines": 21,
+        "depth": 11,
+        "open": 0.19,
+        "blocksPerLine": 1.19,
+        "colours": 11,
+        "score": 72
+      },
+      "warnings": []
+    },
+    {
+      "level": 44,
+      "tier": "normal",
+      "lines": 13,
+      "depth": 7,
+      "open": 0.21626082346257328,
+      "colours": 10,
+      "art": "cup",
+      "id": "c3-044-cup",
+      "built": {
+        "lines": 13,
+        "depth": 7,
+        "open": 0.31,
+        "blocksPerLine": 1,
+        "colours": 10,
+        "score": 57
+      },
+      "warnings": []
+    },
+    {
+      "level": 45,
+      "tier": "normal",
+      "lines": 16,
+      "depth": 6,
+      "open": 0.27146064912147605,
+      "colours": 11,
+      "art": "headphones",
+      "id": "c3-045-headphones",
+      "built": {
+        "lines": 16,
+        "depth": 6,
+        "open": 0.25,
+        "blocksPerLine": 1.25,
+        "colours": 11,
+        "score": 57
+      },
+      "warnings": []
+    },
+    {
+      "level": 46,
+      "tier": "normal",
+      "lines": 16,
+      "depth": 9,
+      "open": 0.2670182738316962,
+      "colours": 9,
+      "art": "apple",
+      "id": "c3-046-apple",
+      "built": {
+        "lines": 16,
+        "depth": 9,
+        "open": 0.25,
+        "blocksPerLine": 0.88,
+        "colours": 9,
+        "score": 63
+      },
+      "warnings": []
+    },
+    {
+      "level": 47,
+      "tier": "hard",
+      "lines": 63,
+      "depth": 16,
+      "open": 0.34180063771877023,
+      "colours": 11,
+      "art": "robot",
+      "id": "c3-047-robot",
+      "built": {
+        "lines": 63,
+        "depth": 16,
+        "open": 0.35,
+        "blocksPerLine": 1.4,
+        "colours": 11,
+        "score": 88
+      },
+      "warnings": []
+    },
+    {
+      "level": 48,
+      "tier": "normal",
+      "lines": 22,
+      "depth": 8,
+      "open": 0.2949458261983341,
+      "colours": 9,
+      "art": "trophy",
+      "id": "c3-048-trophy",
+      "built": {
+        "lines": 22,
+        "depth": 8,
+        "open": 0.27,
+        "blocksPerLine": 1.32,
+        "colours": 9,
+        "score": 62
+      },
+      "warnings": []
+    },
+    {
+      "level": 49,
+      "tier": "normal",
+      "lines": 26,
+      "depth": 11,
+      "open": 0.12,
+      "colours": 10,
+      "art": "beach",
+      "id": "c3-049-beach",
+      "built": {
+        "lines": 24,
+        "depth": 2,
+        "open": 0.83,
+        "blocksPerLine": 0,
+        "colours": 10,
+        "score": 26
+      },
+      "warnings": [
+        "Dropped 2 pair(s) that kept blocking each other",
+        "Built with generator v2 (fallback)"
+      ]
+    },
+    {
+      "level": 50,
+      "tier": "hard",
+      "lines": 55,
+      "depth": 19,
+      "open": 0.4,
+      "colours": 11,
+      "art": "clock",
+      "id": "c3-050-clock",
+      "built": {
+        "lines": 55,
+        "depth": 19,
+        "open": 0.35,
+        "blocksPerLine": 1.29,
+        "colours": 11,
+        "score": 85
+      },
+      "warnings": []
+    },
+    {
+      "level": 51,
+      "tier": "normal",
+      "lines": 29,
+      "depth": 11,
+      "open": 0.12564844769847583,
+      "colours": 11,
+      "art": "phone",
+      "id": "c3-051-phone",
+      "built": {
+        "lines": 29,
+        "depth": 11,
+        "open": 0.24,
+        "blocksPerLine": 1.07,
+        "colours": 11,
+        "score": 74
+      },
+      "warnings": []
+    },
+    {
+      "level": 52,
+      "tier": "normal",
+      "lines": 17,
+      "depth": 6,
+      "open": 0.16805836233064267,
+      "colours": 11,
+      "art": "mushroom",
+      "id": "c3-052-mushroom",
+      "built": {
+        "lines": 17,
+        "depth": 6,
+        "open": 0.24,
+        "blocksPerLine": 1.12,
+        "colours": 11,
+        "score": 57
+      },
+      "warnings": []
+    },
+    {
+      "level": 53,
+      "tier": "normal",
+      "lines": 28,
+      "depth": 14,
+      "open": 0.1870551189868402,
+      "colours": 11,
+      "art": "turtle",
+      "id": "c3-053-turtle",
+      "built": {
+        "lines": 28,
+        "depth": 14,
+        "open": 0.18,
+        "blocksPerLine": 1.39,
+        "colours": 11,
+        "score": 77
+      },
+      "warnings": []
+    },
+    {
+      "level": 54,
+      "tier": "very hard",
+      "lines": 92,
+      "depth": 15,
+      "open": 0.28787775201434634,
+      "colours": 11,
+      "art": "wheel",
+      "id": "c3-054-wheel",
+      "built": {
+        "lines": 92,
+        "depth": 16,
+        "open": 0.29,
+        "blocksPerLine": 1.4,
+        "colours": 11,
+        "score": 97
+      },
+      "warnings": []
+    },
+    {
+      "level": 55,
+      "tier": "normal",
+      "lines": 21,
+      "depth": 9,
+      "open": 0.23734547731106337,
+      "colours": 9,
+      "art": "airplane",
+      "id": "c3-055-airplane",
+      "built": {
+        "lines": 21,
+        "depth": 9,
+        "open": 0.29,
+        "blocksPerLine": 1.14,
+        "colours": 9,
+        "score": 64
+      },
+      "warnings": []
+    },
+    {
+      "level": 56,
+      "tier": "normal",
+      "lines": 23,
+      "depth": 14,
+      "open": 0.21835732059704216,
+      "colours": 9,
+      "art": "penguin",
+      "id": "c3-056-penguin",
+      "built": {
+        "lines": 23,
+        "depth": 12,
+        "open": 0.35,
+        "blocksPerLine": 0.96,
+        "colours": 9,
+        "score": 73
+      },
+      "warnings": []
+    },
+    {
+      "level": 57,
+      "tier": "normal",
+      "lines": 25,
+      "depth": 15,
+      "open": 0.2745576673494017,
+      "colours": 11,
+      "art": "lighthouse",
+      "id": "c3-057-lighthouse",
+      "built": {
+        "lines": 25,
+        "depth": 14,
+        "open": 0.28,
+        "blocksPerLine": 1.28,
+        "colours": 11,
+        "score": 76
+      },
+      "warnings": []
+    },
+    {
+      "level": 58,
+      "tier": "normal",
+      "lines": 18,
+      "depth": 9,
+      "open": 0.2500453117831287,
+      "colours": 10,
+      "art": "umbrella",
+      "id": "c3-058-umbrella",
+      "built": {
+        "lines": 18,
+        "depth": 9,
+        "open": 0.28,
+        "blocksPerLine": 1.44,
+        "colours": 10,
+        "score": 64
+      },
+      "warnings": []
+    },
+    {
+      "level": 59,
+      "tier": "hard",
+      "lines": 54,
+      "depth": 11,
+      "open": 0.4,
+      "colours": 11,
+      "art": "sun",
+      "id": "c3-059-sun",
+      "built": {
+        "lines": 54,
+        "depth": 15,
+        "open": 0.37,
+        "blocksPerLine": 1.31,
+        "colours": 11,
+        "score": 85
+      },
+      "warnings": []
+    },
+    {
+      "level": 60,
+      "tier": "hard",
+      "lines": 52,
+      "depth": 9,
+      "open": 0.26758760305098755,
+      "colours": 11,
+      "art": "owl",
+      "id": "c3-060-owl",
+      "built": {
+        "lines": 52,
+        "depth": 10,
+        "open": 0.27,
+        "blocksPerLine": 1.35,
+        "colours": 11,
+        "score": 79
+      },
+      "warnings": []
+    },
+    {
+      "level": 61,
+      "tier": "normal",
+      "lines": 21,
+      "depth": 8,
+      "open": 0.16691994783301167,
+      "colours": 10,
+      "art": "cherry",
+      "id": "c3-061-cherry",
+      "built": {
+        "lines": 21,
+        "depth": 8,
+        "open": 0.24,
+        "blocksPerLine": 1.24,
+        "colours": 10,
+        "score": 63
+      },
+      "warnings": []
+    },
+    {
+      "level": 62,
+      "tier": "normal",
+      "lines": 27,
+      "depth": 12,
+      "open": 0.21639454287949442,
+      "colours": 10,
+      "art": "xmas_tree",
+      "id": "c3-062-xmas-tree",
+      "built": {
+        "lines": 27,
+        "depth": 12,
+        "open": 0.22,
+        "blocksPerLine": 1.41,
+        "colours": 10,
+        "score": 75
+      },
+      "warnings": []
+    },
+    {
+      "level": 63,
+      "tier": "normal",
+      "lines": 19,
+      "depth": 10,
+      "open": 0.16587782619014624,
+      "colours": 10,
+      "art": "hat",
+      "id": "c3-063-hat",
+      "built": {
+        "lines": 19,
+        "depth": 10,
+        "open": 0.16,
+        "blocksPerLine": 1.16,
+        "colours": 10,
+        "score": 67
+      },
+      "warnings": []
+    },
+    {
+      "level": 64,
+      "tier": "normal",
+      "lines": 19,
+      "depth": 9,
+      "open": 0.1876365907379809,
+      "colours": 10,
+      "art": "drum",
+      "id": "c3-064-drum",
+      "built": {
+        "lines": 19,
+        "depth": 9,
+        "open": 0.21,
+        "blocksPerLine": 1.32,
+        "colours": 10,
+        "score": 65
+      },
+      "warnings": []
+    },
+    {
+      "level": 65,
+      "tier": "very hard",
+      "lines": 85,
+      "depth": 21,
+      "open": 0.20623746699368822,
+      "colours": 11,
+      "art": "radio_tower",
+      "id": "c3-065-radio-tower",
+      "built": {
+        "lines": 85,
+        "depth": 24,
+        "open": 0.21,
+        "blocksPerLine": 1.27,
+        "colours": 11,
+        "score": 94
+      },
+      "warnings": []
+    },
+    {
+      "level": 66,
+      "tier": "normal",
+      "lines": 16,
+      "depth": 7,
+      "open": 0.23680697391040448,
+      "colours": 11,
+      "art": "fence",
+      "id": "c3-066-fence",
+      "built": {
+        "lines": 16,
+        "depth": 7,
+        "open": 0.25,
+        "blocksPerLine": 1.5,
+        "colours": 11,
+        "score": 59
+      },
+      "warnings": []
+    },
+    {
+      "level": 67,
+      "tier": "normal",
+      "lines": 29,
+      "depth": 9,
+      "open": 0.17482269629238587,
+      "colours": 9,
+      "art": "butterfly",
+      "id": "c3-067-butterfly",
+      "built": {
+        "lines": 29,
+        "depth": 9,
+        "open": 0.17,
+        "blocksPerLine": 1.48,
+        "colours": 9,
+        "score": 67
+      },
+      "warnings": []
+    },
+    {
+      "level": 68,
+      "tier": "normal",
+      "lines": 21,
+      "depth": 7,
+      "open": 0.18068646630162433,
+      "colours": 10,
+      "art": "ring",
+      "id": "c3-068-ring",
+      "built": {
+        "lines": 21,
+        "depth": 7,
+        "open": 0.33,
+        "blocksPerLine": 1,
+        "colours": 10,
+        "score": 60
+      },
+      "warnings": []
+    },
+    {
+      "level": 69,
+      "tier": "hard",
+      "lines": 75,
+      "depth": 10,
+      "open": 0.28756303549945905,
+      "colours": 11,
+      "art": "sunflower",
+      "id": "c3-069-sunflower",
+      "built": {
+        "lines": 75,
+        "depth": 12,
+        "open": 0.28,
+        "blocksPerLine": 1.45,
+        "colours": 11,
+        "score": 91
+      },
+      "warnings": []
+    },
+    {
+      "level": 70,
+      "tier": "normal",
+      "lines": 20,
+      "depth": 10,
+      "open": 0.246201944408788,
+      "colours": 10,
+      "art": "watering_can",
+      "id": "c3-070-watering-can",
+      "built": {
+        "lines": 20,
+        "depth": 10,
+        "open": 0.25,
+        "blocksPerLine": 1.35,
+        "colours": 10,
+        "score": 68
+      },
+      "warnings": []
+    },
+    {
+      "level": 71,
+      "tier": "normal",
+      "lines": 17,
+      "depth": 7,
+      "open": 0.31443531856728646,
+      "colours": 11,
+      "art": "laptop",
+      "id": "c3-071-laptop",
+      "built": {
+        "lines": 17,
+        "depth": 7,
+        "open": 0.35,
+        "blocksPerLine": 1.47,
+        "colours": 11,
+        "score": 60
+      },
+      "warnings": []
+    },
+    {
+      "level": 72,
+      "tier": "normal",
+      "lines": 27,
+      "depth": 15,
+      "open": 0.15584110227057468,
+      "colours": 10,
+      "art": "car",
+      "id": "c3-072-car",
+      "built": {
+        "lines": 27,
+        "depth": 14,
+        "open": 0.22,
+        "blocksPerLine": 1.52,
+        "colours": 10,
+        "score": 75
+      },
+      "warnings": []
+    },
+    {
+      "level": 73,
+      "tier": "normal",
+      "lines": 22,
+      "depth": 7,
+      "open": 0.2595358050601547,
+      "colours": 10,
+      "art": "windmill",
+      "id": "c3-073-windmill",
+      "built": {
+        "lines": 22,
+        "depth": 7,
+        "open": 0.27,
+        "blocksPerLine": 1.18,
+        "colours": 10,
+        "score": 60
+      },
+      "warnings": []
+    },
+    {
+      "level": 74,
+      "tier": "hard",
+      "lines": 52,
+      "depth": 10,
+      "open": 0.252703223888043,
+      "colours": 11,
+      "art": "bus",
+      "id": "c3-074-bus",
+      "built": {
+        "lines": 52,
+        "depth": 10,
+        "open": 0.23,
+        "blocksPerLine": 1.67,
+        "colours": 11,
+        "score": 79
+      },
+      "warnings": []
+    },
+    {
+      "level": 75,
+      "tier": "normal",
+      "lines": 23,
+      "depth": 12,
+      "open": 0.16274481187190443,
+      "colours": 9,
+      "art": "desk_lamp",
+      "id": "c3-075-desk-lamp",
+      "built": {
+        "lines": 23,
+        "depth": 12,
+        "open": 0.17,
+        "blocksPerLine": 1.3,
+        "colours": 9,
+        "score": 73
+      },
+      "warnings": []
+    },
+    {
+      "level": 76,
+      "tier": "normal",
+      "lines": 32,
+      "depth": 12,
+      "open": 0.14954626877670169,
+      "colours": 11,
+      "art": "waffle",
+      "id": "c3-076-waffle",
+      "built": {
+        "lines": 32,
+        "depth": 11,
+        "open": 0.31,
+        "blocksPerLine": 1.94,
+        "colours": 11,
+        "score": 75
+      },
+      "warnings": []
+    },
+    {
+      "level": 77,
+      "tier": "normal",
+      "lines": 24,
+      "depth": 12,
+      "open": 0.12,
+      "colours": 9,
+      "art": "train",
+      "id": "c3-077-train",
+      "built": {
+        "lines": 24,
+        "depth": 12,
+        "open": 0.25,
+        "blocksPerLine": 1.54,
+        "colours": 9,
+        "score": 73
+      },
+      "warnings": []
+    },
+    {
+      "level": 78,
+      "tier": "normal",
+      "lines": 18,
+      "depth": 9,
+      "open": 0.12701334103367948,
+      "colours": 9,
+      "art": "camera",
+      "id": "c3-078-camera",
+      "built": {
+        "lines": 18,
+        "depth": 9,
+        "open": 0.17,
+        "blocksPerLine": 1.22,
+        "colours": 9,
+        "score": 63
+      },
+      "warnings": []
+    },
+    {
+      "level": 79,
+      "tier": "normal",
+      "lines": 16,
+      "depth": 8,
+      "open": 0.21485796471428972,
+      "colours": 9,
+      "art": "ladder",
+      "id": "c3-079-ladder",
+      "built": {
+        "lines": 16,
+        "depth": 8,
+        "open": 0.19,
+        "blocksPerLine": 1.38,
+        "colours": 9,
+        "score": 60
+      },
+      "warnings": []
+    },
+    {
+      "level": 80,
+      "tier": "very hard",
+      "lines": 93,
+      "depth": 19,
+      "open": 0.25745398022865595,
+      "colours": 11,
+      "art": "bookshelf",
+      "id": "c3-080-bookshelf",
+      "built": {
+        "lines": 93,
+        "depth": 18,
+        "open": 0.26,
+        "blocksPerLine": 1.41,
+        "colours": 11,
+        "score": 97
+      },
+      "warnings": []
+    },
+    {
+      "level": 81,
+      "tier": "hard",
+      "lines": 65,
+      "depth": 12,
+      "open": 0.2907674149558186,
+      "colours": 11,
+      "art": "crab",
+      "id": "c3-081-crab",
+      "built": {
+        "lines": 65,
+        "depth": 16,
+        "open": 0.29,
+        "blocksPerLine": 1.48,
+        "colours": 11,
+        "score": 88
+      },
+      "warnings": []
+    },
+    {
+      "level": 82,
+      "tier": "normal",
+      "lines": 22,
+      "depth": 9,
+      "open": 0.18576953518739875,
+      "colours": 9,
+      "art": "crown",
+      "id": "c3-082-crown",
+      "built": {
+        "lines": 22,
+        "depth": 9,
+        "open": 0.32,
+        "blocksPerLine": 1.05,
+        "colours": 9,
+        "score": 65
+      },
+      "warnings": []
+    },
+    {
+      "level": 83,
+      "tier": "normal",
+      "lines": 25,
+      "depth": 8,
+      "open": 0.1709617913280367,
+      "colours": 9,
+      "art": "dragonfly",
+      "id": "c3-083-dragonfly",
+      "built": {
+        "lines": 25,
+        "depth": 9,
+        "open": 0.2,
+        "blocksPerLine": 1.48,
+        "colours": 9,
+        "score": 66
+      },
+      "warnings": []
+    },
+    {
+      "level": 84,
+      "tier": "normal",
+      "lines": 33,
+      "depth": 13,
+      "open": 0.21915104743420832,
+      "colours": 10,
+      "art": "pineapple",
+      "id": "c3-084-pineapple",
+      "built": {
+        "lines": 33,
+        "depth": 11,
+        "open": 0.24,
+        "blocksPerLine": 2.06,
+        "colours": 10,
+        "score": 75
+      },
+      "warnings": []
+    },
+    {
+      "level": 85,
+      "tier": "normal",
+      "lines": 21,
+      "depth": 11,
+      "open": 0.17705305891795414,
+      "colours": 10,
+      "art": "house",
+      "id": "c3-085-house",
+      "built": {
+        "lines": 21,
+        "depth": 10,
+        "open": 0.19,
+        "blocksPerLine": 1.43,
+        "colours": 10,
+        "score": 68
+      },
+      "warnings": []
+    },
+    {
+      "level": 86,
+      "tier": "hard",
+      "lines": 66,
+      "depth": 12,
+      "open": 0.2977621802870258,
+      "colours": 11,
+      "art": "birdcage",
+      "id": "c3-086-birdcage",
+      "built": {
+        "lines": 66,
+        "depth": 12,
+        "open": 0.3,
+        "blocksPerLine": 1.8,
+        "colours": 11,
+        "score": 88
+      },
+      "warnings": []
+    },
+    {
+      "level": 87,
+      "tier": "normal",
+      "lines": 33,
+      "depth": 10,
+      "open": 0.20127800719500363,
+      "colours": 11,
+      "art": "piano",
+      "id": "c3-087-piano",
+      "built": {
+        "lines": 33,
+        "depth": 10,
+        "open": 0.21,
+        "blocksPerLine": 1.48,
+        "colours": 11,
+        "score": 73
+      },
+      "warnings": []
+    },
+    {
+      "level": 88,
+      "tier": "very hard",
+      "lines": 89,
+      "depth": 15,
+      "open": 0.3208770413750718,
+      "colours": 11,
+      "art": "skyline",
+      "id": "c3-088-skyline",
+      "built": {
+        "lines": 89,
+        "depth": 15,
+        "open": 0.37,
+        "blocksPerLine": 1.54,
+        "colours": 11,
+        "score": 96
+      },
+      "warnings": []
+    },
+    {
+      "level": 89,
+      "tier": "normal",
+      "lines": 16,
+      "depth": 5,
+      "open": 0.13528972193324598,
+      "colours": 10,
+      "art": "candle",
+      "id": "c3-089-candle",
+      "built": {
+        "lines": 16,
+        "depth": 8,
+        "open": 0.25,
+        "blocksPerLine": 1.19,
+        "colours": 10,
+        "score": 61
+      },
+      "warnings": []
+    },
+    {
+      "level": 90,
+      "tier": "normal",
+      "lines": 26,
+      "depth": 13,
+      "open": 0.13288989446973398,
+      "colours": 10,
+      "art": "calendar",
+      "id": "c3-090-calendar",
+      "built": {
+        "lines": 26,
+        "depth": 12,
+        "open": 0.23,
+        "blocksPerLine": 1.54,
+        "colours": 10,
+        "score": 75
+      },
+      "warnings": []
+    },
+    {
+      "level": 91,
+      "tier": "normal",
+      "lines": 25,
+      "depth": 12,
+      "open": 0.23610140197701612,
+      "colours": 9,
+      "art": "tree",
+      "id": "c3-091-tree",
+      "built": {
+        "lines": 25,
+        "depth": 12,
+        "open": 0.2,
+        "blocksPerLine": 1.6,
+        "colours": 9,
+        "score": 74
+      },
+      "warnings": []
+    },
+    {
+      "level": 92,
+      "tier": "normal",
+      "lines": 18,
+      "depth": 7,
+      "open": 0.2749274255950152,
+      "colours": 9,
+      "art": "backpack",
+      "id": "c3-092-backpack",
+      "built": {
+        "lines": 18,
+        "depth": 7,
+        "open": 0.28,
+        "blocksPerLine": 1.44,
+        "colours": 9,
+        "score": 58
+      },
+      "warnings": []
+    },
+    {
+      "level": 93,
+      "tier": "normal",
+      "lines": 27,
+      "depth": 13,
+      "open": 0.2102911051660631,
+      "colours": 9,
+      "art": "octopus",
+      "id": "c3-093-octopus",
+      "built": {
+        "lines": 27,
+        "depth": 13,
+        "open": 0.19,
+        "blocksPerLine": 1.33,
+        "colours": 9,
+        "score": 74
+      },
+      "warnings": []
+    },
+    {
+      "level": 94,
+      "tier": "hard",
+      "lines": 75,
+      "depth": 18,
+      "open": 0.3197557671410145,
+      "colours": 11,
+      "art": "beehive",
+      "id": "c3-094-beehive",
+      "built": {
+        "lines": 70,
+        "depth": 3,
+        "open": 0.74,
+        "blocksPerLine": 0,
+        "colours": 11,
+        "score": 48
+      },
+      "warnings": [
+        "Joined 5 pair(s) into their neighbours to keep the level solvable",
+        "Built with generator v2 (fallback)"
+      ]
+    },
+    {
+      "level": 95,
+      "tier": "normal",
+      "lines": 25,
+      "depth": 12,
+      "open": 0.19185077893549773,
+      "colours": 9,
+      "art": "watermelon",
+      "id": "c3-095-watermelon",
+      "built": {
+        "lines": 25,
+        "depth": 12,
+        "open": 0.24,
+        "blocksPerLine": 1.16,
+        "colours": 9,
+        "score": 74
+      },
+      "warnings": []
+    },
+    {
+      "level": 96,
+      "tier": "normal",
+      "lines": 21,
+      "depth": 9,
+      "open": 0.1409442762244514,
+      "colours": 9,
+      "art": "whale",
+      "id": "c3-096-whale",
+      "built": {
+        "lines": 21,
+        "depth": 9,
+        "open": 0.24,
+        "blocksPerLine": 1.1,
+        "colours": 9,
+        "score": 64
+      },
+      "warnings": []
+    },
+    {
+      "level": 97,
+      "tier": "normal",
+      "lines": 26,
+      "depth": 9,
+      "open": 0.1789685451487258,
+      "colours": 10,
+      "art": "fox",
+      "id": "c3-097-fox",
+      "built": {
+        "lines": 26,
+        "depth": 10,
+        "open": 0.15,
+        "blocksPerLine": 1.46,
+        "colours": 10,
+        "score": 70
+      },
+      "warnings": []
+    },
+    {
+      "level": 98,
+      "tier": "hard",
+      "lines": 52,
+      "depth": 19,
+      "open": 0.23184707954125156,
+      "colours": 11,
+      "art": "snowman",
+      "id": "c3-098-snowman",
+      "built": {
+        "lines": 52,
+        "depth": 19,
+        "open": 0.23,
+        "blocksPerLine": 1.54,
+        "colours": 11,
+        "score": 84
+      },
+      "warnings": []
+    },
+    {
+      "level": 99,
+      "tier": "normal",
+      "lines": 25,
+      "depth": 13,
+      "open": 0.26115986816204045,
+      "colours": 11,
+      "art": "helicopter",
+      "id": "c3-099-helicopter",
+      "built": {
+        "lines": 25,
+        "depth": 13,
+        "open": 0.2,
+        "blocksPerLine": 1.32,
+        "colours": 11,
+        "score": 76
+      },
+      "warnings": []
+    },
+    {
+      "level": 100,
+      "tier": "super hard",
+      "lines": 100,
+      "depth": 30,
+      "open": 0.25,
+      "colours": 11,
+      "art": "keyboard",
+      "id": "c3-100-keyboard",
+      "built": {
+        "lines": 100,
+        "depth": 30,
+        "open": 0.25,
+        "blocksPerLine": 1.43,
+        "colours": 11,
+        "score": 99
+      },
+      "warnings": []
+    }
+  ]
+}

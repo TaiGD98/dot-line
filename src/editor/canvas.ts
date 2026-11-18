@@ -2,7 +2,7 @@
 // handles every pointer interaction (select, move, copy, draw a new pair, edit curves, pan, zoom).
 import { DEFAULT_RADIUS, Level, Pair, levelBounds, nextPairId, syncEnds } from '../core/level';
 import { COMPLETED_LINE, colour } from '../core/palette';
-import { Anchor, Pt, dist, distToPolyline, fitPath, samplePath, translatePath } from '../core/path';
+import { Anchor, Pt, dist, distToPolyline, fitFreehand, samplePath, translatePath } from '../core/path';
 import { clear, s } from './dom';
 
 export type Tool = 'select' | 'pair' | 'pan';
@@ -29,7 +29,7 @@ type Drag =
     | { kind: 'anchor'; pair: string; idx: number; moved: boolean }
     | { kind: 'handle'; pair: string; idx: number; side: 'in' | 'out'; alt: boolean; moved: boolean }
     | { kind: 'marquee'; start: Pt; cur: Pt; additive: boolean }
-    | { kind: 'stroke'; pts: Pt[] };
+    | { kind: 'stroke'; pts: Pt[]; start: Pt };
 
 const pathD = (path: Anchor[]) => {
     if (!path.length) return '';
@@ -211,7 +211,7 @@ export class Canvas {
             return;
         }
         if (this.host.tool === 'pair') {
-            this.drag = { kind: 'stroke', pts: [this.snap(p, [])] };
+            this.drag = { kind: 'stroke', pts: [p], start: this.snap(p, []) };
             return;
         }
         const sel = this.host.selection;
@@ -257,7 +257,9 @@ export class Canvas {
                 d.pts.push(p);
                 clear(this.gTemp);
                 const c = colour(this.host.activeColour)?.base ?? '#fff';
-                this.gTemp.append(s('polyline', { points: d.pts.map((q) => `${q.x},${q.y}`).join(' '), stroke: c, class: 'stroke' }));
+                // Faint raw stroke + the clean curve that will be created (Alt: keep sharp corners).
+                this.gTemp.append(s('polyline', { points: d.pts.map((q) => `${q.x},${q.y}`).join(' '), stroke: c, class: 'stroke', opacity: 0.25 }));
+                if (d.pts.length > 2) this.gTemp.append(s('polyline', { points: samplePath(fitFreehand(d.pts, 6 / this.scale, e.altKey), 4).map((q) => `${q.x},${q.y}`).join(' '), stroke: c, class: 'stroke' }));
                 if (this.pendingA) this.gTemp.append(s('circle', { cx: this.pendingA.x, cy: this.pendingA.y, r: DEFAULT_RADIUS, fill: c }));
                 return;
             }
@@ -330,7 +332,7 @@ export class Canvas {
         switch (d.kind) {
             case 'stroke':
                 clear(this.gTemp);
-                this.finishStroke(d.pts, this.world(e));
+                this.finishStroke(d.pts, this.world(e), e.altKey, d.start);
                 return;
             case 'marquee': {
                 clear(this.gTemp);
@@ -349,8 +351,8 @@ export class Canvas {
         }
     }
 
-    /** Pair tool: drag = freehand line between start and end; two clicks = straight line. */
-    private finishStroke(pts: Pt[], endPt: Pt) {
+    /** Pair tool: drag = freehand line (auto-rounded; Alt keeps sharp corners); two clicks = straight line. */
+    private finishStroke(pts: Pt[], endPt: Pt, keepCorners = false, start: Pt = pts[0]) {
         const len = pts.reduce((acc, q, i) => (i ? acc + dist(pts[i - 1], q) : 0), 0);
         let a: Pt, b: Pt, path: Anchor[];
         if (len < 12 / this.scale) {
@@ -371,8 +373,16 @@ export class Canvas {
             this.pendingA = null;
             const end = this.snap(pts[pts.length - 1], []);
             clear(this.gGuides);
-            pts[pts.length - 1] = end;
-            path = fitPath(pts, 3 / this.scale);
+            // Fit the stroke as drawn, then slide its ends (with their handles) onto the snapped
+            // points, so snapping never adds a little hook at the ends.
+            path = fitFreehand(pts, 6 / this.scale, keepCorners);
+            const moveEnd = (an: Anchor, to: Pt) => {
+                const dx = to.x - an.x, dy = to.y - an.y;
+                an.x = r1(to.x); an.y = r1(to.y);
+                for (const h of [an.in, an.out]) if (h) { h.x = r1(h.x + dx); h.y = r1(h.y + dy); }
+            };
+            moveEnd(path[0], start);
+            moveEnd(path[path.length - 1], end);
             a = path[0]; b = path[path.length - 1];
             if (dist(a, b) < DEFAULT_RADIUS * 2 && path.length < 3) return;
         }

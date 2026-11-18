@@ -1,20 +1,27 @@
 import * as Phaser from 'phaser';
 import { Level, Pair, levelBounds } from '../core/level';
 import { COMPLETED_LINE, colour, hexToInt } from '../core/palette';
-import { Pt, arcLengths, dist, pointAt } from '../core/path';
+import { Pt, arcLengths, dist, distToPolyline, pointAt } from '../core/path';
 import { BlockModel, HIT_SCALE, Side } from '../core/solver';
 import { levels } from '../game/source';
 import { tuning } from '../game/tuning';
+import { onSettings } from '../game/settings';
+import { theme } from '../game/theme';
 
 // ---- Tunables (GDD 3.2 / 3.6) ----
 export const HEARTS = 3;
 export const MAX_ZOOM = 3;
 export const HINT_ZOOM = 1.5;
-export const LINE_WIDTH = 7;
+export { LINE_WIDTH } from '../core/level';
+import { LINE_WIDTH } from '../core/level';
+/** Every line has the same width (designer); only the dots change size. */
+export const lineWidth = (_p?: unknown) => LINE_WIDTH;
 /** Collision sub-step along the line, world px. */
 const STEP = 4;
 /** Top band reserved for the HUD, in game px (780 x 1688 canvas). */
 export const HUD_HEIGHT = 230;
+/** Bottom band with the boosters (drawn over the board, in the background colour). */
+export const BOTTOM_HEIGHT = 210;
 
 /** Elastic wobble after a bump: decaying squash/stretch along `angle`. */
 interface Wobble {
@@ -25,6 +32,16 @@ interface Wobble {
 
 const TRAIL = 9;
 
+/** Ending: when the last dot is this close to its partner (seconds at its current speed), slow motion starts. */
+const FINALE_LEAD = 0.4;
+/** ...or this many of its radii, whichever is further. */
+const FINALE_MIN_RADII = 6;
+/** Game speed during the slow motion (1 = normal). */
+const FINALE_SLOW = 0.2;
+/** Camera zoom on the meeting point (x the fitted zoom, at most MAX_ZOOM). */
+const FINALE_ZOOM = 2.2;
+
+
 interface Mover {
     side: Side;
     open: boolean;
@@ -32,6 +49,8 @@ interface Mover {
     acc: number[];
     s: number;
     returning: boolean;
+    /** Seconds since the dot set off (it accelerates). */
+    t: number;
 }
 
 export interface BoardState {
@@ -63,13 +82,19 @@ export class Game extends Phaser.Scene {
     private trails = new Map<string, Pt[]>();
     private pinch: { d: number; zoom: number; mid: Pt; scroll: Pt } | null = null;
     private dragFrom: { x: number; y: number; scroll: Pt; moved: boolean } | null = null;
+    /** Ending slow motion (last line): k = game speed, eased from 1 down to FINALE_SLOW. */
+    private finale: { k: number } | null = null;
+    /** Scissors booster armed: the next tap on a line removes that pair. */
+    private cutting = false;
 
     constructor() {
         super('Game');
     }
 
     create() {
-        this.cameras.main.setBackgroundColor('#fbfaf3');
+        this.applyTheme();
+        const off = onSettings(() => this.applyTheme());
+        this.events.once('shutdown', off);
         this.gfx = this.add.graphics();
         const g = this.make.graphics({}, false);
         g.fillStyle(0xffffff, 1).fillCircle(8, 8, 8);
@@ -83,6 +108,12 @@ export class Game extends Phaser.Scene {
         this.scale.on('resize', () => this.fit());
         this.scene.launch('Hud');
         levels.onLevel((l) => this.loadLevel(l));
+    }
+
+    /** Background colour of the board for the current theme (light / dark). */
+    private applyTheme() {
+        this.cameras.main.setBackgroundColor(theme().background);
+        document.body.style.background = theme().background;
     }
 
     loadLevel(level: Level) {
@@ -104,6 +135,11 @@ export class Game extends Phaser.Scene {
         this.tweens.killTweensOf(this.reveal);
         this.reveal.a = 0;
         this.trails.clear();
+        if (this.finale) this.tweens.killTweensOf(this.finale);
+        this.finale = null;
+        this.setCutting(false);
+        this.cameras.main.panEffect.reset();
+        this.cameras.main.zoomEffect.reset();
         this.fit();
         this.emitState();
         this.events.emit('loaded');
@@ -151,7 +187,7 @@ export class Game extends Phaser.Scene {
         const cam = this.cameras.main;
         this.bounds = levelBounds(this.level, 50);
         // Tutorial levels keep the bottom free for the caption.
-        const bottom = this.level.tutorial ? 300 : 40;
+        const bottom = BOTTOM_HEIGHT + (this.level.tutorial ? 150 : 20);
         const availH = this.scale.height - HUD_HEIGHT - bottom;
         this.baseZoom = Math.min(this.scale.width / this.bounds.w, availH / this.bounds.h);
         cam.setZoom(this.baseZoom);
@@ -166,12 +202,13 @@ export class Game extends Phaser.Scene {
         const c = cam.midPoint;
         const b = this.bounds;
         const x = Phaser.Math.Clamp(c.x, b.x, b.x + b.w);
-        const y = Phaser.Math.Clamp(c.y, b.y - HUD_HEIGHT / cam.zoom, b.y + b.h);
+        const y = Phaser.Math.Clamp(c.y, b.y - HUD_HEIGHT / cam.zoom, b.y + b.h + BOTTOM_HEIGHT / cam.zoom);
         if (x !== c.x || y !== c.y) cam.centerOn(x, y);
     }
 
     private zoomAt(z: number, screen: { x: number; y: number }) {
         const cam = this.cameras.main;
+        if (this.finale) return;
         const before = cam.getWorldPoint(screen.x, screen.y);
         cam.setZoom(Phaser.Math.Clamp(z, this.baseZoom, this.baseZoom * MAX_ZOOM));
         if (Math.abs(cam.zoom - this.baseZoom) > 0.05 * this.baseZoom) this.events.emit('zoomed');
@@ -203,9 +240,15 @@ export class Game extends Phaser.Scene {
         return this.input.manager.pointers.filter((p) => p.isDown);
     }
 
+    /** The HUD bands (top and bottom) belong to the HUD: a touch there is not a tap or a drag on the board. */
+    private inHud(p: { y: number }) {
+        return p.y < HUD_HEIGHT || p.y > this.scale.height - BOTTOM_HEIGHT;
+    }
+
     private down(p: Phaser.Input.Pointer) {
         const ps = this.activePointers();
         const cam = this.cameras.main;
+        if (ps.length < 2 && this.inHud(p)) { this.dragFrom = null; return; }
         if (ps.length >= 2) {
             const [a, b] = ps;
             this.pinch = { d: Phaser.Math.Distance.Between(a.x, a.y, b.x, b.y), zoom: cam.zoom, mid: { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 }, scroll: { x: cam.scrollX, y: cam.scrollY } };
@@ -217,6 +260,7 @@ export class Game extends Phaser.Scene {
 
     private moveP(p: Phaser.Input.Pointer) {
         const cam = this.cameras.main;
+        if (this.finale) return; // the camera follows the ending
         if (this.pinch) {
             const ps = this.activePointers();
             if (ps.length < 2) return;
@@ -234,7 +278,6 @@ export class Game extends Phaser.Scene {
         if (!d || !p.isDown) return;
         if (!d.moved && Phaser.Math.Distance.Between(p.x, p.y, d.x, d.y) < 14) return;
         d.moved = true;
-        if (cam.zoom <= this.baseZoom * 1.001) return; // pan only when zoomed in
         cam.scrollX = d.scroll.x - (p.x - d.x) / cam.zoom;
         cam.scrollY = d.scroll.y - (p.y - d.y) / cam.zoom;
         this.clampCamera();
@@ -256,7 +299,44 @@ export class Game extends Phaser.Scene {
         return this.level.pairs.find((p) => p.id === id)!;
     }
 
+    /** Scissors booster: arm / disarm (the HUD shows it). */
+    setCutting(on: boolean) {
+        if (on && (this.over || !this.alive.size)) return;
+        if (this.cutting === on) return;
+        this.cutting = on;
+        this.events.emit('cutting', on);
+    }
+
+    get isCutting() {
+        return this.cutting;
+    }
+
+    /** Scissors: the line (or dot) of a resting pair nearest to the tap is cut and the pair disappears. */
+    private cutAt(w: Pt) {
+        const slack = 26 / this.cameras.main.zoom;
+        let best: { p: Pair; d: number } | null = null;
+        for (const id of this.alive) {
+            if (this.movers.has(id)) continue;
+            const p = this.pair(id);
+            const d = Math.min(distToPolyline(w, this.model.line(id)), dist(w, p.a) - p.a.r, dist(w, p.b) - p.b.r);
+            if (d < slack && (!best || d < best.d)) best = { p, d };
+        }
+        if (!best) return; // missed: stay armed
+        const p = best.p;
+        this.setCutting(false);
+        if (this.nudge?.id === p.id) this.nudge = null;
+        // Snip at the tap, then both dots pop.
+        const tint = hexToInt(colour(p.color)?.base ?? COMPLETED_LINE);
+        const snip = this.add.particles(w.x, w.y, 'spark', { speed: { min: 60, max: 260 }, lifespan: { min: 200, max: 450 }, scale: { start: 0.7, end: 0 }, tint: [0xffffff, tint], emitting: false });
+        snip.explode(18);
+        this.time.delayedCall(600, () => snip.destroy());
+        this.pop(p.a, p.a.r, tint);
+        this.pop(p.b, p.b.r, tint);
+        this.removePair(p);
+    }
+
     private tap(w: Pt) {
+        if (this.cutting) return this.cutAt(w);
         let best: { p: Pair; side: Side; d: number } | null = null;
         const slack = 14 / this.cameras.main.zoom;
         for (const id of this.alive) {
@@ -276,7 +356,8 @@ export class Game extends Phaser.Scene {
             pts: best.side === 'a' ? ln.a : ln.b,
             acc: best.side === 'a' ? ln.accA : ln.accB,
             s: 0,
-            returning: false
+            returning: false,
+            t: 0
         });
         if (this.nudge?.id === best.p.id) this.nudge = null;
     }
@@ -296,7 +377,8 @@ export class Game extends Phaser.Scene {
 
     update(_t: number, dtMs: number) {
         if (!this.level) return;
-        const dt = Math.min(dtMs, 50) / 1000;
+        this.checkFinale();
+        const dt = (Math.min(dtMs, 50) / 1000) * (this.finale?.k ?? 1);
         for (const [id, m] of [...this.movers]) {
             const p = this.pair(id);
             const total = m.acc[m.acc.length - 1];
@@ -307,7 +389,10 @@ export class Game extends Phaser.Scene {
                 continue;
             }
             // Advance in small steps so a fast dot can't tunnel through a blocker.
-            let left = tuning.moveSpeed * dt;
+            // Accelerates: start speed, +accel every second (speed at the middle of this frame).
+            const speed = tuning.startSpeed + tuning.accel * (m.t + dt / 2);
+            m.t += dt;
+            let left = speed * dt;
             let hit: { key: string; pos: Pt } | null = null;
             while (left > 0 && m.s < total) {
                 const step = Math.min(left, STEP);
@@ -335,6 +420,30 @@ export class Game extends Phaser.Scene {
         this.draw();
     }
 
+    /**
+     * Ending: the last line's dot is about to reach its partner. Slow motion, and the camera zooms
+     * in with the meeting point in the middle of the screen. The end screen comes with the pop.
+     */
+    private checkFinale() {
+        if (this.finale || this.over || this.alive.size !== 1) return;
+        const [id] = this.alive;
+        const m = this.movers.get(id);
+        if (!m || m.returning || !m.open) return;
+        const p = this.pair(id);
+        const left = m.acc[m.acc.length - 1] - m.s;
+        const speed = tuning.startSpeed + tuning.accel * m.t;
+        if (left > Math.max(speed * FINALE_LEAD, p[m.side].r * FINALE_MIN_RADII)) return;
+        this.finale = { k: 1 };
+        this.dragFrom = null;
+        this.pinch = null;
+        this.tweens.add({ targets: this.finale, k: FINALE_SLOW, duration: 180, ease: 'Sine.easeOut' });
+        const meet = p[m.side === 'a' ? 'b' : 'a'];
+        const cam = this.cameras.main;
+        const zoom = Math.min(this.baseZoom * MAX_ZOOM, Math.max(cam.zoom, this.baseZoom * FINALE_ZOOM));
+        cam.pan(meet.x, meet.y, 380, 'Sine.easeOut', true);
+        cam.zoomTo(zoom, 380, 'Sine.easeOut', true);
+    }
+
     private pushTrail(id: string, p: Pt) {
         const t = this.trails.get(id) ?? [];
         t.push({ x: p.x, y: p.y });
@@ -359,26 +468,46 @@ export class Game extends Phaser.Scene {
         return null;
     }
 
-    private clear(p: Pair, from: Side) {
-        this.movers.delete(p.id);
-        this.alive.delete(p.id);
-        const c = colour(p.color);
-        const tint = hexToInt(c?.base ?? COMPLETED_LINE);
-        const at = p[from === 'a' ? 'b' : 'a'];
-        const size = Math.max(p.a.r, p.b.r);
-        // Bigger dots, bigger splash.
+    /** Splash of sparks where a dot pops (bigger dots, bigger splash). */
+    private pop(at: Pt, size: number, tint: number) {
         const fx = this.add.particles(at.x, at.y, 'spark', {
             speed: { min: size * 3, max: size * 11 }, lifespan: { min: 250, max: 600 }, scale: { start: size / 22, end: 0 },
             tint, quantity: Math.round(10 + size), emitting: false
         });
         fx.explode(Math.round(10 + size * 1.2));
         this.time.delayedCall(800, () => fx.destroy());
+    }
+
+    private clear(p: Pair, from: Side) {
+        const tint = hexToInt(colour(p.color)?.base ?? COMPLETED_LINE);
+        this.pop(p[from === 'a' ? 'b' : 'a'], Math.max(p.a.r, p.b.r), tint);
+        this.removePair(p);
+    }
+
+    /** A pair leaves the board (reached its partner, or cut); the level is won when none are left. */
+    private removePair(p: Pair) {
+        this.movers.delete(p.id);
+        this.alive.delete(p.id);
+        this.trails.delete(p.id);
+        if (!this.alive.size) this.setCutting(false);
         this.emitState();
         if (!this.alive.size) {
             this.over = true;
             // Cleared lines are gone during play; the whole picture comes back once the level is won.
             this.tweens.add({ targets: this.reveal, a: 1, duration: 700, delay: 250, ease: 'Sine.easeOut' });
-            this.time.delayedCall(1100, () => this.events.emit('win'));
+            // After the slow-motion ending the end screen comes with the pop; otherwise after the picture.
+            if (this.finale) {
+                this.tweens.killTweensOf(this.finale);
+                this.finale.k = 1;
+                this.events.emit('win');
+                // Behind the end screen the camera eases back out to the whole picture.
+                const cam = this.cameras.main, b = this.bounds, bottom = BOTTOM_HEIGHT + (this.level.tutorial ? 150 : 20);
+                this.time.delayedCall(250, () => {
+                    cam.zoomTo(this.baseZoom, 700, 'Sine.easeInOut', true);
+                    cam.pan(b.x + b.w / 2, b.y + b.h / 2 - (HUD_HEIGHT - bottom) / 2 / this.baseZoom, 700, 'Sine.easeInOut', true);
+                });
+            }
+            else this.time.delayedCall(1100, () => this.events.emit('win'));
         }
     }
 
@@ -405,23 +534,23 @@ export class Game extends Phaser.Scene {
             g.fillCircle(pts[pts.length - 1].x, pts[pts.length - 1].y, w / 2);
         };
         const done = hexToInt(COMPLETED_LINE);
-        if (this.reveal.a > 0) for (const p of this.level.pairs) if (!this.alive.has(p.id)) stroke(this.model.line(p.id), done, LINE_WIDTH, this.reveal.a);
+        if (this.reveal.a > 0) for (const p of this.level.pairs) if (!this.alive.has(p.id)) stroke(this.model.line(p.id), done, lineWidth(p), this.reveal.a);
         for (const id of this.alive) {
             const p = this.pair(id);
-            const col = hexToInt(colour(p.color)?.base ?? COMPLETED_LINE);
+            const col = hexToInt(theme().lineOverride[p.color] ?? colour(p.color)?.base ?? COMPLETED_LINE);
             const m = this.movers.get(id);
             if (m) {
                 // The line shortens behind the moving dot.
                 const rest = [pointAt(m.pts, m.acc, m.s), ...m.pts.filter((_, i) => m.acc[i] > m.s)];
-                stroke(rest, col);
-            } else stroke(this.model.line(id), col);
+                stroke(rest, col, lineWidth(p));
+            } else stroke(this.model.line(id), col, lineWidth(p));
         }
         // Trails behind moving dots.
         for (const [id, t] of this.trails) {
             if (!this.alive.has(id)) continue;
             const p = this.pair(id), m = this.movers.get(id);
             const r = m ? p[m.side].r : p.a.r;
-            const col = hexToInt(colour(p.color)?.base ?? COMPLETED_LINE);
+            const col = hexToInt(theme().lineOverride[p.color] ?? colour(p.color)?.base ?? COMPLETED_LINE);
             t.forEach((q, i) => {
                 const k = (i + 1) / (t.length + 1);
                 g.fillStyle(col, 0.28 * k);
@@ -429,7 +558,7 @@ export class Game extends Phaser.Scene {
             });
         }
         // Dots: soft drop shadows first (so they sit under every dot), then the glossy dots.
-        const dots: { pos: Pt; r: number; name: string; sx: number; sy: number; angle: number; striped: boolean }[] = [];
+        const dots: { pos: Pt; draw: Pt; r: number; name: string; sx: number; sy: number; angle: number; striped: boolean }[] = [];
         for (const id of this.alive) {
             const p = this.pair(id);
             const m = this.movers.get(id);
@@ -447,11 +576,12 @@ export class Game extends Phaser.Scene {
                     if (!(m && m.side === side)) angle = w.angle;
                     sx *= 1 - e; sy *= 1 + e;
                 }
-                dots.push({ pos: this.dotPos(p, side), r: p[side].r, name: p.color, sx, sy, angle, striped: this.marked.has(id) });
+                const pos = this.dotPos(p, side);
+                dots.push({ pos, draw: pos, r: p[side].r, name: p.color, sx, sy, angle, striped: this.marked.has(id) });
             }
         }
         for (const d of dots) this.drawShadow(d.pos, d.r, d.sx, d.sy, d.angle);
-        for (const d of dots) this.drawDot(d.pos, d.r, d.name, d.sx, d.sy, d.angle, d.striped);
+        for (const d of dots) this.drawDot(d.draw, d.r, d.name, d.sx, d.sy, d.angle, d.striped);
     }
 
     /** Soft drop shadow below-right of a dot (light from the top-left). */
@@ -461,9 +591,10 @@ export class Game extends Phaser.Scene {
         g.translateCanvas(pos.x + r * 0.14, pos.y + r * 0.3);
         g.rotateCanvas(angle);
         g.scaleCanvas(sx, sy);
-        g.fillStyle(0x3a2f20, 0.07);
+        const th = theme();
+        g.fillStyle(th.shadow, th.shadowAlpha[0]);
         g.fillCircle(0, 0, r * 1.12);
-        g.fillStyle(0x3a2f20, 0.12);
+        g.fillStyle(th.shadow, th.shadowAlpha[1]);
         g.fillCircle(0, 0, r * 0.96);
         g.restore();
     }
@@ -472,7 +603,7 @@ export class Game extends Phaser.Scene {
     private drawDot(pos: Pt, r: number, name: string, sx: number, sy: number, angle: number, striped: boolean) {
         const g = this.gfx;
         const c = colour(name);
-        const base = hexToInt(c?.base ?? COMPLETED_LINE);
+        const base = hexToInt(theme().lineOverride[name] ?? c?.base ?? COMPLETED_LINE);
         g.save();
         g.translateCanvas(pos.x, pos.y);
         g.rotateCanvas(angle);

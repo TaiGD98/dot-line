@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" width="400" height="400" fill="none" stroke="#222" stroke-width="5" stroke-linecap="round" stroke-linejoin="round">
+  <!-- Level 36 · Sneaker · normal. data-big="1" = pair with big dots. -->
+  <path d="M40 300 L40 180 C80 180 110 200 140 160 L200 160 C230 230 300 230 370 260 L370 300 Z"/>
+  <line x1="40" y1="300" x2="370" y2="300"/>
+  <line x1="40" y1="330" x2="370" y2="330"/>
+  <line x1="40" y1="300" x2="40" y2="330"/>
+  <line x1="370" y1="300" x2="370" y2="330"/>
+  <line x1="150" y1="170" x2="190" y2="180"/>
+  <line x1="160" y1="190" x2="200" y2="200"/>
+  <line x1="170" y1="210" x2="210" y2="220"/>
+</svg>

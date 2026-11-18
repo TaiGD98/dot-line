@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" width="400" height="400" fill="none" stroke="#222" stroke-width="5" stroke-linecap="round" stroke-linejoin="round">
+  <!-- Chapter 2 · level 72 · Car · normal -->
+  <polyline points="40 260 40 210 110 200 150 140 270 140 310 200 370 215 370 260 40 260"/>
+  <line x1="210" y1="140" x2="210" y2="200"/>
+  <polyline points="160 150 130 200 205 200 205 150 160 150"/>
+  <polyline points="215 150 215 200 295 200 265 150 215 150"/>
+  <circle cx="110" cy="270" r="40"/>
+  <circle cx="300" cy="270" r="40"/>
+  <circle cx="110" cy="270" r="14"/>
+  <circle cx="300" cy="270" r="14"/>
+  <ellipse cx="355" cy="228" rx="10" ry="8"/>
+</svg>

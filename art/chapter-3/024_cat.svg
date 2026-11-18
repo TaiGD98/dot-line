@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" width="400" height="400" fill="none" stroke="#222" stroke-width="5" stroke-linecap="round" stroke-linejoin="round">
+  <!-- Chapter 2 · level 24 · Cat face · hard -->
+  <ellipse cx="200" cy="220" rx="150" ry="130"/>
+  <polyline points="80 150 90 50 160 100"/>
+  <polyline points="240 100 310 50 320 150"/>
+  <ellipse cx="150" cy="200" rx="18" ry="26"/>
+  <ellipse cx="250" cy="200" rx="18" ry="26"/>
+  <polygon points="185 250 215 250 200 268"/>
+  <path d="M200 268 C190 300 160 300 150 285"/>
+  <path d="M200 268 C210 300 240 300 250 285"/>
+  <line x1="140" y1="260" x2="50" y2="245"/>
+  <line x1="140" y1="272" x2="50" y2="280"/>
+  <line x1="260" y1="260" x2="350" y2="245"/>
+  <line x1="260" y1="272" x2="350" y2="280"/>
+</svg>

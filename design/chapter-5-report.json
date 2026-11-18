@@ -1,0 +1,1038 @@
+{
+  "generated": "2026-11-18",
+  "chapter": "chapter-5",
+  "levels": [
+    {
+      "level": 1,
+      "id": "c5-001-pumpkin",
+      "name": "Pumpkin",
+      "source": "art/openclipart/01_pumpkin.png",
+      "tier": "normal",
+      "traced": 30,
+      "strokes": 28,
+      "stats": {
+        "strokes": 28,
+        "lines": 28,
+        "ornaments": 0,
+        "tDots": 0.35714285714285715,
+        "freeDots": 0.25,
+        "touchingDots": 0.39285714285714285,
+        "openShare": 0.5357142857142857,
+        "blocksPerLine": 0.75,
+        "depth": 5,
+        "crossingsPerLine": 0.14285714285714285,
+        "pulledBack": 43,
+        "extended": 1,
+        "size": 1000
+      },
+      "targets": {
+        "open": 0.36,
+        "blocks": 1.26,
+        "depthPerLine": 0.27
+      },
+      "score": 50,
+      "solvable": true,
+      "warnings": [
+        "1 short line(s) left out to keep the level solvable"
+      ]
+    },
+    {
+      "level": 2,
+      "id": "c5-002-bunny",
+      "name": "Bunny",
+      "source": "art/openclipart/02_bunny.png",
+      "tier": "hard",
+      "traced": 58,
+      "strokes": 50,
+      "stats": {
+        "strokes": 50,
+        "lines": 54,
+        "ornaments": 0,
+        "tDots": 0.3611111111111111,
+        "freeDots": 0.3611111111111111,
+        "touchingDots": 0.2777777777777778,
+        "openShare": 0.5555555555555556,
+        "blocksPerLine": 0.7037037037037037,
+        "depth": 7,
+        "crossingsPerLine": 0.2777777777777778,
+        "pulledBack": 35,
+        "extended": 8,
+        "size": 1350
+      },
+      "targets": {
+        "open": 0.34,
+        "blocks": 1.35,
+        "depthPerLine": 0.22
+      },
+      "score": 63,
+      "solvable": true,
+      "warnings": [
+        "1 short line(s) left out to keep the level solvable",
+        "The drawing has 54 strokes, more than the 50 lines asked for (stroke mode never merges strokes)"
+      ]
+    },
+    {
+      "level": 3,
+      "id": "c5-003-imaginary-flower",
+      "name": "Imaginary flower",
+      "source": "art/openclipart/03_imaginary-flower.png",
+      "tier": "hard",
+      "traced": 63,
+      "strokes": 55,
+      "stats": {
+        "strokes": 55,
+        "lines": 55,
+        "ornaments": 0,
+        "tDots": 0.4909090909090909,
+        "freeDots": 0.20909090909090908,
+        "touchingDots": 0.3,
+        "openShare": 0.5636363636363636,
+        "blocksPerLine": 0.9818181818181818,
+        "depth": 5,
+        "crossingsPerLine": 0.4,
+        "pulledBack": 39,
+        "extended": 0,
+        "size": 1350
+      },
+      "targets": {
+        "open": 0.34,
+        "blocks": 1.35,
+        "depthPerLine": 0.22
+      },
+      "score": 58,
+      "solvable": true,
+      "warnings": []
+    },
+    {
+      "level": 4,
+      "id": "c5-004-simple-flower",
+      "name": "Flower head",
+      "source": "art/openclipart/04_simple-flower.png",
+      "tier": "normal",
+      "traced": 30,
+      "strokes": 27,
+      "stats": {
+        "strokes": 27,
+        "lines": 22,
+        "ornaments": 0,
+        "tDots": 0.5681818181818182,
+        "freeDots": 0.3181818181818182,
+        "touchingDots": 0.11363636363636363,
+        "openShare": 0.6363636363636364,
+        "blocksPerLine": 1.0909090909090908,
+        "depth": 7,
+        "crossingsPerLine": 0.2727272727272727,
+        "pulledBack": 33,
+        "extended": 1,
+        "size": 1000
+      },
+      "targets": {
+        "open": 0.36,
+        "blocks": 1.26,
+        "depthPerLine": 0.27
+      },
+      "score": 48,
+      "solvable": true,
+      "warnings": [
+        "10 short line(s) left out to keep the level solvable"
+      ]
+    },
+    {
+      "level": 5,
+      "id": "c5-005-christmas-tree",
+      "name": "Christmas tree",
+      "source": "art/openclipart/05_christmas-tree.png",
+      "tier": "normal",
+      "traced": 28,
+      "strokes": 28,
+      "stats": {
+        "strokes": 28,
+        "lines": 31,
+        "ornaments": 0,
+        "tDots": 0.3225806451612903,
+        "freeDots": 0.3709677419354839,
+        "touchingDots": 0.3064516129032258,
+        "openShare": 0.6451612903225806,
+        "blocksPerLine": 0.6129032258064516,
+        "depth": 6,
+        "crossingsPerLine": 0.03225806451612903,
+        "pulledBack": 50,
+        "extended": 0,
+        "size": 1000
+      },
+      "targets": {
+        "open": 0.36,
+        "blocks": 1.26,
+        "depthPerLine": 0.27
+      },
+      "score": 48,
+      "solvable": true,
+      "warnings": [
+        "The drawing has 31 strokes, more than the 28 lines asked for (stroke mode never merges strokes)"
+      ]
+    },
+    {
+      "level": 6,
+      "id": "c5-006-butterfly",
+      "name": "Butterfly",
+      "source": "art/openclipart/06_butterfly.png",
+      "tier": "normal",
+      "traced": 31,
+      "strokes": 29,
+      "stats": {
+        "strokes": 29,
+        "lines": 35,
+        "ornaments": 0,
+        "tDots": 0.4714285714285714,
+        "freeDots": 0.2,
+        "touchingDots": 0.32857142857142857,
+        "openShare": 0.5428571428571428,
+        "blocksPerLine": 1,
+        "depth": 7,
+        "crossingsPerLine": 0.05714285714285714,
+        "pulledBack": 26,
+        "extended": 1,
+        "size": 1000
+      },
+      "targets": {
+        "open": 0.36,
+        "blocks": 1.26,
+        "depthPerLine": 0.27
+      },
+      "score": 57,
+      "solvable": true,
+      "warnings": [
+        "The drawing has 35 strokes, more than the 29 lines asked for (stroke mode never merges strokes)"
+      ]
+    },
+    {
+      "level": 7,
+      "id": "c5-007-hurricane-lamp",
+      "name": "Hurricane lamp",
+      "source": "art/openclipart/07_hurricane-lamp.png",
+      "tier": "hard",
+      "traced": 114,
+      "strokes": 86,
+      "stats": {
+        "strokes": 86,
+        "lines": 67,
+        "ornaments": 0,
+        "tDots": 0.34328358208955223,
+        "freeDots": 0.35074626865671643,
+        "touchingDots": 0.30597014925373134,
+        "openShare": 0.6268656716417911,
+        "blocksPerLine": 0.6716417910447762,
+        "depth": 9,
+        "crossingsPerLine": 0.14925373134328357,
+        "pulledBack": 130,
+        "extended": 5,
+        "size": 1350
+      },
+      "targets": {
+        "open": 0.34,
+        "blocks": 1.35,
+        "depthPerLine": 0.22
+      },
+      "score": 69,
+      "solvable": true,
+      "warnings": [
+        "9 short line(s) left out to keep the level solvable"
+      ]
+    },
+    {
+      "level": 8,
+      "id": "c5-008-fall-leaves",
+      "name": "Fall leaves",
+      "source": "art/openclipart/08_fall-leaves.png",
+      "tier": "normal",
+      "traced": 28,
+      "strokes": 21,
+      "stats": {
+        "strokes": 21,
+        "lines": 22,
+        "ornaments": 0,
+        "tDots": 0.20454545454545456,
+        "freeDots": 0.5454545454545454,
+        "touchingDots": 0.25,
+        "openShare": 0.6818181818181818,
+        "blocksPerLine": 0.4090909090909091,
+        "depth": 3,
+        "crossingsPerLine": 0.045454545454545456,
+        "pulledBack": 37,
+        "extended": 0,
+        "size": 1000
+      },
+      "targets": {
+        "open": 0.36,
+        "blocks": 1.26,
+        "depthPerLine": 0.27
+      },
+      "score": 35,
+      "solvable": true,
+      "warnings": [
+        "The drawing has 22 strokes, more than the 21 lines asked for (stroke mode never merges strokes)"
+      ]
+    },
+    {
+      "level": 9,
+      "id": "c5-009-christmas-bear",
+      "name": "Christmas bear",
+      "source": "art/openclipart/09_christmas-bear.png",
+      "tier": "hard",
+      "traced": 194,
+      "strokes": 135,
+      "stats": {
+        "strokes": 135,
+        "lines": 115,
+        "ornaments": 0,
+        "tDots": 0.2391304347826087,
+        "freeDots": 0.3739130434782609,
+        "touchingDots": 0.3869565217391304,
+        "openShare": 0.7565217391304347,
+        "blocksPerLine": 0.391304347826087,
+        "depth": 5,
+        "crossingsPerLine": 0.10434782608695652,
+        "pulledBack": 170,
+        "extended": 2,
+        "size": 1350
+      },
+      "targets": {
+        "open": 0.34,
+        "blocks": 1.35,
+        "depthPerLine": 0.22
+      },
+      "score": 62,
+      "solvable": true,
+      "warnings": [
+        "22 short line(s) left out to keep the level solvable"
+      ]
+    },
+    {
+      "level": 10,
+      "id": "c5-010-dog-ilio",
+      "name": "Dog with a garland",
+      "source": "art/openclipart/10_dog-ilio.png",
+      "tier": "hard",
+      "traced": 109,
+      "strokes": 88,
+      "stats": {
+        "strokes": 88,
+        "lines": 73,
+        "ornaments": 0,
+        "tDots": 0.3698630136986301,
+        "freeDots": 0.3287671232876712,
+        "touchingDots": 0.3013698630136986,
+        "openShare": 0.6301369863013698,
+        "blocksPerLine": 0.7123287671232876,
+        "depth": 6,
+        "crossingsPerLine": 0.2328767123287671,
+        "pulledBack": 93,
+        "extended": 1,
+        "size": 1350
+      },
+      "targets": {
+        "open": 0.34,
+        "blocks": 1.35,
+        "depthPerLine": 0.22
+      },
+      "score": 63,
+      "solvable": true,
+      "warnings": [
+        "11 short line(s) left out to keep the level solvable"
+      ]
+    },
+    {
+      "level": 15,
+      "id": "c5-015-toy-airplane",
+      "name": "Toy airplane",
+      "title": "Airplane with propeller - outline",
+      "source": "art/openclipart/15_toy-airplane.png",
+      "tier": "normal",
+      "strokes": 11,
+      "stats": {
+        "strokes": 11,
+        "lines": 15,
+        "ornaments": 0,
+        "tDots": 0.4,
+        "freeDots": 0,
+        "touchingDots": 0.6,
+        "openShare": 0.4,
+        "blocksPerLine": 0.8,
+        "depth": 3,
+        "crossingsPerLine": 0,
+        "pulledBack": 6,
+        "extended": 0,
+        "lost": 0,
+        "size": 704,
+        "radius": 16,
+        "bigDots": 0
+      },
+      "targets": {
+        "open": 0.36,
+        "blocks": 1.26,
+        "depthPerLine": 0.27
+      },
+      "score": 47,
+      "solvable": true,
+      "warnings": [
+        "The drawing has 15 strokes, more than the 11 lines asked for (stroke mode never merges strokes)"
+      ]
+    },
+    {
+      "level": 16,
+      "id": "c5-016-palm-tree",
+      "name": "Palm tree",
+      "title": "Palm tree 7 (outline)",
+      "source": "art/openclipart/16_palm-tree.png",
+      "tier": "hard",
+      "strokes": 86,
+      "stats": {
+        "strokes": 86,
+        "lines": 82,
+        "ornaments": 0,
+        "tDots": 0.42073170731707316,
+        "freeDots": 0.21341463414634146,
+        "touchingDots": 0.36585365853658536,
+        "openShare": 0.45121951219512196,
+        "blocksPerLine": 0.8658536585365854,
+        "depth": 9,
+        "crossingsPerLine": 0.2073170731707317,
+        "pulledBack": 71,
+        "extended": 6,
+        "lost": 4,
+        "size": 1752,
+        "radius": 16,
+        "bigDots": 0
+      },
+      "targets": {
+        "open": 0.34,
+        "blocks": 1.35,
+        "depthPerLine": 0.22
+      },
+      "score": 83,
+      "solvable": true,
+      "warnings": [
+        "4 stroke(s) of the drawing left out: too small for dots of radius 16, or in the way"
+      ]
+    },
+    {
+      "level": 17,
+      "id": "c5-017-usb-stick",
+      "name": "Usb stick",
+      "title": "USB Key",
+      "source": "art/openclipart/17_usb-stick.png",
+      "tier": "normal",
+      "strokes": 10,
+      "stats": {
+        "strokes": 10,
+        "lines": 12,
+        "ornaments": 0,
+        "tDots": 0.5,
+        "freeDots": 0.041666666666666664,
+        "touchingDots": 0.4583333333333333,
+        "openShare": 0.4166666666666667,
+        "blocksPerLine": 1,
+        "depth": 4,
+        "crossingsPerLine": 0.3333333333333333,
+        "pulledBack": 1,
+        "extended": 0,
+        "lost": 0,
+        "size": 744,
+        "radius": 16,
+        "bigDots": 2
+      },
+      "targets": {
+        "open": 0.36,
+        "blocks": 1.26,
+        "depthPerLine": 0.27
+      },
+      "score": 48,
+      "solvable": true,
+      "warnings": [
+        "The drawing has 12 strokes, more than the 10 lines asked for (stroke mode never merges strokes)"
+      ]
+    },
+    {
+      "level": 18,
+      "id": "c5-018-vase-twist",
+      "name": "Vase twist",
+      "title": "Vase 36 line drawing",
+      "source": "art/openclipart/18_vase-twist.png",
+      "tier": "normal",
+      "strokes": 22,
+      "stats": {
+        "strokes": 22,
+        "lines": 23,
+        "ornaments": 0,
+        "tDots": 0.6304347826086957,
+        "freeDots": 0.10869565217391304,
+        "touchingDots": 0.2608695652173913,
+        "openShare": 0.5217391304347826,
+        "blocksPerLine": 1.2173913043478262,
+        "depth": 5,
+        "crossingsPerLine": 0.2608695652173913,
+        "pulledBack": 16,
+        "extended": 0,
+        "lost": 0,
+        "size": 911,
+        "radius": 16,
+        "bigDots": 0
+      },
+      "targets": {
+        "open": 0.36,
+        "blocks": 1.26,
+        "depthPerLine": 0.27
+      },
+      "score": 49,
+      "solvable": true,
+      "warnings": [
+        "The drawing has 23 strokes, more than the 22 lines asked for (stroke mode never merges strokes)"
+      ]
+    },
+    {
+      "level": 19,
+      "id": "c5-019-angel",
+      "name": "Angel",
+      "title": "Angle 9 (outline)",
+      "source": "art/openclipart/19_angel.png",
+      "tier": "normal",
+      "strokes": 26,
+      "stats": {
+        "strokes": 26,
+        "lines": 26,
+        "ornaments": 0,
+        "tDots": 0.6730769230769231,
+        "freeDots": 0.1346153846153846,
+        "touchingDots": 0.19230769230769232,
+        "openShare": 0.38461538461538464,
+        "blocksPerLine": 1.3076923076923077,
+        "depth": 7,
+        "crossingsPerLine": 0.34615384615384615,
+        "pulledBack": 14,
+        "extended": 0,
+        "lost": 0,
+        "size": 916,
+        "radius": 16,
+        "bigDots": 0
+      },
+      "targets": {
+        "open": 0.36,
+        "blocks": 1.26,
+        "depthPerLine": 0.27
+      },
+      "score": 61,
+      "solvable": true,
+      "warnings": []
+    },
+    {
+      "level": 20,
+      "id": "c5-020-dancer-swirl",
+      "name": "Dancer swirl",
+      "title": "Dancer 3 line drawing",
+      "source": "art/openclipart/20_dancer-swirl.png",
+      "tier": "normal",
+      "strokes": 40,
+      "stats": {
+        "strokes": 40,
+        "lines": 37,
+        "ornaments": 0,
+        "tDots": 0.5945945945945946,
+        "freeDots": 0.08108108108108109,
+        "touchingDots": 0.32432432432432434,
+        "openShare": 0.35135135135135137,
+        "blocksPerLine": 1.1891891891891893,
+        "depth": 8,
+        "crossingsPerLine": 0.13513513513513514,
+        "pulledBack": 26,
+        "extended": 0,
+        "lost": 1,
+        "size": 1379,
+        "radius": 16,
+        "bigDots": 2
+      },
+      "targets": {
+        "open": 0.36,
+        "blocks": 1.26,
+        "depthPerLine": 0.27
+      },
+      "score": 68,
+      "solvable": true,
+      "warnings": [
+        "1 stroke(s) of the drawing left out: too small for dots of radius 16, or in the way"
+      ]
+    },
+    {
+      "level": 21,
+      "id": "c5-021-dancer-hat",
+      "name": "Dancer hat",
+      "title": "Dancer 11 line drawing",
+      "source": "art/openclipart/21_dancer-hat.png",
+      "tier": "normal",
+      "strokes": 41,
+      "stats": {
+        "strokes": 41,
+        "lines": 40,
+        "ornaments": 0,
+        "tDots": 0.5375,
+        "freeDots": 0.2,
+        "touchingDots": 0.2625,
+        "openShare": 0.55,
+        "blocksPerLine": 1.125,
+        "depth": 6,
+        "crossingsPerLine": 0.1,
+        "pulledBack": 35,
+        "extended": 0,
+        "lost": 1,
+        "size": 1152,
+        "radius": 16,
+        "bigDots": 0
+      },
+      "targets": {
+        "open": 0.36,
+        "blocks": 1.26,
+        "depthPerLine": 0.27
+      },
+      "score": 56,
+      "solvable": true,
+      "warnings": [
+        "1 stroke(s) of the drawing left out: too small for dots of radius 16, or in the way"
+      ]
+    },
+    {
+      "level": 22,
+      "id": "c5-022-dancer-kimono",
+      "name": "Dancer kimono",
+      "title": "Dancer 15 line drawing",
+      "source": "art/openclipart/22_dancer-kimono.png",
+      "tier": "normal",
+      "strokes": 41,
+      "stats": {
+        "strokes": 41,
+        "lines": 41,
+        "ornaments": 0,
+        "tDots": 0.6341463414634146,
+        "freeDots": 0.12195121951219512,
+        "touchingDots": 0.24390243902439024,
+        "openShare": 0.36585365853658536,
+        "blocksPerLine": 1.3414634146341464,
+        "depth": 9,
+        "crossingsPerLine": 0.3902439024390244,
+        "pulledBack": 29,
+        "extended": 0,
+        "lost": 0,
+        "size": 1540,
+        "radius": 16,
+        "bigDots": 0
+      },
+      "targets": {
+        "open": 0.36,
+        "blocks": 1.26,
+        "depthPerLine": 0.27
+      },
+      "score": 72,
+      "solvable": true,
+      "warnings": []
+    },
+    {
+      "level": 23,
+      "id": "c5-023-dancer-wave",
+      "name": "Dancer wave",
+      "title": "Dancer 21 line drawing",
+      "source": "art/openclipart/23_dancer-wave.png",
+      "tier": "hard",
+      "strokes": 52,
+      "stats": {
+        "strokes": 52,
+        "lines": 52,
+        "ornaments": 0,
+        "tDots": 0.6826923076923077,
+        "freeDots": 0.10576923076923077,
+        "touchingDots": 0.21153846153846154,
+        "openShare": 0.4230769230769231,
+        "blocksPerLine": 1.3461538461538463,
+        "depth": 7,
+        "crossingsPerLine": 0.4423076923076923,
+        "pulledBack": 28,
+        "extended": 1,
+        "lost": 0,
+        "size": 1930,
+        "radius": 16,
+        "bigDots": 1
+      },
+      "targets": {
+        "open": 0.34,
+        "blocks": 1.35,
+        "depthPerLine": 0.22
+      },
+      "score": 69,
+      "solvable": true,
+      "warnings": []
+    },
+    {
+      "level": 24,
+      "id": "c5-024-dancer-parasol",
+      "name": "Dancer parasol",
+      "title": "Dancer 27 line drawing",
+      "source": "art/openclipart/24_dancer-parasol.png",
+      "tier": "hard",
+      "strokes": 52,
+      "stats": {
+        "strokes": 52,
+        "lines": 52,
+        "ornaments": 0,
+        "tDots": 0.625,
+        "freeDots": 0.14423076923076922,
+        "touchingDots": 0.23076923076923078,
+        "openShare": 0.5769230769230769,
+        "blocksPerLine": 1.3076923076923077,
+        "depth": 10,
+        "crossingsPerLine": 0.3269230769230769,
+        "pulledBack": 36,
+        "extended": 0,
+        "lost": 0,
+        "size": 1318,
+        "radius": 16,
+        "bigDots": 1
+      },
+      "targets": {
+        "open": 0.34,
+        "blocks": 1.35,
+        "depthPerLine": 0.22
+      },
+      "score": 70,
+      "solvable": true,
+      "warnings": []
+    },
+    {
+      "level": 25,
+      "id": "c5-025-dancer-shell",
+      "name": "Dancer shell",
+      "title": "Dancer 29 line drawing",
+      "source": "art/openclipart/25_dancer-shell.png",
+      "tier": "hard",
+      "strokes": 57,
+      "stats": {
+        "strokes": 57,
+        "lines": 55,
+        "ornaments": 0,
+        "tDots": 0.5454545454545454,
+        "freeDots": 0.17272727272727273,
+        "touchingDots": 0.2818181818181818,
+        "openShare": 0.5272727272727272,
+        "blocksPerLine": 1.1454545454545455,
+        "depth": 8,
+        "crossingsPerLine": 0.2545454545454545,
+        "pulledBack": 37,
+        "extended": 0,
+        "lost": 2,
+        "size": 1448,
+        "radius": 16,
+        "bigDots": 0
+      },
+      "targets": {
+        "open": 0.34,
+        "blocks": 1.35,
+        "depthPerLine": 0.22
+      },
+      "score": 68,
+      "solvable": true,
+      "warnings": [
+        "2 stroke(s) of the drawing left out: too small for dots of radius 16, or in the way"
+      ]
+    },
+    {
+      "level": 26,
+      "id": "c5-026-dancer-veil",
+      "name": "Dancer veil",
+      "title": "Dancer 35 line drawing",
+      "source": "art/openclipart/26_dancer-veil.png",
+      "tier": "hard",
+      "strokes": 53,
+      "stats": {
+        "strokes": 53,
+        "lines": 50,
+        "ornaments": 0,
+        "tDots": 0.66,
+        "freeDots": 0.17,
+        "touchingDots": 0.17,
+        "openShare": 0.42,
+        "blocksPerLine": 1.32,
+        "depth": 10,
+        "crossingsPerLine": 0.26,
+        "pulledBack": 42,
+        "extended": 0,
+        "lost": 2,
+        "size": 1249,
+        "radius": 16,
+        "bigDots": 1
+      },
+      "targets": {
+        "open": 0.34,
+        "blocks": 1.35,
+        "depthPerLine": 0.22
+      },
+      "score": 77,
+      "solvable": true,
+      "warnings": [
+        "2 stroke(s) of the drawing left out: too small for dots of radius 16, or in the way"
+      ]
+    },
+    {
+      "level": 27,
+      "id": "c5-027-dancer-fan",
+      "name": "Dancer fan",
+      "title": "Dancer 37 line drawing",
+      "source": "art/openclipart/27_dancer-fan.png",
+      "tier": "normal",
+      "strokes": 28,
+      "stats": {
+        "strokes": 28,
+        "lines": 29,
+        "ornaments": 0,
+        "tDots": 0.6206896551724138,
+        "freeDots": 0.06896551724137931,
+        "touchingDots": 0.3103448275862069,
+        "openShare": 0.3793103448275862,
+        "blocksPerLine": 1.206896551724138,
+        "depth": 7,
+        "crossingsPerLine": 0.27586206896551724,
+        "pulledBack": 19,
+        "extended": 2,
+        "lost": 0,
+        "size": 1418,
+        "radius": 16,
+        "bigDots": 1
+      },
+      "targets": {
+        "open": 0.36,
+        "blocks": 1.26,
+        "depthPerLine": 0.27
+      },
+      "score": 62,
+      "solvable": true,
+      "warnings": [
+        "The drawing has 29 strokes, more than the 28 lines asked for (stroke mode never merges strokes)"
+      ]
+    },
+    {
+      "level": 28,
+      "id": "c5-028-dancer-scarf",
+      "name": "Dancer scarf",
+      "title": "Dancer 45 line drawing",
+      "source": "art/openclipart/28_dancer-scarf.png",
+      "tier": "normal",
+      "strokes": 39,
+      "stats": {
+        "strokes": 39,
+        "lines": 37,
+        "ornaments": 0,
+        "tDots": 0.581081081081081,
+        "freeDots": 0.13513513513513514,
+        "touchingDots": 0.28378378378378377,
+        "openShare": 0.5675675675675675,
+        "blocksPerLine": 1.1081081081081081,
+        "depth": 5,
+        "crossingsPerLine": 0.21621621621621623,
+        "pulledBack": 29,
+        "extended": 0,
+        "lost": 1,
+        "size": 1163,
+        "radius": 16,
+        "bigDots": 2
+      },
+      "targets": {
+        "open": 0.36,
+        "blocks": 1.26,
+        "depthPerLine": 0.27
+      },
+      "score": 51,
+      "solvable": true,
+      "warnings": [
+        "1 stroke(s) of the drawing left out: too small for dots of radius 16, or in the way"
+      ]
+    },
+    {
+      "level": 29,
+      "id": "c5-029-rose",
+      "name": "Rose",
+      "title": "Rose outline",
+      "source": "art/openclipart/29_rose.png",
+      "tier": "normal",
+      "strokes": 36,
+      "stats": {
+        "strokes": 36,
+        "lines": 38,
+        "ornaments": 0,
+        "tDots": 0.5263157894736842,
+        "freeDots": 0.14473684210526316,
+        "touchingDots": 0.32894736842105265,
+        "openShare": 0.34210526315789475,
+        "blocksPerLine": 1.0789473684210527,
+        "depth": 10,
+        "crossingsPerLine": 0.07894736842105263,
+        "pulledBack": 27,
+        "extended": 0,
+        "lost": 1,
+        "size": 1243,
+        "radius": 16,
+        "bigDots": 0
+      },
+      "targets": {
+        "open": 0.36,
+        "blocks": 1.26,
+        "depthPerLine": 0.27
+      },
+      "score": 73,
+      "solvable": true,
+      "warnings": [
+        "1 stroke(s) of the drawing left out: too small for dots of radius 16, or in the way",
+        "The drawing has 38 strokes, more than the 36 lines asked for (stroke mode never merges strokes)"
+      ]
+    },
+    {
+      "level": 30,
+      "id": "c5-030-glass-poppy",
+      "name": "Glass poppy",
+      "title": "Poppy",
+      "source": "art/openclipart/30_glass-poppy.png",
+      "tier": "hard",
+      "strokes": 138,
+      "stats": {
+        "strokes": 138,
+        "lines": 138,
+        "ornaments": 0,
+        "tDots": 0.5144927536231884,
+        "freeDots": 0.25,
+        "touchingDots": 0.23550724637681159,
+        "openShare": 0.45652173913043476,
+        "blocksPerLine": 1.0434782608695652,
+        "depth": 11,
+        "crossingsPerLine": 0.35507246376811596,
+        "pulledBack": 71,
+        "extended": 8,
+        "lost": 3,
+        "size": 2280,
+        "radius": 16,
+        "bigDots": 0
+      },
+      "targets": {
+        "open": 0.34,
+        "blocks": 1.35,
+        "depthPerLine": 0.22
+      },
+      "score": 93,
+      "solvable": true,
+      "warnings": [
+        "3 stroke(s) of the drawing left out: too small for dots of radius 16, or in the way"
+      ]
+    },
+    {
+      "level": 31,
+      "id": "c5-031-cupcake-ghosts",
+      "name": "Cupcake ghosts",
+      "title": "Cake 16",
+      "source": "art/openclipart/31_cupcake-ghosts.png",
+      "tier": "normal",
+      "strokes": 35,
+      "stats": {
+        "strokes": 25,
+        "lines": 31,
+        "ornaments": 0,
+        "tDots": 0.3387096774193548,
+        "freeDots": 0.03225806451612903,
+        "touchingDots": 0.6290322580645161,
+        "openShare": 0.6451612903225806,
+        "blocksPerLine": 0.6774193548387096,
+        "depth": 5,
+        "crossingsPerLine": 0.2903225806451613,
+        "pulledBack": 13,
+        "extended": 0,
+        "lost": 0,
+        "size": 1222,
+        "radius": 16,
+        "bigDots": 10
+      },
+      "targets": {
+        "open": 0.36,
+        "blocks": 1.26,
+        "depthPerLine": 0.27
+      },
+      "score": 44,
+      "solvable": true,
+      "warnings": []
+    },
+    {
+      "level": 32,
+      "id": "c5-032-cupcake-hats",
+      "name": "Cupcake hats",
+      "title": "Cake 12",
+      "source": "art/openclipart/32_cupcake-hats.png",
+      "tier": "normal",
+      "strokes": 22,
+      "stats": {
+        "strokes": 22,
+        "lines": 23,
+        "ornaments": 0,
+        "tDots": 0.2608695652173913,
+        "freeDots": 0.3695652173913043,
+        "touchingDots": 0.3695652173913043,
+        "openShare": 0.6956521739130435,
+        "blocksPerLine": 0.4782608695652174,
+        "depth": 4,
+        "crossingsPerLine": 0.043478260869565216,
+        "pulledBack": 12,
+        "extended": 0,
+        "lost": 1,
+        "size": 928,
+        "radius": 16,
+        "bigDots": 0
+      },
+      "targets": {
+        "open": 0.36,
+        "blocks": 1.26,
+        "depthPerLine": 0.27
+      },
+      "score": 38,
+      "solvable": true,
+      "warnings": [
+        "1 stroke(s) of the drawing left out: too small for dots of radius 16, or in the way",
+        "The drawing has 23 strokes, more than the 22 lines asked for (stroke mode never merges strokes)"
+      ]
+    },
+    {
+      "level": 33,
+      "id": "c5-033-ice-cream-cone",
+      "name": "Ice cream cone",
+      "title": "Ice cream line art",
+      "source": "art/openclipart/33_ice-cream-cone.png",
+      "tier": "normal",
+      "strokes": 19,
+      "stats": {
+        "strokes": 19,
+        "lines": 19,
+        "ornaments": 0,
+        "tDots": 0.42105263157894735,
+        "freeDots": 0.34210526315789475,
+        "touchingDots": 0.23684210526315788,
+        "openShare": 0.7368421052631579,
+        "blocksPerLine": 0.8421052631578947,
+        "depth": 4,
+        "crossingsPerLine": 0.3157894736842105,
+        "pulledBack": 5,
+        "extended": 5,
+        "lost": 0,
+        "size": 1160,
+        "radius": 16,
+        "bigDots": 0
+      },
+      "targets": {
+        "open": 0.36,
+        "blocks": 1.26,
+        "depthPerLine": 0.27
+      },
+      "score": 34,
+      "solvable": true,
+      "warnings": []
+    }
+  ]
+}

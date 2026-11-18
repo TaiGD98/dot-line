@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" width="400" height="400" fill="none" stroke="#222" stroke-width="5" stroke-linecap="round" stroke-linejoin="round">
+  <!-- Chapter 2 · level 73 · Windmill · normal -->
+  <polyline points="150 380 170 170 230 170 250 380 150 380"/>
+  <polyline points="160 170 200 130 240 170"/>
+  <circle cx="200" cy="150" r="10"/>
+  <line x1="200" y1="150" x2="80" y2="40"/>
+  <line x1="200" y1="150" x2="320" y2="40"/>
+  <line x1="200" y1="150" x2="80" y2="260"/>
+  <line x1="200" y1="150" x2="320" y2="260"/>
+  <polyline points="185 380 185 340 215 340 215 380"/>
+</svg>

@@ -1,7 +1,0 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" width="400" height="400" fill="none" stroke="#222" stroke-width="5" stroke-linecap="round" stroke-linejoin="round">
-  <!-- Level 17 · Pear · relax. data-big="1" = pair with big dots. -->
-  <path d="M200 80 C160 80 160 150 140 190 C90 260 100 370 200 370 C300 370 310 260 260 190 C240 150 240 80 200 80 Z"/>
-  <line x1="200" y1="80" x2="205" y2="30"/>
-  <path d="M205 45 C230 20 280 30 290 45 C260 60 230 60 205 45"/>
-  <line data-big="1" x1="165" y1="270" x2="235" y2="270"/>
-</svg>

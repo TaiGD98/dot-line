@@ -11,9 +11,9 @@
 // 5. Touching dots get different colours.
 // Each call builds many random candidates, repairs blocking cycles so every candidate is
 // solvable, scores them against the target difficulty and returns the best few.
-import { Pair } from './level';
+import { DEFAULT_RADIUS, MIN_RADIUS, Pair } from './level';
 import { PALETTE } from './palette';
-import { Pt, arcLengths, dist, distToPolyline, fitPath, pointAt, samplePath, simplify, slicePolyline } from './path';
+import { Pt, arcLengths, dist, distToPolyline, fitSmooth, pointAt, resample, roundCorners, samplePath, slicePolyline, smoothPolyline } from './path';
 import { HIT_SCALE, solve, SolveResult } from './solver';
 import type { Stroke } from './trace';
 
@@ -36,6 +36,8 @@ export interface GenerateOptions {
      * other line and blocks it (turns an X crossing into a T). The main difficulty dial.
      */
     crossBlocks?: number;
+    /** Radius of every dot (default 16): one size for the whole level. */
+    radius?: number;
 }
 
 export interface Candidate {
@@ -45,6 +47,12 @@ export interface Candidate {
     stats: { tJunctions: number; cuts: number; accents: number };
     warnings: string[];
 }
+
+/**
+ * World size (longest side of the drawing, px) for a level with this many lines in total
+ * (base + X + T): more lines need more room, dots keep their size. 700 up to 24 lines, 1470 at 100+.
+ */
+export const worldSize = (lines: number) => Math.round(700 * Math.max(1, Math.min(2.1, Math.sqrt(lines / 24))));
 
 /** Placeholder suggestion rule for a target difficulty 1..5 (spec: TBD). */
 export function suggest(difficulty: number): { pairs: number; colors: number } {
@@ -60,7 +68,7 @@ export function targets(difficulty: number, pairs: number) {
 
 const clampInt = (v: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, Math.round(v) || lo));
 
-function rng(seed: number) {
+export function rng(seed: number) {
     let a = seed >>> 0;
     return () => {
         a = (a + 0x6d2b79f5) >>> 0;
@@ -71,18 +79,20 @@ function rng(seed: number) {
     };
 }
 
-interface Line {
+export interface Line {
     pts: Pt[];
     acc: number[];
     len: number;
     closed: boolean;
     corners: number[];
     big?: boolean;
+    /** Line weight from the drawing (1 = main, ~0.7 detail, ~0.5 fine). */
+    weight?: number;
     /** Arc positions where another line crosses this one (filled by findCrossings). */
     crossings: number[];
 }
 
-function toLine(pts: Pt[], closed: boolean, big?: boolean): Line {
+export function toLine(pts: Pt[], closed: boolean, big?: boolean): Line {
     const acc = arcLengths(pts);
     const len = acc[acc.length - 1];
     // Corners: direction change over ±12px above ~50 degrees.
@@ -105,19 +115,32 @@ export function strokeFrame(strokes: Stroke[], size = 700) {
     return { k: size / Math.max(x1 - x0, y1 - y0, 1), cx: (x0 + x1) / 2, cy: (y0 + y1) / 2 };
 }
 
-/** Normalises strokes to world units (longest side = size, centred) and smooths them. */
-export function prepareStrokes(strokes: Stroke[], size = 700): Line[] {
+/** Sharp corners of a drawing are rounded with about this radius (world px). */
+export const CORNER_RADIUS = 12;
+
+/**
+ * Normalises strokes to world units (longest side = size, centred) and smooths them.
+ * Strokes shorter than `minLen` (world px) are dropped.
+ */
+export function prepareStrokes(strokes: Stroke[], size = 700, minLen = 40): Line[] {
     if (!strokes.some((s) => s.pts.length)) return [];
     const { k, cx, cy } = strokeFrame(strokes, size);
     return strokes
         .map((s) => {
             const w = s.pts.map((p) => ({ x: (p.x - cx) * k, y: (p.y - cy) * k }));
             if (s.closed && dist(w[0], w[w.length - 1]) > 0.5) w.push({ ...w[0] });
-            const smooth = s.smooth ? samplePath(fitPath(simplify(w, Math.max(0.8, 1.2 * k)), 1.2), 4) : samplePath(w.map((p) => ({ x: p.x, y: p.y })), 4);
+            // Traced strokes: remove the pixel stair-steps (about 1.8 source pixels). Then every stroke
+            // gets its sharp corners rounded: generated lines have no kinks.
+            let even = resample(w, 2);
+            if (s.closed) even[even.length - 1] = { ...even[0] };
+            if (s.smooth) even = smoothPolyline(even, Math.max(3, Math.min(5, 1.8 * k)), s.closed);
+            const smooth = resample(roundCorners(even, CORNER_RADIUS, s.closed), 4);
             if (s.closed) smooth[smooth.length - 1] = { ...smooth[0] };
-            return toLine(smooth, s.closed, s.big);
+            const line = toLine(smooth, s.closed, s.big);
+            if (s.weight) line.weight = s.weight;
+            return line;
         })
-        .filter((l) => l.len >= 40);
+        .filter((l) => l.pts.length >= 2 && l.len >= minLen);
 }
 
 /** Arc positions where lines cross each other (X crossings, away from line ends). Grid-bucketed. */
@@ -157,7 +180,7 @@ function findCrossings(lines: Line[]) {
     }
 }
 
-interface Seg {
+export interface Seg {
     line: number;
     s0: number;
     s1: number; // may exceed len on closed lines (wraps)
@@ -173,7 +196,7 @@ interface Seg {
     dead?: boolean;
 }
 
-function slice(l: Line, s0: number, s1: number): Pt[] {
+export function slice(l: Line, s0: number, s1: number): Pt[] {
     if (l.closed && s0 >= l.len) { s0 -= l.len; s1 -= l.len; }
     if (!l.closed || s1 <= l.len) return slicePolyline(l.pts, l.acc, Math.max(0, s0), Math.min(l.len, s1));
     const a = slicePolyline(l.pts, l.acc, s0, l.len);
@@ -181,22 +204,23 @@ function slice(l: Line, s0: number, s1: number): Pt[] {
     return [...a, ...b.slice(1)];
 }
 
-function segPoints(lines: Line[], g: Seg): Pt[] {
+export function segPoints(lines: Line[], g: Seg): Pt[] {
     const pts = slice(lines[g.line], g.s0, g.s1);
     if (g.snapA) pts.unshift(g.snapA);
     if (g.snapB) pts.push(g.snapB);
     return pts;
 }
 
-function toPair(lines: Line[], g: Seg, id: string): Pair {
-    const path = fitPath(segPoints(lines, g), 1.5);
+export function toPair(lines: Line[], g: Seg, id: string): Pair {
+    const path = fitSmooth(segPoints(lines, g), 1.2);
     const a = path[0], b = path[path.length - 1];
     return { id, color: '', a: { x: r1(a.x), y: r1(a.y), r: g.ra }, b: { x: r1(b.x), y: r1(b.y), r: g.rb }, path };
 }
 
 function buildCandidate(lines: Line[], opt: GenerateOptions, rand: () => number): Candidate {
     const warnings: string[] = [];
-    const R = () => 14 + Math.round(rand() * 4);
+    // One dot size for the whole level.
+    const rad = Math.max(6, Math.round(opt.radius ?? DEFAULT_RADIUS)), R = () => rad;
     // Long enough pairs keep the drawing readable (many tiny pairs look like a dotted line).
     const minSeg = 95;
     const total = Math.max(1, Math.round(opt.pairs));
@@ -331,9 +355,11 @@ function buildCandidate(lines: Line[], opt: GenerateOptions, rand: () => number)
     const segOf = (id: string) => segs[+id.slice(1) - 1];
     let pairs = build();
     let sim = solve({ pairs } as never);
+    let level = rad;
     for (let iter = 0; iter < 10 && !sim.solvable; iter++) {
         const stuck = new Set(sim.stuck);
         const lineOf = new Map(pairs.map((p) => [p.id, samplePath(p.path, 5)]));
+        let smaller = false;
         for (const id of stuck) {
             const X = pairs.find((p) => p.id === id)!;
             const xl = lineOf.get(id)!;
@@ -344,12 +370,17 @@ function buildCandidate(lines: Line[], opt: GenerateOptions, rand: () => number)
                     if (distToPolyline(Y[e], xl) >= (Y[e].r + rx) * HIT_SCALE) continue;
                     const g = segOf(Y.id);
                     const step = (Y[e].r + rx) * 2 + 6;
-                    // Prefer sliding the cut (keeps the drawing whole); else shrink the dot; else shorten a little.
+                    // Prefer sliding the cut (keeps the drawing whole); else shorten a little; else smaller
+                    // dots for the whole level (a dot never changes size on its own).
                     if (shiftCut(g, e, rand() < 0.5 ? step : -step) || shiftCut(g, e, rand() < 0.5 ? -step : step)) continue;
-                    if (!g.accent && (e === 'a' ? g.ra > 11 : g.rb > 11)) { if (e === 'a') g.ra = 11; else g.rb = 11; continue; }
-                    if (iter < 5) retract(g, e, Y[e].r + 6);
+                    if (iter < 4) retract(g, e, Y[e].r + 6);
+                    else smaller = true;
                 }
             }
+        }
+        if (smaller && level > MIN_RADIUS) {
+            level = Math.max(MIN_RADIUS, level - 2);
+            for (const g of segs) if (!g.accent) { g.ra = Math.min(g.ra, level); g.rb = Math.min(g.rb, level); }
         }
         pairs = build();
         sim = solve({ pairs } as never);
@@ -403,16 +434,23 @@ function buildCandidate(lines: Line[], opt: GenerateOptions, rand: () => number)
     sim = solve({ pairs } as never);
 
     colourPairs(pairs, opt.colors, rand);
-    // Last resort for dots that still touch: shrink them.
+    // Last resort for dots that still touch: the whole level gets a smaller dot. Every normal dot
+    // keeps the same size; only an accent (big) dot is shrunk on its own.
+    let tight = Infinity;
     for (let a = 0; a < pairs.length; a++)
         for (const ea of ['a', 'b'] as const)
-            for (let b = 0; b < pairs.length; b++)
+            for (let b = a + 1; b < pairs.length; b++)
                 for (const eb of ['a', 'b'] as const) {
-                    if (a === b) continue; // a pair's own dots are handled above
-                    const d1 = pairs[a][ea], d2 = pairs[b][eb];
-                    const over = d1.r + d2.r + 1 - dist(d1, d2);
-                    if (over > 0) { d1.r = Math.max(8, Math.floor(d1.r - over / 2 - 0.5)); d2.r = Math.max(8, Math.floor(d2.r - over / 2 - 0.5)); }
+                    const d1 = pairs[a][ea], d2 = pairs[b][eb], d = dist(d1, d2);
+                    if (d >= d1.r + d2.r + 1) continue;
+                    if (d1.r > rad) d1.r = Math.max(rad, Math.floor(d - d2.r - 1));
+                    else if (d2.r > rad) d2.r = Math.max(rad, Math.floor(d - d1.r - 1));
+                    else tight = Math.min(tight, d);
                 }
+    if (tight < Infinity) {
+        const small = Math.max(MIN_RADIUS, Math.min(rad, Math.floor((tight - 1) / 2)));
+        for (const p of pairs) for (const d of [p.a, p.b]) if (d.r <= rad) d.r = small;
+    }
     sim = solve({ pairs } as never); // smaller dots only remove blocks
     const t = targets(opt.difficulty, total);
     const n = pairs.length || 1;
@@ -420,7 +458,7 @@ function buildCandidate(lines: Line[], opt: GenerateOptions, rand: () => number)
     return { pairs, score, sim, stats: { tJunctions, cuts, accents }, warnings };
 }
 
-function nearest(pts: Pt[], p: Pt): { d: number; q: Pt } {
+export function nearest(pts: Pt[], p: Pt): { d: number; q: Pt } {
     let best = { d: Infinity, q: pts[0] };
     for (let i = 1; i < pts.length; i++) {
         const a = pts[i - 1], b = pts[i];
@@ -433,22 +471,61 @@ function nearest(pts: Pt[], p: Pt): { d: number; q: Pt } {
     return best;
 }
 
-/** Greedy colouring: touching / nearby dots of different pairs avoid sharing a colour. */
-function colourPairs(pairs: Pair[], m: number, rand: () => number) {
+/** Lines closer than this (px, line to line) count as "near each other" for colouring. */
+export const NEAR_LINES = 40;
+
+/** Pairs of indices whose lines touch, cross or run within NEAR_LINES px of each other. */
+export function nearPairs(pairs: Pair[], gap = NEAR_LINES): [number, number][] {
+    const lines = pairs.map((p) => samplePath(p.path, 8));
+    const box = lines.map((l) => {
+        let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
+        for (const q of l) { x0 = Math.min(x0, q.x); y0 = Math.min(y0, q.y); x1 = Math.max(x1, q.x); y1 = Math.max(y1, q.y); }
+        return { x0: x0 - gap, y0: y0 - gap, x1: x1 + gap, y1: y1 + gap };
+    });
+    const out: [number, number][] = [];
+    for (let i = 0; i < pairs.length; i++)
+        for (let j = i + 1; j < pairs.length; j++) {
+            const a = box[i], b = box[j];
+            if (a.x1 < b.x0 + gap || b.x1 < a.x0 + gap || a.y1 < b.y0 + gap || b.y1 < a.y0 + gap) continue;
+            // 8 px samples on both lines: within gap + 6 of each other means the lines are within ~gap.
+            search: for (const p of lines[i]) for (const q of lines[j]) if (Math.abs(p.x - q.x) < gap + 6 && Math.hypot(p.x - q.x, p.y - q.y) < gap + 6) { out.push([i, j]); break search; }
+        }
+    return out;
+}
+
+/**
+ * Colours the pairs so that lines near each other never share a colour: lines that touch, cross or
+ * run close together (neighbours along a stroke included). Most constrained line first; colours
+ * are used evenly. Returns how many near pairs still share a colour (only with too few colours).
+ */
+export function colourPairs(pairs: Pair[], m: number, rand: () => number): number {
     const k = Math.max(1, Math.min(PALETTE.length, Math.round(m), pairs.length));
     const names = PALETTE.map((c) => c.name).sort(() => rand() - 0.5).slice(0, k);
-    const near = (p: Pair, q: Pair) =>
-        [p.a, p.b].some((d) => [q.a, q.b].some((e) => dist(d, e) < d.r + e.r + 24));
+    const adj: number[][] = pairs.map(() => []);
+    for (const [i, j] of nearPairs(pairs)) { adj[i].push(j); adj[j].push(i); }
     const used = new Map<string, number>(names.map((n) => [n, 0]));
-    const order = [...pairs].sort(() => rand() - 0.5);
-    for (const p of order) {
-        const bad = new Set(pairs.filter((q) => q !== p && q.color && near(p, q)).map((q) => q.color));
-        const options = names.filter((n) => !bad.has(n));
-        const pool = options.length ? options : names;
+    const colour: (string | null)[] = pairs.map(() => null);
+    const tie = pairs.map(() => rand());
+    let clashes = 0;
+    for (let done = 0; done < pairs.length; done++) {
+        // Next: the uncoloured line that already sees the most different colours around it.
+        let best = -1, bestSat = -1;
+        for (let i = 0; i < pairs.length; i++) {
+            if (colour[i]) continue;
+            const sat = new Set(adj[i].map((j) => colour[j]).filter(Boolean)).size + adj[i].length / 1000 + tie[i] / 1e6;
+            if (sat > bestSat) { bestSat = sat; best = i; }
+        }
+        const around = adj[best].map((j) => colour[j]).filter(Boolean) as string[];
+        const free = names.filter((n) => !around.includes(n));
+        const count = (n: string) => around.filter((c) => c === n).length;
+        const pool = free.length ? free : names.filter((n) => count(n) === Math.min(...names.map(count)));
+        if (!free.length) clashes += count(pool[0]);
         pool.sort((a, b) => used.get(a)! - used.get(b)! || rand() - 0.5);
-        p.color = pool[0];
+        colour[best] = pool[0];
         used.set(pool[0], used.get(pool[0])! + 1);
     }
+    pairs.forEach((p, i) => { p.color = colour[i]!; });
+    return clashes;
 }
 
 /** Builds `tries` candidates from strokes and returns the `keep` best (lowest score first). */

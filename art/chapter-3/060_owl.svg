@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" width="400" height="400" fill="none" stroke="#222" stroke-width="5" stroke-linecap="round" stroke-linejoin="round">
+  <!-- Chapter 2 · level 60 · Owl · hard -->
+  <ellipse cx="200" cy="210" rx="120" ry="150"/>
+  <circle cx="155" cy="160" r="35"/>
+  <circle cx="245" cy="160" r="35"/>
+  <circle cx="155" cy="160" r="12"/>
+  <circle cx="245" cy="160" r="12"/>
+  <polygon points="190 200 210 200 200 225"/>
+  <polyline points="110 90 120 50 150 75"/>
+  <polyline points="250 75 280 50 290 90"/>
+  <line x1="40" y1="360" x2="360" y2="360"/>
+  <path d="M150 320 C130.6 320 114 295.6 110.6 262.2 C107.2 228.7 118.1 195.8 136.3 184.2"/>
+  <path d="M263.7 184.2 C281.9 195.8 292.8 228.7 289.4 262.2 C286 295.6 269.4 320 250 320"/>
+</svg>

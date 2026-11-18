@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" width="400" height="400" fill="none" stroke="#222" stroke-width="5" stroke-linecap="round" stroke-linejoin="round">
+  <!-- Chapter 2 · level 52 · Mushroom · normal -->
+  <path d="M40 220 C40 90 360 90 360 220 Z"/>
+  <path d="M150 220 L140 350 L260 350 L250 220"/>
+  <circle cx="120" cy="170" r="18"/>
+  <circle cx="280" cy="175" r="18"/>
+  <path d="M20 370 C40 362 60 378 80 370 C100 362 120 378 140 370 C160 362 180 378 200 370 C220 362 240 378 260 370 C280 362 300 378 320 370 C340 362 360 378 380 370"/>
+  <line data-big="1" x1="160" y1="140" x2="240" y2="140"/>
+</svg>

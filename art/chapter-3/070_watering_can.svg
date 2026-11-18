@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" width="400" height="400" fill="none" stroke="#222" stroke-width="5" stroke-linecap="round" stroke-linejoin="round">
+  <!-- Chapter 2 · level 70 · Watering can · normal -->
+  <path d="M90 360 L110 170 L290 170 L310 360 Z"/>
+  <line x1="290" y1="220" x2="380" y2="120"/>
+  <line x1="305" y1="260" x2="385" y2="150"/>
+  <polyline points="370 100 395 125 380 160"/>
+  <path d="M115.4 139.2 C128.4 103.7 162.2 80 200 80 C237.8 80 271.6 103.7 284.6 139.2"/>
+  <ellipse cx="150" cy="170" rx="40" ry="10"/>
+</svg>

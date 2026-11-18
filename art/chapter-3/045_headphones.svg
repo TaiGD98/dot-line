@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" width="400" height="400" fill="none" stroke="#222" stroke-width="5" stroke-linecap="round" stroke-linejoin="round">
+  <!-- Chapter 2 · level 45 · Headphones · normal -->
+  <path d="M50 220 C50 131.6 117.2 60 200 60 C282.8 60 350 131.6 350 220"/>
+  <path d="M70 220 C70 142.7 128.2 80 200 80 C271.8 80 330 142.7 330 220"/>
+  <rect x="30" y="210" width="60" height="110"/>
+  <rect x="310" y="210" width="60" height="110"/>
+  <rect x="90" y="230" width="25" height="70"/>
+  <rect x="285" y="230" width="25" height="70"/>
+</svg>

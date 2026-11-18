@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" width="400" height="400" fill="none" stroke="#222" stroke-width="5" stroke-linecap="round" stroke-linejoin="round">
+  <!-- Chapter 2 · level 95 · Watermelon · normal -->
+  <path d="M380 120 C380 241.5 299.4 340 200 340 C100.6 340 20 241.5 20 120"/>
+  <path d="M350 120 C350 222.2 282.8 305 200 305 C117.2 305 50 222.2 50 120"/>
+  <line x1="20" y1="120" x2="380" y2="120"/>
+  <line x1="120" y1="170" x2="125" y2="190"/>
+  <line x1="170" y1="200" x2="175" y2="220"/>
+  <line x1="220" y1="170" x2="225" y2="190"/>
+  <line x1="270" y1="200" x2="275" y2="220"/>
+  <line data-big="1" x1="160" y1="250" x2="240" y2="250"/>
+</svg>

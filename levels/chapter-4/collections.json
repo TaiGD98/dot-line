@@ -1,0 +1,20 @@
+{
+  "collections": [
+    {
+      "name": "Main",
+      "version": 1,
+      "levels": [
+        "c4-001-leaf",
+        "c4-002-feather",
+        "c4-003-mushrooms",
+        "c4-004-tree",
+        "c4-005-fish",
+        "c4-006-owl",
+        "c4-007-cactus",
+        "c4-008-balloon",
+        "c4-009-pineapple",
+        "c4-010-lighthouse"
+      ]
+    }
+  ]
+}

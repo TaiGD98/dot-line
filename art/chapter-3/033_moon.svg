@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" width="400" height="400" fill="none" stroke="#222" stroke-width="5" stroke-linecap="round" stroke-linejoin="round">
+  <!-- Chapter 2 · level 33 · Moon & stars · normal -->
+  <path d="M250 60 C140 60 80 160 120 250 C160 340 280 350 330 290 C240 300 180 230 200 160 C215 110 240 80 250 60 Z"/>
+  <polygon points="320 90 328 110 348 112 332 124 338 144 320 132 302 144 308 124 292 112 312 110"/>
+  <polygon points="80 70 86 84 100 86 89 95 93 110 80 101 67 110 71 95 60 86 74 84"/>
+  <path d="M40 360 C40 330 80 320 100 335 C110 300 170 300 180 340 C210 335 230 360 210 375 L50 375 C40 375 40 365 40 360"/>
+  <line data-big="1" x1="290" y1="200" x2="370" y2="175"/>
+</svg>

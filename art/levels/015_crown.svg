@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" width="400" height="400" fill="none" stroke="#222" stroke-width="5" stroke-linecap="round" stroke-linejoin="round">
+  <!-- Level 15 · Crown · normal. data-big="1" = pair with big dots. -->
+  <polyline points="60 300 60 120 130 210 200 80 270 210 340 120 340 300 60 300"/>
+  <line x1="60" y1="260" x2="340" y2="260"/>
+  <circle cx="200" cy="230" r="16"/>
+  <circle cx="120" cy="230" r="12"/>
+  <circle cx="280" cy="230" r="12"/>
+  <circle cx="60" cy="110" r="10"/>
+  <circle cx="340" cy="110" r="10"/>
+  <circle cx="200" cy="70" r="10"/>
+</svg>

@@ -1,0 +1,39 @@
+{
+  "collections": [
+    {
+      "name": "Main",
+      "version": 1,
+      "levels": [
+        "c5-001-pumpkin",
+        "c5-002-bunny",
+        "c5-003-imaginary-flower",
+        "c5-004-simple-flower",
+        "c5-005-christmas-tree",
+        "c5-006-butterfly",
+        "c5-007-hurricane-lamp",
+        "c5-008-fall-leaves",
+        "c5-009-christmas-bear",
+        "c5-010-dog-ilio",
+        "c5-015-toy-airplane",
+        "c5-016-palm-tree",
+        "c5-017-usb-stick",
+        "c5-018-vase-twist",
+        "c5-019-angel",
+        "c5-020-dancer-swirl",
+        "c5-021-dancer-hat",
+        "c5-022-dancer-kimono",
+        "c5-023-dancer-wave",
+        "c5-024-dancer-parasol",
+        "c5-025-dancer-shell",
+        "c5-026-dancer-veil",
+        "c5-027-dancer-fan",
+        "c5-028-dancer-scarf",
+        "c5-029-rose",
+        "c5-030-glass-poppy",
+        "c5-031-cupcake-ghosts",
+        "c5-032-cupcake-hats",
+        "c5-033-ice-cream-cone"
+      ]
+    }
+  ]
+}

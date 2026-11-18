@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" width="400" height="400" fill="none" stroke="#222" stroke-width="5" stroke-linecap="round" stroke-linejoin="round">
+  <!-- Chapter 2 · level 77 · Train engine · normal -->
+  <rect x="230" y="110" width="120" height="170"/>
+  <rect x="40" y="180" width="190" height="100"/>
+  <polyline points="80 180 80 110 120 110 120 180"/>
+  <rect x="255" y="135" width="70" height="50"/>
+  <circle cx="90" cy="300" r="32"/>
+  <circle cx="180" cy="300" r="32"/>
+  <circle cx="300" cy="300" r="32"/>
+  <polyline points="40 280 15 320 40 320"/>
+  <line x1="230" y1="230" x2="40" y2="230"/>
+</svg>

@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" width="400" height="400" fill="none" stroke="#222" stroke-width="5" stroke-linecap="round" stroke-linejoin="round">
+  <!-- Chapter 2 · level 51 · Smartphone · normal -->
+  <path d="M120 30 L280 30 C300 30 310 40 310 60 L310 340 C310 360 300 370 280 370 L120 370 C100 370 90 360 90 340 L90 60 C90 40 100 30 120 30 Z"/>
+  <rect x="110" y="70" width="180" height="240"/>
+  <circle cx="200" cy="340" r="14"/>
+  <line x1="180" y1="50" x2="220" y2="50"/>
+  <rect x="130" y="100" width="35" height="35"/>
+  <rect x="180" y="100" width="35" height="35"/>
+  <rect x="230" y="100" width="35" height="35"/>
+  <rect x="130" y="160" width="35" height="35"/>
+  <rect x="180" y="160" width="35" height="35"/>
+  <rect x="230" y="160" width="35" height="35"/>
+</svg>

@@ -95,6 +95,10 @@ header { display: flex; align-items: center; gap: 8px; padding: 8px 12px; border
 .resizer:hover { background: var(--accent); }
 
 .list { display: flex; flex-direction: column; gap: 3px; }
+/* Levels panel: the head, chapter, buttons and search stay put; only the level list scrolls. */
+.panel.left { overflow: hidden; }
+.panel.left > * { flex-shrink: 0; }
+.panel.left > .list { flex: 1 1 auto; min-height: 0; overflow-y: auto; margin-right: -6px; padding-right: 6px; }
 .item { display: flex; gap: 8px; align-items: flex-start; padding: 7px; border: 1px solid transparent; border-radius: 8px; cursor: pointer; }
 .item:hover { background: var(--bg2); }
 .item.on { background: var(--accent-soft); border-color: var(--accent); }
@@ -113,8 +117,8 @@ header { display: flex; align-items: center; gap: 8px; padding: 8px 12px; border
 .canvas { width: 100%; height: 100%; display: block; background: var(--canvas); outline: none; touch-action: none; }
 .canvas[data-tool='pair'] { cursor: crosshair; }
 .canvas[data-tool='pan'] { cursor: grab; }
-.canvas .line { fill: none; stroke-width: 7; stroke-linecap: round; stroke-linejoin: round; }
-.canvas .line.sel { stroke-width: 9; }
+.canvas .line { fill: none; stroke-width: 5.1; stroke-linecap: round; stroke-linejoin: round; }
+.canvas .line.sel { stroke-width: 7.1; }
 .canvas .line.stuck { stroke-dasharray: 14 8; }
 .canvas .hit { fill: none; stroke: transparent; stroke-width: 22; stroke-linecap: round; cursor: pointer; }
 .canvas .dot { cursor: grab; }
@@ -124,7 +128,7 @@ header { display: flex; align-items: center; gap: 8px; padding: 8px 12px; border
 .canvas .hline { stroke: var(--accent); }
 .canvas .guide { stroke: var(--guide); stroke-dasharray: 6 4; }
 .canvas .marquee { fill: color-mix(in srgb, var(--accent) 12%, transparent); stroke: var(--accent); }
-.canvas .stroke { fill: none; stroke-width: 6; stroke-linecap: round; stroke-linejoin: round; opacity: .8; }
+.canvas .stroke { fill: none; stroke-width: 5.1; stroke-linecap: round; stroke-linejoin: round; opacity: .8; }
 .canvas .order circle { fill: var(--bg2); stroke: var(--accent); stroke-width: 2; }
 .canvas .order text { fill: var(--text); font-size: 13px; text-anchor: middle; font-weight: 700; }
 .canvas-tools { position: absolute; top: 8px; right: 10px; display: flex; gap: 8px; align-items: center; background: color-mix(in srgb, var(--panel) 85%, transparent); padding: 4px 6px; border-radius: 8px; }
@@ -133,6 +137,16 @@ header { display: flex; align-items: center; gap: 8px; padding: 8px 12px; border
 
 .gen { border-top: 1px solid var(--line); padding: 8px 10px; }
 .gen-head { display: flex; justify-content: space-between; cursor: pointer; user-select: none; }
+.gen-cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(440px, 1fr)); gap: 10px 22px; margin-top: 6px; }
+.gen-col { min-width: 0; }
+.gen-col + .gen-col { border-left: 1px dashed var(--line); padding-left: 22px; }
+.gen-part { display: flex; gap: 10px; align-items: baseline; flex-wrap: wrap; }
+.gen .cand .mini { width: 76px; height: 76px; }
+.gen-col .suggest { margin-top: 6px; flex-wrap: wrap; }
+.gen-col .cands { flex-wrap: nowrap; overflow-x: auto; align-items: flex-start; }
+.gen-col .cand .small { max-width: 112px; white-space: normal; line-height: 1.25; }
+.gen-col .gen-row { gap: 8px; }
+.gen-col .gen-row select { max-width: 104px; }
 .gen-row { display: flex; gap: 10px; align-items: flex-end; flex-wrap: wrap; margin-top: 8px; }
 .thumb-btn { cursor: pointer; }
 .thumb { width: 58px; height: 52px; object-fit: contain; border: 1px solid var(--line2); border-radius: 6px; background: #fff; display: flex; align-items: center; justify-content: center; font-size: 10px; color: #888; }
@@ -181,3 +195,6 @@ header { display: flex; align-items: center; gap: 8px; padding: 8px 12px; border
 .cand { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 4px; }
 .cand.on { border-color: var(--accent); background: var(--accent-soft); }
 .cand .mini { width: 96px; height: 96px; background: var(--canvas); border-radius: 6px; }
+
+.chapter-row { align-items: center; margin-bottom: 6px; }
+.chapter-row select { min-width: 0; }

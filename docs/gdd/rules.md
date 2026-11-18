@@ -7,7 +7,7 @@
 | **Hạt** | Hình tròn, có màu. Mỗi hạt thuộc đúng một cặp. |
 | **Cặp** | 2 hạt cùng màu, nối nhau bằng một sợi dây cùng màu. |
 | **Dây** | Đường nối 2 hạt của một cặp. Có thể thẳng hoặc cong/gấp khúc (theo clip). Dây của các cặp khác nhau có thể cắt chéo nhau. |
-| **Kích thước hạt** | Hạt có thể to hoặc nhỏ hơn bình thường. 2 hạt trong cùng một cặp có thể khác kích thước. Kích thước không theo mức cố định mà chỉnh tự do cho từng hạt, tùy tình huống của level. |
+| **Kích thước hạt** | Trong một level, **hầu hết hạt có cùng một cỡ** (cỡ hạt thường của level, chọn theo kích cỡ hình). Ngoại lệ là **bóng bự**: hạt to hơn hẳn, đặt ở chi tiết tròn kín của hình (mắt, mũi, nút áo). 2 hạt trong cùng một cặp có thể khác kích thước (bóng bự nối với hạt thường, hoặc hai bóng bự thành một cặp). |
 
 ## 3.2 Tap và di chuyển <Badge type="tip" text="Live" />
 
@@ -15,7 +15,7 @@
 - Hạt di chuyển chạy **dọc theo sợi dây** về phía hạt đích; dây ngắn dần sau lưng nó.
 - Khi một hạt đang chạy, **không tap được hạt còn lại của cặp đó**.
 - Khi một hạt đang chạy, người chơi **vẫn tap được hạt của các cặp khác**; nhiều hạt có thể chạy cùng lúc.
-- Tốc độ di chuyển: **750 px thế giới / giây** khi chạy tới, **1020 px/giây** khi bị chặn và quay về (`MOVE_SPEED` trong `src/game/tuning.ts`; tốc độ quay về = 1,36 × tốc độ chạy tới). Chỉnh trực tiếp bằng thanh cheat ⚙ speed trong game; bấm Confirm khi chạy local để ghi vào code. Lấy theo cảm giác của clip tham khảo; chỉnh lại khi chơi thử.
+- Tốc độ di chuyển: chấm **khởi đầu ở 500 px thế giới / giây** và **tăng đều lên 750 px/giây sau 1 giây**, rồi giữ nguyên gia tốc đó (250 px/s²) cho tới hết quãng đường còn lại (`START_SPEED`, `MOVE_SPEED` trong `src/game/tuning.ts`). Khi bị chặn và quay về: **1020 px/giây** (= 1,36 × `MOVE_SPEED`). Chỉnh `MOVE_SPEED` bằng thanh cheat ⚙ speed trong game; bấm Confirm khi chạy local để ghi vào code. Lấy theo cảm giác của clip tham khảo; chỉnh lại khi chơi thử.
 - **Zoom:** người chơi chụm 2 ngón tay để thu nhỏ và kéo 2 ngón ra để phóng to board, tối đa 3 lần. Khi đang phóng to, người chơi kéo (pan) được board. Zoom chỉ áp dụng cho board, HUD giữ nguyên kích thước.
 
 ## 3.3 Va chạm <Badge type="tip" text="Live" />
@@ -33,6 +33,18 @@
 - **Hình dáng bóng:** bóng bóng loáng (glossy) với ánh sáng từ góc trên bên trái: viền tối, thân sáng dần về phía nguồn sáng, đốm phản quang trắng, ánh phản xạ nhẹ ở đáy; mỗi bóng có **bóng đổ** mềm lệch xuống dưới bên phải (bóng đổ đi theo bóng khi bóng méo).
 - **Khi va chạm:** cả bóng đang chạy và bóng bị đụng **biến dạng đàn hồi** (co giãn dao động tắt dần trong khoảng 0,7 giây, theo hướng va chạm).
 
+## 3.3c Giao diện sáng / tối <Badge type="tip" text="Live" />
+
+Bật trong **Settings** (nút Pause ở góc trên trái mở Settings, game tạm dừng; nút **THEME: LIGHT/DARK**, ghi nhớ trong trình duyệt, mặc định sáng).
+
+| | Sáng | Tối |
+|---|---|---|
+| Nền | `#fbfaf3` (kem) | `#171a24` (xanh đen) |
+| Bóng đổ của bóng | nâu nhạt, mờ | đen, đậm hơn |
+| Thanh tiến độ (nền) | `#e5e2da` | `#2c3142` |
+| Chữ hướng dẫn | nâu `#8a5a2b` | cam nhạt `#f3c98b` |
+| Màu "black" của bảng màu | `#494E68` | sáng hơn `#7B83AA` để không chìm vào nền |
+
 ## 3.4 Cặp biến mất <Badge type="tip" text="Live" />
 
 - Khi hạt di chuyển chạm vào hạt đích → cả 2 hạt vỡ ra, có effect văng màu tại chỗ chạm, rồi biến mất.
@@ -42,16 +54,20 @@
 ## 3.5 Thắng và thua <Badge type="tip" text="Live" />
 
 - **Thắng:** mọi cặp trên board đã biến mất → hình vẽ của level hiện lại từ tất cả các dây (màu Completed), rồi confetti và màn "Well Done!".
+- **Cảnh kết thúc:** khi chỉ còn 1 dây và bóng cuối đang chạy, lúc bóng sắp chạm bóng đích (còn khoảng 0,4 giây đường đi, hoặc 6 bán kính bóng) game chuyển **slow motion** (tốc độ 0,2) và camera **zoom 2,2 lần** vào điểm va chạm, đưa điểm đó ra giữa màn hình. Khi bóng nổ thì màn "Well Done!" bung ra ngay; phía sau, camera lùi về toàn cảnh trong lúc hình vẽ hiện lại.
+- **Kéo màn:** kéo được ở mọi mức zoom, kể cả nhỏ nhất.
 - **Thua:** mỗi lần va chạm mất 1 tim, mỗi level có 3 tim. Hết tim = thua màn. Màn thắng "Well Done!" (confetti, nút CONTINUE) và màn thua "Out of Hearts!" (nút RETRY) vẽ trong Phaser theo phong cách của skill `prototype-ui` (font Lilita One, tiêu đề gradient).
 
 ## 3.6 HUD và nút (theo clip) <Badge type="tip" text="Live" />
 
 | Vị trí | Thành phần |
 |---|---|
-| Trên cùng, bên trái | Nút Pause |
+| Trên cùng, bên trái | Nút Pause: mở Settings (tạm dừng game, chọn giao diện sáng/tối, RESUME) |
 | Trên cùng, ở giữa | 3 trái tim (mạng) |
-| Trên cùng, bên phải | Nút Hint (gợi ý), có nhãn AD (xem quảng cáo để dùng). Khi bấm: chọn ngẫu nhiên một hạt đang tap được (có đường thông), camera zoom vào hạt đó tới 1.5 lần so với bình thường, rồi hạt chạy nhấp nhả một đoạn ngắn dọc theo dây để thu hút sự chú ý của người chơi. |
 | Dưới HUD | Thanh tiến độ: % cặp đã dọn trong level |
+| Panel dưới cùng | Dải booster, cùng màu nền với board và nằm đè lên vùng chơi (board trượt xuống dưới nó khi zoom/kéo), góc trên bo tròn, bóng đổ nhẹ. Dải trên cùng (HUD) cũng có nền như vậy. Chạm vào 2 dải này không tính là chạm vào board. |
+| Booster Hint | Nút bóng đèn, nhãn AD (xem quảng cáo để dùng). Khi bấm: chọn ngẫu nhiên một hạt đang tap được (có đường thông), camera zoom vào hạt đó tới 1.5 lần so với bình thường, rồi hạt chạy nhấp nhả một đoạn ngắn dọc theo dây để thu hút sự chú ý của người chơi. |
+| Booster Cut (cây kéo) | Nút cây kéo, nhãn AD. Bấm để cầm kéo (nút sáng viền vàng và nhấp nháy, dòng "Tap a line to cut it" hiện phía trên panel); chạm vào một dây hoặc hạt của cặp đang đứng yên thì cặp đó bị cắt: nổ ở chỗ cắt và ở 2 hạt, cặp biến mất và tính là đã dọn. Chạm trượt thì vẫn cầm kéo; bấm lại nút để bỏ. Cắt cặp cuối cùng thì thắng màn như thường. |
 
 ## 3.7 Bảng màu <Badge type="tip" text="Live" />
 
@@ -69,14 +85,14 @@ Nguồn: tài liệu DotPaint Concept. Mỗi màu có 3 sắc: **Base** (màu h�
 | orange | `#FF772D` | `#FFA754` | `#FFC079` |
 | pink | `#FF80C4` | `#FFACAC` | `#FFC0C0` |
 | brown | `#AC6F6D` | `#E67775` | `#FF8C8A` |
-| grey | `#888888` | `#CFC9BC` | `#E4E0D9` |
 | dark_green | `#008D7F` | `#00D2BD` | `#00F3D7` |
 | red | `#FA3E3E` | `#FA692B` | `#FB904D` |
 | gold | `#D3BB7F` | `#FFEC83` | `#FFF7AF` |
-| white | `#D6E6E9` | `#FFFFFF` | `#FFFFFF` |
 | black | `#494E68` | `#5C658F` | `#7B83AA` |
 
 Dây đã hoàn thành (Completed): `#6977C2`.
+
+**Không dùng nữa:** grey (`#888888`) và white (`#D6E6E9`), vì bị chìm vào nền. Level cũ còn 2 màu này được đổi sang một màu khác khi mở (màu không trùng với dây nào ở gần).
 
 ## 3.8 Level <Badge type="tip" text="Live" />
 

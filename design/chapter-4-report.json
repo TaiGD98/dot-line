@@ -1,0 +1,308 @@
+{
+  "generated": "2026-11-18",
+  "chapter": "chapter-4",
+  "levels": [
+    {
+      "level": 1,
+      "id": "c4-001-leaf",
+      "name": "Leaf",
+      "tier": "normal",
+      "strokes": 16,
+      "stats": {
+        "strokes": 16,
+        "lines": 16,
+        "ornaments": 0,
+        "tDots": 0.65625,
+        "freeDots": 0.34375,
+        "touchingDots": 0,
+        "openShare": 0.75,
+        "blocksPerLine": 1.25,
+        "depth": 4,
+        "crossingsPerLine": 0.875,
+        "pulledBack": 2,
+        "extended": 3,
+        "size": 1000
+      },
+      "targets": {
+        "open": 0.36,
+        "blocks": 1.26,
+        "depthPerLine": 0.27
+      },
+      "score": 33,
+      "solvable": true,
+      "warnings": []
+    },
+    {
+      "level": 2,
+      "id": "c4-002-feather",
+      "name": "Feather",
+      "tier": "normal",
+      "strokes": 18,
+      "stats": {
+        "strokes": 18,
+        "lines": 18,
+        "ornaments": 0,
+        "tDots": 0.75,
+        "freeDots": 0.2222222222222222,
+        "touchingDots": 0.027777777777777776,
+        "openShare": 0.6666666666666666,
+        "blocksPerLine": 1.4444444444444444,
+        "depth": 5,
+        "crossingsPerLine": 0.6111111111111112,
+        "pulledBack": 2,
+        "extended": 4,
+        "size": 1000
+      },
+      "targets": {
+        "open": 0.36,
+        "blocks": 1.26,
+        "depthPerLine": 0.27
+      },
+      "score": 40,
+      "solvable": true,
+      "warnings": []
+    },
+    {
+      "level": 3,
+      "id": "c4-003-mushrooms",
+      "name": "Mushrooms",
+      "tier": "normal",
+      "strokes": 20,
+      "stats": {
+        "strokes": 20,
+        "lines": 20,
+        "ornaments": 0,
+        "tDots": 0.5,
+        "freeDots": 0.5,
+        "touchingDots": 0,
+        "openShare": 0.7,
+        "blocksPerLine": 0.85,
+        "depth": 3,
+        "crossingsPerLine": 0.4,
+        "pulledBack": 5,
+        "extended": 0,
+        "size": 1000
+      },
+      "targets": {
+        "open": 0.36,
+        "blocks": 1.26,
+        "depthPerLine": 0.27
+      },
+      "score": 34,
+      "solvable": true,
+      "warnings": []
+    },
+    {
+      "level": 4,
+      "id": "c4-004-tree",
+      "name": "Tree with a swing",
+      "tier": "hard",
+      "strokes": 42,
+      "stats": {
+        "strokes": 42,
+        "lines": 42,
+        "ornaments": 1,
+        "tDots": 0.40476190476190477,
+        "freeDots": 0.5476190476190477,
+        "touchingDots": 0.047619047619047616,
+        "openShare": 0.6190476190476191,
+        "blocksPerLine": 0.7857142857142857,
+        "depth": 5,
+        "crossingsPerLine": 0.40476190476190477,
+        "pulledBack": 40,
+        "extended": 2,
+        "size": 1350
+      },
+      "targets": {
+        "open": 0.34,
+        "blocks": 1.35,
+        "depthPerLine": 0.22
+      },
+      "score": 51,
+      "solvable": true,
+      "warnings": [
+        "1 short line(s) left out to keep the level solvable"
+      ]
+    },
+    {
+      "level": 5,
+      "id": "c4-005-fish",
+      "name": "Fish and seaweed",
+      "tier": "normal",
+      "strokes": 24,
+      "stats": {
+        "strokes": 24,
+        "lines": 24,
+        "ornaments": 0,
+        "tDots": 0.6875,
+        "freeDots": 0.2708333333333333,
+        "touchingDots": 0.041666666666666664,
+        "openShare": 0.625,
+        "blocksPerLine": 1.1666666666666667,
+        "depth": 4,
+        "crossingsPerLine": 0.7083333333333334,
+        "pulledBack": 4,
+        "extended": 3,
+        "size": 1000
+      },
+      "targets": {
+        "open": 0.36,
+        "blocks": 1.26,
+        "depthPerLine": 0.27
+      },
+      "score": 41,
+      "solvable": true,
+      "warnings": []
+    },
+    {
+      "level": 6,
+      "id": "c4-006-owl",
+      "name": "Owl on a branch",
+      "tier": "normal",
+      "strokes": 26,
+      "stats": {
+        "strokes": 26,
+        "lines": 26,
+        "ornaments": 0,
+        "tDots": 0.6346153846153846,
+        "freeDots": 0.28846153846153844,
+        "touchingDots": 0.07692307692307693,
+        "openShare": 0.5769230769230769,
+        "blocksPerLine": 1.1153846153846154,
+        "depth": 5,
+        "crossingsPerLine": 0.7692307692307693,
+        "pulledBack": 20,
+        "extended": 7,
+        "size": 1000
+      },
+      "targets": {
+        "open": 0.36,
+        "blocks": 1.26,
+        "depthPerLine": 0.27
+      },
+      "score": 47,
+      "solvable": true,
+      "warnings": []
+    },
+    {
+      "level": 7,
+      "id": "c4-007-cactus",
+      "name": "Cactus in a pot",
+      "tier": "normal",
+      "strokes": 26,
+      "stats": {
+        "strokes": 16,
+        "lines": 26,
+        "ornaments": 10,
+        "tDots": 0.4423076923076923,
+        "freeDots": 0.46153846153846156,
+        "touchingDots": 0.09615384615384616,
+        "openShare": 0.6153846153846154,
+        "blocksPerLine": 0.8846153846153846,
+        "depth": 5,
+        "crossingsPerLine": 0.5384615384615384,
+        "pulledBack": 10,
+        "extended": 2,
+        "size": 1000
+      },
+      "targets": {
+        "open": 0.36,
+        "blocks": 1.26,
+        "depthPerLine": 0.27
+      },
+      "score": 45,
+      "solvable": true,
+      "warnings": []
+    },
+    {
+      "level": 8,
+      "id": "c4-008-balloon",
+      "name": "Hot air balloon",
+      "tier": "normal",
+      "strokes": 28,
+      "stats": {
+        "strokes": 28,
+        "lines": 28,
+        "ornaments": 0,
+        "tDots": 0.5,
+        "freeDots": 0.25,
+        "touchingDots": 0.25,
+        "openShare": 0.6071428571428571,
+        "blocksPerLine": 1,
+        "depth": 4,
+        "crossingsPerLine": 0.5714285714285714,
+        "pulledBack": 16,
+        "extended": 1,
+        "size": 1000
+      },
+      "targets": {
+        "open": 0.36,
+        "blocks": 1.26,
+        "depthPerLine": 0.27
+      },
+      "score": 44,
+      "solvable": true,
+      "warnings": []
+    },
+    {
+      "level": 9,
+      "id": "c4-009-pineapple",
+      "name": "Pineapple",
+      "tier": "hard",
+      "strokes": 43,
+      "stats": {
+        "strokes": 43,
+        "lines": 43,
+        "ornaments": 0,
+        "tDots": 0.7790697674418605,
+        "freeDots": 0.1511627906976744,
+        "touchingDots": 0.06976744186046512,
+        "openShare": 0.4883720930232558,
+        "blocksPerLine": 1.3255813953488371,
+        "depth": 4,
+        "crossingsPerLine": 1.1162790697674418,
+        "pulledBack": 7,
+        "extended": 13,
+        "size": 1350
+      },
+      "targets": {
+        "open": 0.34,
+        "blocks": 1.35,
+        "depthPerLine": 0.22
+      },
+      "score": 55,
+      "solvable": true,
+      "warnings": []
+    },
+    {
+      "level": 10,
+      "id": "c4-010-lighthouse",
+      "name": "Lighthouse",
+      "tier": "normal",
+      "strokes": 29,
+      "stats": {
+        "strokes": 29,
+        "lines": 29,
+        "ornaments": 0,
+        "tDots": 0.5,
+        "freeDots": 0.3103448275862069,
+        "touchingDots": 0.1896551724137931,
+        "openShare": 0.5172413793103449,
+        "blocksPerLine": 0.896551724137931,
+        "depth": 6,
+        "crossingsPerLine": 0.41379310344827586,
+        "pulledBack": 14,
+        "extended": 6,
+        "size": 1000
+      },
+      "targets": {
+        "open": 0.36,
+        "blocks": 1.26,
+        "depthPerLine": 0.27
+      },
+      "score": 54,
+      "solvable": true,
+      "warnings": []
+    }
+  ]
+}

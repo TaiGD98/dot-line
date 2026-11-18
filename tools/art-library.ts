@@ -179,9 +179,10 @@ export const ART: Record<string, Art> = {
  * Play-order pools (by role), ordered from simple to structured by `npm run art:measure`
  * (best difficulty score each drawing reaches at 20 pairs). The level plan takes them in order.
  */
+// Levels 5-21 use symmetric drawings with few strokes (generator v3 builds long symmetric outlines).
 export const POOLS: Record<Role | 'first', string[]> = {
     first: ['rainbow'],
-    relax: ['lollipop', 'jellyfish', 'heart', 'pear', 'sun', 'moon', 'watermelon', 'mushroom', 'cherry', 'donut', 'balloon', 'apple', 'beach', 'icecream', 'snail', 'hot_air_balloon', 'cupcake', 'sunflower', 'butterfly', 'pineapple'],
-    hard: ['ladder', 'fence', 'piano', 'wheel', 'keyboard', 'bookshelf', 'abacus', 'basket', 'radio_tower', 'window', 'building', 'castle_gate', 'beehive', 'ferris_wheel', 'skyline', 'calendar', 'bridge', 'waffle', 'birdcage', 'spider_web'],
-    normal: ['tshirt', 'phone', 'book', 'star', 'clock', 'key', 'anchor', 'whale', 'cup', 'bucket', 'shoe', 'pencil_cup', 'tv', 'octopus', 'fish', 'umbrella', 'desk_lamp', 'airplane', 'watering_can', 'sailboat', 'rocket', 'glasses', 'owl', 'house', 'kite', 'teapot', 'gift', 'turtle', 'backpack', 'scissors', 'ring', 'helicopter', 'crown', 'bird', 'laptop', 'headphones', 'tractor', 'fox', 'bell', 'xmas_tree', 'crab', 'camera', 'windmill', 'candle', 'trophy', 'lighthouse', 'guitar', 'cat', 'envelope', 'drum', 'robot', 'penguin', 'snowman', 'bus', 'dragonfly', 'car', 'train', 'hat', 'tree']
+    relax: ['lollipop', 'mushroom', 'heart', 'butterfly', 'sun', 'moon', 'watermelon', 'jellyfish', 'cherry', 'donut', 'balloon', 'apple', 'beach', 'icecream', 'snail', 'hot_air_balloon', 'cupcake', 'sunflower', 'pear', 'pineapple'],
+    hard: ['ladder', 'fence', 'piano', 'window', 'keyboard', 'bookshelf', 'abacus', 'basket', 'radio_tower', 'wheel', 'building', 'castle_gate', 'beehive', 'ferris_wheel', 'skyline', 'calendar', 'bridge', 'waffle', 'birdcage', 'spider_web'],
+    normal: ['tshirt', 'phone', 'book', 'star', 'clock', 'owl', 'anchor', 'crown', 'cup', 'trophy', 'laptop', 'gift', 'tv', 'octopus', 'fish', 'umbrella', 'desk_lamp', 'airplane', 'watering_can', 'sailboat', 'shoe', 'glasses', 'key', 'house', 'kite', 'teapot', 'pencil_cup', 'turtle', 'backpack', 'scissors', 'ring', 'helicopter', 'whale', 'bird', 'rocket', 'headphones', 'tractor', 'fox', 'bell', 'xmas_tree', 'crab', 'camera', 'windmill', 'candle', 'bucket', 'lighthouse', 'guitar', 'cat', 'envelope', 'drum', 'robot', 'penguin', 'snowman', 'bus', 'dragonfly', 'car', 'train', 'hat', 'tree']
 };

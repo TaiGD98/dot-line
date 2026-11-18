@@ -1,9 +1,0 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" width="400" height="400" fill="none" stroke="#222" stroke-width="5" stroke-linecap="round" stroke-linejoin="round">
-  <!-- Level 18 · Bucket & spade · normal. data-big="1" = pair with big dots. -->
-  <polyline points="80 160 110 360 250 360 280 160 80 160"/>
-  <path d="M80 160 C80 135.1 124.8 115 180 115 C235.2 115 280 135.1 280 160"/>
-  <line x1="95" y1="250" x2="265" y2="250"/>
-  <line x1="320" y1="60" x2="320" y2="280"/>
-  <polyline points="300 280 340 280 345 340 320 370 295 340 300 280"/>
-  <polygon points="60 330 70 350 90 352 75 365 80 385 60 375 40 385 45 365 30 352 50 350"/>
-</svg>

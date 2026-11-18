@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" width="400" height="400" fill="none" stroke="#222" stroke-width="5" stroke-linecap="round" stroke-linejoin="round">
+  <!-- Chapter 2 · level 75 · Desk lamp · normal -->
+  <ellipse cx="160" cy="360" rx="90" ry="20"/>
+  <line x1="160" y1="340" x2="120" y2="220"/>
+  <line x1="120" y1="220" x2="230" y2="140"/>
+  <circle cx="120" cy="220" r="12"/>
+  <circle cx="230" cy="140" r="12"/>
+  <polyline points="230 140 300 90 360 180 230 140"/>
+  <path d="M349.1 166 C343.3 175.9 331 179.8 320.7 174.9 C310.4 170.1 305.4 158.2 309.3 147.5"/>
+</svg>

@@ -76,10 +76,15 @@ export function parseSvg(text: string): SvgDrawing {
     const width = vb[2] ?? Number(root.width ?? 400), height = vb[3] ?? Number(root.height ?? 400);
     const ox = vb[0] ?? 0, oy = vb[1] ?? 0;
     const strokes: Stroke[] = [];
+    // Stroke widths (an element's own, else the <svg> default) give each stroke a weight.
+    const widthOf = (a: Record<string, string>) => Number(a['stroke-width'] ?? /stroke-width\s*:\s*([\d.]+)/.exec(a.style ?? '')?.[1] ?? NaN);
+    const rootWidth = widthOf(root);
+    const found: number[] = [];
     for (const m of text.matchAll(/<(path|line|polyline|polygon|rect|circle|ellipse)\b([^>]*?)\/?>/g)) {
         const tag = m[1], a = attrs(m[2]);
         const big = a['data-big'] === '1' || (a.class ?? '').split(/\s+/).includes('big');
-        const add = (pts: Pt[], closed: boolean) => strokes.push({ pts: pts.map((q) => ({ x: q.x - ox, y: q.y - oy })), closed, big });
+        const width = widthOf(a);
+        const add = (pts: Pt[], closed: boolean) => { strokes.push({ pts: pts.map((q) => ({ x: q.x - ox, y: q.y - oy })), closed, big }); found.push(isNaN(width) ? rootWidth : width); };
         const n = (k: string) => Number(a[k] ?? 0);
         if (tag === 'path') for (const sp of parsePath(a.d ?? '')) add(sp.pts, sp.closed);
         else if (tag === 'line') add([{ x: n('x1'), y: n('y1') }, { x: n('x2'), y: n('y2') }], false);
@@ -102,6 +107,14 @@ export function parseSvg(text: string): SvgDrawing {
             for (let j = 1; j <= steps; j++) d.push({ x: a.x + ((b.x - a.x) * j) / steps, y: a.y + ((b.y - a.y) * j) / steps });
         }
         s.pts = d;
+    }
+    // Weight = width / the most common width (the main lines). Only when widths differ.
+    const known = found.filter((w) => !isNaN(w));
+    if (known.length && new Set(known).size > 1) {
+        const count = new Map<number, number>();
+        for (const w of known) count.set(w, (count.get(w) ?? 0) + 1);
+        const main = [...count].sort((x, y) => y[1] - x[1] || y[0] - x[0])[0][0];
+        strokes.forEach((st, k) => { if (!isNaN(found[k]) && found[k] < main) st.weight = Math.max(0.4, found[k] / main); });
     }
     return { strokes, width, height };
 }

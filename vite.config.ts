@@ -32,7 +32,8 @@ export default defineConfig({
     base: './',
     // Set by scripts/publish-site.sh ("latest" or a tag like "v0.2.0"); "dev" when run locally.
     define: { __APP_VERSION__: JSON.stringify(process.env.SITE_VERSION ?? 'dev') },
-    server: { port: config.devPort },
+    // 127.0.0.1: reachable as localhost and 127.0.0.1 in every browser (Node's default 'localhost' binds IPv6 ::1 only).
+    server: { port: config.devPort, host: '127.0.0.1' },
     build: {
         chunkSizeWarningLimit: 1500,
         rollupOptions: {

@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" width="400" height="400" fill="none" stroke="#222" stroke-width="5" stroke-linecap="round" stroke-linejoin="round">
+  <!-- Chapter 2 · level 5 · Star · normal -->
+  <polygon points="200 30 245 150 375 155 270 230 310 360 200 285 90 360 130 230 25 155 155 150"/>
+  <polygon points="200 140 220 190 270 195 230 225 245 275 200 245 155 275 170 225 130 195 180 190"/>
+  <line x1="60" y1="60" x2="100" y2="100"/>
+  <line x1="340" y1="60" x2="300" y2="100"/>
+  <line x1="200" y1="395" x2="200" y2="370"/>
+</svg>

@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" width="400" height="400" fill="none" stroke="#222" stroke-width="5" stroke-linecap="round" stroke-linejoin="round">
+  <!-- Level 17 · Butterfly · relax. data-big="1" = pair with big dots. -->
+  <ellipse cx="200" cy="210" rx="14" ry="110"/>
+  <line x1="195" y1="100" x2="160" y2="40"/>
+  <line x1="205" y1="100" x2="240" y2="40"/>
+  <path d="M190 160 C120 40 20 60 40 160 C55 220 150 220 190 200"/>
+  <path d="M210 160 C280 40 380 60 360 160 C345 220 250 220 210 200"/>
+  <path d="M190 220 C120 230 70 300 110 340 C150 370 180 300 190 260"/>
+  <path d="M210 220 C280 230 330 300 290 340 C250 370 220 300 210 260"/>
+  <circle cx="120" cy="280" r="20"/>
+  <circle cx="280" cy="280" r="20"/>
+  <line data-big="1" x1="100" y1="130" x2="300" y2="130"/>
+</svg>

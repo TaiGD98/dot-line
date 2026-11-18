@@ -11,7 +11,9 @@ import type { Stroke } from '../src/core/trace';
 
 // Same layout as the level editor's folder storage (choose the project folder in the editor).
 const ROOT = `${process.cwd()}/`; // run from the project root (npm run levels:intro)
-const OUT = `${ROOT}levels/`;
+/** Chapter folder these levels belong to (the editor shows each folder under levels/ as a chapter). */
+const LV = `${ROOT}levels/chapter-1/`;
+const OUT = LV;
 const COLLECTION = 'Intro';
 type P = [number, number];
 const pt = ([x, y]: P): Pt => ({ x, y });
@@ -146,12 +148,12 @@ for (const sp of specs) {
 }
 
 // Play order: the "Intro" collection (as the editor's Organiser saves it), keeping other collections.
-const colFile = `${ROOT}collections.json`;
+const colFile = `${LV}collections.json`;
 const cols: { name: string; version: number; levels: string[] }[] = existsSync(colFile) ? JSON.parse(readFileSync(colFile, 'utf8')).collections ?? [] : [];
 const others = cols.filter((c) => c.name !== COLLECTION);
 const prev = cols.find((c) => c.name === COLLECTION);
 writeFileSync(colFile, json({ collections: [{ name: COLLECTION, version: prev?.version ?? 1, levels: ids }, ...others] }));
-const colDir = `${ROOT}collections/${COLLECTION}/`;
+const colDir = `${LV}collections/${COLLECTION}/`;
 mkdirSync(colDir, { recursive: true });
 for (const f of readdirSync(colDir)) unlinkSync(colDir + f);
 ids.forEach((id, i) => writeFileSync(`${colDir}${String(i + 1).padStart(3, '0')}_${id}.json`, json(JSON.parse(readFileSync(`${OUT}${id}.json`, 'utf8')))));

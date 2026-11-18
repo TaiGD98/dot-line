@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" width="400" height="400" fill="none" stroke="#222" stroke-width="5" stroke-linecap="round" stroke-linejoin="round">
+  <!-- Chapter 2 · level 4 · Kite · normal -->
+  <polygon points="200 20 320 170 200 320 80 170"/>
+  <line x1="200" y1="20" x2="200" y2="320"/>
+  <line x1="80" y1="170" x2="320" y2="170"/>
+  <path d="M200 320 C230 350 170 370 210 395"/>
+  <polyline points="185 345 215 335 210 360 190 350"/>
+</svg>

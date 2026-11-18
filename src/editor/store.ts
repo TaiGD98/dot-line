@@ -3,12 +3,15 @@
 // sits on top once.
 //
 // <root>/
-//   levels/<id>.json                level
-//   levels/<id>.png                 source image used by the generator (optional)
-//   levels/.versions/<id>/<rev>.json  3 most recent saved versions
-//   drafts/current.json             autosaved draft of the open level
-//   collections.json                collection list
-//   collections/<name>/NNN_<id>.json  numbered copies in play order
+//   levels/<chapter>/                 one folder per chapter; each chapter is independent:
+//     <id>.json                       level
+//     <id>.png | <id>.svg             source image used by the generator (optional)
+//     .versions/<id>/<rev>.json       3 most recent saved versions
+//     collections.json                collection list of this chapter (the first one = play order)
+//     collections/<name>/NNN_<id>.json  numbered copies in play order
+//   drafts/current.json               autosaved draft of the open level (remembers its chapter)
+// Older projects keep levels directly in levels/ with collections.json at the root: that layout
+// still opens, as the chapter "" (shown as "levels/").
 import { Level, parseLevel } from '../core/level';
 
 export interface Files {
@@ -20,6 +23,8 @@ export interface Files {
     remove(path: string): Promise<void>;
     /** File names (not dirs) directly inside `dir`. */
     list(dir: string): Promise<string[]>;
+    /** Folder names directly inside `dir`. */
+    listDirs(dir: string): Promise<string[]>;
     removeDir(dir: string): Promise<void>;
 }
 
@@ -71,6 +76,11 @@ export class BrowserFiles implements Files {
         const keys = (await tx<IDBValidKey[]>('files', 'readonly', (s) => s.getAllKeys())) as string[];
         const pre = dir.endsWith('/') ? dir : `${dir}/`;
         return keys.filter((k) => k.startsWith(pre) && !k.slice(pre.length).includes('/')).map((k) => k.slice(pre.length));
+    }
+    async listDirs(dir: string) {
+        const keys = (await tx<IDBValidKey[]>('files', 'readonly', (s) => s.getAllKeys())) as string[];
+        const pre = dir.endsWith('/') ? dir : `${dir}/`;
+        return [...new Set(keys.filter((k) => k.startsWith(pre) && k.slice(pre.length).includes('/')).map((k) => k.slice(pre.length).split('/')[0]))];
     }
     async removeDir(dir: string) {
         const keys = (await tx<IDBValidKey[]>('files', 'readonly', (s) => s.getAllKeys())) as string[];
@@ -168,6 +178,13 @@ export class FolderFiles implements Files {
         for await (const e of d.values()) if (e.kind === 'file') out.push(e.name);
         return out;
     }
+    async listDirs(dir: string) {
+        const d = (await this.dir(dir.split('/').filter(Boolean), false)) as DirHandle | null;
+        if (!d) return [];
+        const out: string[] = [];
+        for await (const e of d.values()) if (e.kind === 'directory') out.push(e.name);
+        return out;
+    }
     async removeDir(dir: string) {
         const { dirs, name } = this.split(dir);
         const d = await this.dir(dirs, false);
@@ -192,28 +209,52 @@ export interface Collection {
 export interface Draft {
     level: Level;
     savedId: string | null;
+    /** Chapter the draft belongs to (absent in old drafts = the root chapter ""). */
+    chapter?: string;
 }
+
+/** Shown name of a chapter folder. */
+export const chapterLabel = (c: string) => (c ? c : 'levels/ (no chapter)');
 
 const json = (v: unknown) => JSON.stringify(v, null, 2);
 
 export class Store {
-    constructor(public files: Files) {}
+    /** `chapter` = folder under levels/ ("" = levels/ itself, the old single-chapter layout). */
+    constructor(public files: Files, public chapter = '') {}
+
+    /** Folder of this chapter's levels. */
+    private get lv() {
+        return this.chapter ? `levels/${this.chapter}` : 'levels';
+    }
+    private get colFile() {
+        return this.chapter ? `${this.lv}/collections.json` : 'collections.json';
+    }
+    private get colDir() {
+        return this.chapter ? `${this.lv}/collections` : 'collections';
+    }
+
+    /** Chapter folders (sorted), plus "" when levels/ itself holds level files. */
+    static async chapters(files: Files): Promise<string[]> {
+        const dirs = (await files.listDirs('levels')).filter((d) => !d.startsWith('.')).sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
+        const root = (await files.list('levels')).some((f) => f.endsWith('.json'));
+        return [...(root ? [''] : []), ...dirs];
+    }
 
     async levels(): Promise<Level[]> {
         const out: Level[] = [];
-        for (const f of await this.files.list('levels')) {
-            if (!f.endsWith('.json')) continue;
+        for (const f of await this.files.list(this.lv)) {
+            if (!f.endsWith('.json') || f === 'collections.json') continue;
             try {
-                out.push(parseLevel(JSON.parse((await this.files.read(`levels/${f}`))!)));
+                out.push(parseLevel(JSON.parse((await this.files.read(`${this.lv}/${f}`))!)));
             } catch (e) {
-                console.warn(`Skipped levels/${f}:`, e);
+                console.warn(`Skipped ${this.lv}/${f}:`, e);
             }
         }
         return out.sort((a, b) => a.id.localeCompare(b.id, undefined, { numeric: true }));
     }
 
     async exists(id: string) {
-        return (await this.files.read(`levels/${id}.json`)) !== null;
+        return (await this.files.read(`${this.lv}/${id}.json`)) !== null;
     }
 
     async uniqueId(id: string): Promise<string> {
@@ -226,28 +267,28 @@ export class Store {
     /** Saves `level`; keeps the previous file as a version. `savedId` is the id it was loaded under. */
     async save(level: Level, savedId: string | null, image?: Blob | null): Promise<Level> {
         if (savedId && savedId !== level.id) await this.rename(savedId, level.id);
-        const prev = await this.files.read(`levels/${level.id}.json`);
+        const prev = await this.files.read(`${this.lv}/${level.id}.json`);
         if (prev) {
             const old = parseLevel(JSON.parse(prev));
-            await this.files.write(`levels/.versions/${level.id}/${String(old.rev ?? 0).padStart(4, '0')}.json`, prev);
-            const vs = (await this.files.list(`levels/.versions/${level.id}`)).sort();
-            for (const v of vs.slice(0, Math.max(0, vs.length - KEEP_VERSIONS))) await this.files.remove(`levels/.versions/${level.id}/${v}`);
+            await this.files.write(`${this.lv}/.versions/${level.id}/${String(old.rev ?? 0).padStart(4, '0')}.json`, prev);
+            const vs = (await this.files.list(`${this.lv}/.versions/${level.id}`)).sort();
+            for (const v of vs.slice(0, Math.max(0, vs.length - KEEP_VERSIONS))) await this.files.remove(`${this.lv}/.versions/${level.id}/${v}`);
         }
         const saved = { ...level, rev: (level.rev ?? 0) + 1 };
         if (image) {
             const ext = image.type === 'image/svg+xml' || (image as File).name?.toLowerCase().endsWith('.svg') ? 'svg' : 'png';
-            await this.files.remove(`levels/${level.id}.${ext === 'svg' ? 'png' : 'svg'}`);
-            await this.files.write(`levels/${level.id}.${ext}`, image);
+            await this.files.remove(`${this.lv}/${level.id}.${ext === 'svg' ? 'png' : 'svg'}`);
+            await this.files.write(`${this.lv}/${level.id}.${ext}`, image);
             saved.source = { ...(saved.source ?? {}), image: `${level.id}.${ext}` };
         }
-        await this.files.write(`levels/${level.id}.json`, json(saved));
+        await this.files.write(`${this.lv}/${level.id}.json`, json(saved));
         return saved;
     }
 
     async versions(id: string): Promise<Level[]> {
         const out: Level[] = [];
-        for (const v of (await this.files.list(`levels/.versions/${id}`)).sort().reverse()) {
-            const t = await this.files.read(`levels/.versions/${id}/${v}`);
+        for (const v of (await this.files.list(`${this.lv}/.versions/${id}`)).sort().reverse()) {
+            const t = await this.files.read(`${this.lv}/.versions/${id}/${v}`);
             if (t) out.push(parseLevel(JSON.parse(t)));
         }
         return out;
@@ -255,32 +296,32 @@ export class Store {
 
     /** Source image of a level (PNG or SVG), typed so callers can tell them apart. */
     async image(id: string): Promise<Blob | null> {
-        const png = await this.files.readBlob(`levels/${id}.png`);
+        const png = await this.files.readBlob(`${this.lv}/${id}.png`);
         if (png) return png.type ? png : new Blob([png], { type: 'image/png' });
-        const svg = await this.files.readBlob(`levels/${id}.svg`);
+        const svg = await this.files.readBlob(`${this.lv}/${id}.svg`);
         return svg ? new Blob([svg], { type: 'image/svg+xml' }) : null;
     }
 
     /** Deletes the level file and its image; version history is kept. */
     async remove(id: string) {
-        await this.files.remove(`levels/${id}.json`);
-        await this.files.remove(`levels/${id}.png`);
-        await this.files.remove(`levels/${id}.svg`);
+        await this.files.remove(`${this.lv}/${id}.json`);
+        await this.files.remove(`${this.lv}/${id}.png`);
+        await this.files.remove(`${this.lv}/${id}.svg`);
     }
 
     /** Moves a level to a new id: file, image, history and collection entries. */
     async rename(oldId: string, newId: string) {
         if (oldId === newId) return;
         if (await this.exists(newId)) throw new Error(`Id "${newId}" already exists`);
-        const text = await this.files.read(`levels/${oldId}.json`);
-        if (text) await this.files.write(`levels/${newId}.json`, json({ ...JSON.parse(text), id: newId }));
+        const text = await this.files.read(`${this.lv}/${oldId}.json`);
+        if (text) await this.files.write(`${this.lv}/${newId}.json`, json({ ...JSON.parse(text), id: newId }));
         const img = await this.image(oldId);
-        if (img) await this.files.write(`levels/${newId}.${img.type === 'image/svg+xml' ? 'svg' : 'png'}`, img);
-        for (const v of await this.files.list(`levels/.versions/${oldId}`)) {
-            const t = await this.files.read(`levels/.versions/${oldId}/${v}`);
-            if (t) await this.files.write(`levels/.versions/${newId}/${v}`, json({ ...JSON.parse(t), id: newId }));
+        if (img) await this.files.write(`${this.lv}/${newId}.${img.type === 'image/svg+xml' ? 'svg' : 'png'}`, img);
+        for (const v of await this.files.list(`${this.lv}/.versions/${oldId}`)) {
+            const t = await this.files.read(`${this.lv}/.versions/${oldId}/${v}`);
+            if (t) await this.files.write(`${this.lv}/.versions/${newId}/${v}`, json({ ...JSON.parse(t), id: newId }));
         }
-        await this.files.removeDir(`levels/.versions/${oldId}`);
+        await this.files.removeDir(`${this.lv}/.versions/${oldId}`);
         await this.remove(oldId);
         const cols = await this.collections();
         for (const c of cols) c.levels = c.levels.map((id) => (id === oldId ? newId : id));
@@ -295,7 +336,7 @@ export class Store {
             try {
                 const level = parseLevel(JSON.parse(await f.text()));
                 level.id = await this.uniqueId(level.id);
-                await this.files.write(`levels/${level.id}.json`, json(level));
+                await this.files.write(`${this.lv}/${level.id}.json`, json(level));
                 added.push(level.id);
             } catch (e) {
                 errors.push(`${f.name}: ${(e as Error).message}`);
@@ -334,7 +375,7 @@ export class Store {
     }
 
     async collections(): Promise<Collection[]> {
-        const t = await this.files.read('collections.json');
+        const t = await this.files.read(this.colFile);
         try {
             return t ? ((JSON.parse(t).collections ?? []) as Collection[]) : [];
         } catch {
@@ -343,7 +384,7 @@ export class Store {
     }
 
     writeCollections(cols: Collection[]) {
-        return this.files.write('collections.json', json({ collections: cols }));
+        return this.files.write(this.colFile, json({ collections: cols }));
     }
 
     static copyName(index: number, id: string) {
@@ -351,19 +392,19 @@ export class Store {
     }
 
     async copyStatus(c: Collection): Promise<Set<string>> {
-        return new Set(await this.files.list(`collections/${c.name}`));
+        return new Set(await this.files.list(`${this.colDir}/${c.name}`));
     }
 
     /** Writes collections.json and the numbered copies; `oldName` folder is removed after a rename. */
     async saveCollection(all: Collection[], c: Collection, oldName: string | null) {
         await this.writeCollections(all);
-        if (oldName && oldName !== c.name) await this.files.removeDir(`collections/${oldName}`);
-        await this.files.removeDir(`collections/${c.name}`);
+        if (oldName && oldName !== c.name) await this.files.removeDir(`${this.colDir}/${oldName}`);
+        await this.files.removeDir(`${this.colDir}/${c.name}`);
         let copied = 0;
         for (let i = 0; i < c.levels.length; i++) {
-            const t = await this.files.read(`levels/${c.levels[i]}.json`);
+            const t = await this.files.read(`${this.lv}/${c.levels[i]}.json`);
             if (!t) continue;
-            await this.files.write(`collections/${c.name}/${Store.copyName(i, c.levels[i])}`, t);
+            await this.files.write(`${this.colDir}/${c.name}/${Store.copyName(i, c.levels[i])}`, t);
             copied++;
         }
         return copied;

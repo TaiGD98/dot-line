@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" width="400" height="400" fill="none" stroke="#222" stroke-width="5" stroke-linecap="round" stroke-linejoin="round">
+  <!-- Chapter 2 · level 58 · Umbrella · normal -->
+  <path d="M30 180 C30 102.7 106.1 40 200 40 C293.9 40 370 102.7 370 180"/>
+  <path d="M30 180 C58.3 170 86.7 190 115 180 C143.3 170 171.7 190 200 180 C228.3 170 256.7 190 285 180 C313.3 170 341.7 190 370 180"/>
+  <line x1="200" y1="40" x2="200" y2="330"/>
+  <path d="M240 330 C240 341 231 350 220 350 C209 350 200 341 200 330"/>
+  <path d="M115 180 C115 102.7 153.1 40 200 40"/>
+  <path d="M200 40 C246.9 40 285 102.7 285 180"/>
+</svg>

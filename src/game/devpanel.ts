@@ -21,7 +21,7 @@ export function mountDevPanel() {
     const reset = document.createElement('button');
     reset.textContent = 'Reset';
     const show = () => {
-        value.textContent = `${tuning.moveSpeed} px/s`;
+        value.textContent = `${tuning.startSpeed} → ${tuning.moveSpeed} px/s in 1 s`;
         note.textContent = overridden() ? `code: ${MOVE_SPEED} · not confirmed` : 'same as code';
     };
     slider.addEventListener('input', () => { setMoveSpeed(+slider.value); show(); });

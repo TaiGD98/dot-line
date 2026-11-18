@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" width="400" height="400" fill="none" stroke="#222" stroke-width="5" stroke-linecap="round" stroke-linejoin="round">
+  <!-- Chapter 2 · level 64 · Drum · normal -->
+  <ellipse cx="200" cy="140" rx="150" ry="45"/>
+  <polyline points="50 140 50 310"/>
+  <polyline points="350 140 350 310"/>
+  <path d="M350 310 C350 334.9 282.8 355 200 355 C117.2 355 50 334.9 50 310"/>
+  <polyline points="50 200 100 300 150 200 200 300 250 200 300 300 350 200"/>
+  <line x1="120" y1="110" x2="40" y2="30"/>
+  <line x1="280" y1="110" x2="360" y2="30"/>
+</svg>

@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" width="400" height="400" fill="none" stroke="#222" stroke-width="5" stroke-linecap="round" stroke-linejoin="round">
+  <!-- Chapter 2 · level 21 · Key · normal -->
+  <circle cx="110" cy="200" r="70"/>
+  <circle cx="110" cy="200" r="25"/>
+  <line x1="180" y1="190" x2="360" y2="190"/>
+  <line x1="180" y1="210" x2="360" y2="210"/>
+  <line x1="360" y1="190" x2="360" y2="210"/>
+  <polyline points="300 210 300 240 320 240 320 210"/>
+  <polyline points="260 210 260 250 280 250 280 210"/>
+</svg>

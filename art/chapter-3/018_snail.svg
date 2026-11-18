@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" width="400" height="400" fill="none" stroke="#222" stroke-width="5" stroke-linecap="round" stroke-linejoin="round">
+  <!-- Chapter 2 · level 18 · Snail · normal -->
+  <circle cx="200" cy="210" r="110"/>
+  <path d="M275 210 C275 243.9 252.2 273.7 219.4 282.4 C186.6 291.2 152 276.9 135 247.5 C118.1 218.1 123 181 147 157 C171 133 208.1 128.1 237.5 145"/>
+  <path d="M225 239.6 C205.9 250.7 181.4 244.1 170.4 225 C159.3 205.9 165.9 181.4 185 170.4 C204.1 159.3 228.6 165.9 239.6 185"/>
+  <path d="M90 300 L360 300 C390 300 390 260 360 250"/>
+  <line x1="355" y1="255" x2="345" y2="190"/>
+  <line data-big="1" x1="320" y1="180" x2="385" y2="180"/>
+</svg>

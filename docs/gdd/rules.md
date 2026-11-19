@@ -154,8 +154,8 @@ Nguồn: vật liệu `Voxel_*` của game Cube Blast (file `VoxelMaterials.json
 ## 3.8 Level <Badge type="tip" text="Live" />
 
 - Mỗi level là một hình vẽ ghép từ các cặp hạt và dây (ví dụ cái micro trong clip).
-- **Hệ thống 100 level** (bộ "Main", game chơi bộ này trước): xem [Level system](../guide/level-system) và `design/level-system.xlsx`.
-- **10 level mở đầu cũ** (bộ "Intro", chơi sau level 100): Ripples (hướng dẫn bấm), Flag (hướng dẫn va chạm), Kite (hướng dẫn pinch zoom), House, Fish, Sailboat, Umbrella, Rocket, Tree, Castle. Level 1–2 làm tay; level 3–10 tạo bằng generator v2 từ hình vẽ trong `tools/intro-levels.ts`. File level nằm trong `levels/`, thứ tự chơi là bộ "Intro" trong `collections.json`.
+- **Bộ level đang chơi (Play order, `levels/game.json`):** 30 level của **chapter 6**, gen lại từ hình gốc của bộ cũ (2 level hướng dẫn của chapter 1 + 28 level tranh line art của chapter 5) bằng generator hiện tại (`npm run levels:chapter6`). LEVEL 1 hướng dẫn bấm, LEVEL 2 hướng dẫn va chạm, LEVEL 3 hướng dẫn pinch zoom. Bản build của game chứa đúng các level này.
+- Bộ cũ vẫn còn trong repo nhưng không chơi: hệ thống 100 level (chapter 1, xem [Level system](../guide/level-system) và `design/level-system.xlsx`), 10 level mở đầu cũ (bộ "Intro"), chapter 5 bản trước.
 - **Hướng dẫn:** level có trường `tutorial` hiện bàn tay chỉ vào hạt và dòng chữ (Tap a dot to send it home / Blocked dots bounce back / Pinch to zoom); biến mất sau lần bấm hoặc zoom đầu tiên. Ở level hướng dẫn va chạm (`collision`), **lần đụng đầu tiên không mất tim**, rồi hiện thông báo "Free this time! Next bump costs a heart".
 - **Nhãn "Hard"** hiện trên tim ở các level vị trí khó của hệ thống level (`category: "hard"`); level không thuộc hệ thống thì hiện khi độ khó từ 4 trở lên.
 - Số cặp mỗi level, số màu, cách tăng độ khó qua các level: _TBD_.

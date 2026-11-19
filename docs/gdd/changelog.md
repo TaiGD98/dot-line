@@ -4,19 +4,33 @@ Every published version stays playable at its own URL. The [landing page](https:
 
 ## latest (main) <Badge type="tip" text="Live" />
 
-- **Fix: LEVEL 6 (chapter-6/level-9) was upside down.** Its SVG flips the drawing with a group transform, which the build tools' SVG reader ignored; the reader now follows group transforms like a browser, and the level was rebuilt (`npm run levels:chapter6 -- level-9`).
-- **Smaller hitbox:** two dots bump when their centres are closer than 78% of their radii (was 85%): a dot whose edge is a few px clear of a line (centre 25 px or more from it) no longer stops a dot running on that line.
-- **Generator: dots go plainly onto lines.** A dot near another line but not clearly on it (centre 16–27 px from it) is moved onto the line (8 px, else 16 px), when there is room and the level stays solvable: a dot that blocks a line sits on it, one that does not is clearly off it. Chapter 6 rebuilt with it.
-- **Colours by family:** the 28 colours form 10 families (reds, oranges, yellows, limes, greens, cyans, blues, purples, magenta, pinks). Lines near each other (within 60 px) never get colours that look alike: not the same colour or family, and clearly different (CIEDE2000 ≥ 25) as shown on both the light and the dark board, so no spring green next to turquoise. A level check, enforced by `publish:levels`. A level uses as many colours as it can (every colour once before any twice). Theme swaps stay inside the family and are always the same for a colour.
-- **Chapter 6:** every level of the play order generated again with today's generator (`npm run levels:chapter6`), in `levels/chapter-6/`.
-- **Level editor:** saving a level (or the play order) no longer reloads the editor page; only the dev game reloads with the new levels.
-- **Level editor, big dots from drawn circles:** round loops drawn as lines now become big dots too: a line that curls round a circle in the middle and goes on, a loop or an open hook at the end of a line, and a round arc hanging from another line even when tracing leaves a small gap (the Christmas tree's ornaments). Regenerate a level in the editor to get them. Their big dots sit a little inside the drawn circle, and the part of the line drawn joined to a circle carries its big dot. After the layout, lines that were pulled back grow back along their stroke where there is room again, so less of the drawing is lost.
-- **No more line edges; colours that sink into the board are swapped:** lines are drawn in their colour only. A colour too close to the current theme's board (light ones on the light board, dark ones on the dark board) is shown as a readable colour of the same hue family, and swapped again when the theme changes; the level files keep their colours. The dark board asks for more contrast, so deep colours (brown, olive, teal, purple, navy, maroon...) turn into brighter ones there.
-- **Jelly variant** at [/jelly/](https://taigd98.github.io/dot-line/jelly/) (**Play Jelly** on the landing page, next to **Play Classic**): the same levels with jelly dots. They deform while moving instead of leaving a trail, jiggle more on a bump, and a dot that reaches its partner presses into it and merges into one blob before popping.
-- **Magic variant** at [/magic/](https://taigd98.github.io/dot-line/magic/) (**Play Magic** on the landing page): the level is a seal on a double door in the board colours of the classic game. The leaves slam shut, one dot of each pair runs along its line to the other end; when the last dot is gone the level's map (lines and dots) glows gold, then the seam lights up, and the door opens (each leaf taking its half of the map) onto a glowing room before Well Done. Tutorial captions show once the dots have run out and go when the last dot is gone. Orb dots in every palette colour, no seam until the last dot is gone, and HUD bands that slide away for the Well Done screen and back in on the next level.
-- **Droplets on a bump** (both versions): when two dots bump, each splashes a few droplets in its own colour, away from where they touched. A dot reaching its partner splashes the same way (the arriving dot backwards, the partner forwards) before the pair pops.
+- No changes since v0.5.0.
 
 [Play latest](https://taigd98.github.io/dot-line/demo/)
+
+## v0.5.0
+
+**Three ways to play** (landing page: **Play Classic**, **Play Jelly**, **Play Magic**; the same levels in each)
+- **Jelly** ([/jelly/](https://taigd98.github.io/dot-line/jelly/)): dots deform while they move instead of leaving a trail, jiggle more on a bump, and a dot that reaches its partner presses into it and merges into one blob before popping.
+- **Magic** ([/magic/](https://taigd98.github.io/dot-line/magic/)): the level is a seal on a double door in the board colours. The leaves slam shut, one dot of each pair runs along its line to the other end, then play starts (a tutorial caption only shows from then on). When the last dot is gone the level's map (lines and dots) glows gold, the seam lights up and the door opens, each leaf taking its half of the map, onto a glowing room behind it; the HUD bands slide away for the Well Done screen and back in on the next level. Glass orb dots in every colour.
+
+**Feel**
+- **Droplets:** when two dots bump, each splashes a few droplets in its own colour; a dot reaching its partner splashes too before the pair pops (every version).
+- **Smaller hitbox:** two dots bump when their centres are closer than 78% of their radii (was 85%). A dot a few px clear of a line (centre 25 px or more from it) no longer stops a dot running on that line; dots that do block a line now sit plainly on it.
+
+**Colours**
+- **No two look-alike colours side by side:** the 28 colours form 10 families (reds, oranges, yellows, limes, greens, cyans, blues, purples, magenta, pinks). Lines within 60 px of each other never share a colour or a family and always look clearly different, on the light and on the dark board alike. A level uses as many colours as it can.
+- **No line edges; colours that would sink into the board are swapped** for a readable colour of the same family (light ones on the light board, deep ones on the dark board), and swapped back when the theme changes.
+
+**Levels**
+- **All 30 levels generated again** (chapter 6, same order, same tutorials) with the new colour rule, dots plainly on or off lines, and big dots on circles drawn as lines (the Christmas tree's ornaments). Small ghosts and other not-quite-round shapes stay lines.
+- **Fix:** LEVEL 6 (Christmas tree) is no longer upside down.
+
+**Level editor**
+- **Big dots from drawn circles:** a line that curls round a circle, a loop or an open hook at the end of a line, and a round arc hanging from another line become big dots; lines pulled back to make room grow back where there is room again, so less of the drawing is lost.
+- **Saving no longer reloads the editor page** (only the dev game reloads with the new levels).
+
+[Play v0.5.0](https://taigd98.github.io/dot-line/v0.5.0/demo/) · [Docs v0.5.0](https://taigd98.github.io/dot-line/v0.5.0/docs/)
 
 ## v0.4.0
 
@@ -88,4 +102,5 @@ Every published version stays playable at its own URL. The [landing page](https:
 | 2026-11-16 | Dây ở lại với màu Completed; thêm bảng màu (3.7) |
 | 2026-11-17 | Released v0.1.0 |
 | 2026-11-17 | Released v0.2.0 |
+| 2026-11-19 | Released v0.5.0 |
 | 2026-11-18 | Released v0.3.0 |

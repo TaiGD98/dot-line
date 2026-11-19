@@ -12,7 +12,7 @@
 import { Pair } from './level';
 import { Pt, arcLengths, dist, distToPolyline, samplePath } from './path';
 import { BlockModel, HIT_SCALE, solve, SolveResult } from './solver';
-import { Line, Seg, colourPairs, nearest, prepareStrokes, rng, slice, toLine, toPair } from './generator';
+import { Line, Seg, colourPairs, nearest, prepareStrokes, rng, settleNearDots, slice, toLine, toPair } from './generator';
 import type { Stroke } from './trace';
 
 export interface LayeredOptions {
@@ -311,6 +311,7 @@ function buildOnce(strokes: Stroke[], opt: LayeredOptions, rand: () => number): 
     }
     if (pairs.length < N) warnings.push(`Placed ${pairs.length - outline} of ${N - outline} blockers (no more free space)`);
 
+    settleNearDots(pairs);
     colourPairs(pairs, opt.colors, rand);
     sim = solve({ pairs } as never);
     st = blockStats(pairs);

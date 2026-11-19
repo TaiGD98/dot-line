@@ -193,7 +193,7 @@ export class Game extends Phaser.Scene {
      */
     private recolour() {
         if (!this.level) return;
-        const swap = readableColours(this.level.pairs.map((p) => this.levelColours.get(p.id) ?? p.color), theme().background);
+        const swap = readableColours(this.level.pairs.map((p) => this.levelColours.get(p.id) ?? p.color), theme().background, theme().minContrast);
         for (const p of this.level.pairs) {
             const own = this.levelColours.get(p.id) ?? p.color;
             p.color = swap.get(own) ?? own;

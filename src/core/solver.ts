@@ -13,8 +13,12 @@ export type Side = 'a' | 'b';
 /**
  * Hitbox = this share of the sum of the two radii. Below 1 so dots that only touch at the edge
  * (e.g. two dots side by side at a cut) don't count as a bump; a dot sitting on a line still blocks.
+ * 0.78: two normal dots (radius 16) bump when their centres are closer than 25 px, so a dot whose
+ * edge is a few px clear of a line (centre 25 px or more from it) lets a dot on that line pass.
  */
-export const HIT_SCALE = 0.85;
+export const HIT_SCALE = 0.78;
+/** The hitbox before (0.85): dots the generators placed this close to a line were meant to block it. */
+export const OLD_HIT_SCALE = 0.85;
 
 export class BlockModel {
     private lines = new Map<string, Pt[]>();

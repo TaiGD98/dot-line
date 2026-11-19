@@ -14,10 +14,10 @@
 // pointing at the centre), "stripes" / "columns" / "diagonal" (parallel lines across the drawing).
 // Nothing here can make the level unsolvable: a cross line is only ever blocked by a twig on it.
 import { Check, DEFAULT_RADIUS, Dot, Pair, mainRadius } from './level';
-import { PALETTE } from './palette';
+import { PALETTE, farApart } from './palette';
 import { Anchor, Pt, arcLengths, dist, distToPolyline, pointAt, samplePath } from './path';
 import { HIT_SCALE, SolveResult, solve } from './solver';
-import { NEAR_LINES, nearPairs, rng } from './generator';
+import { NEAR_LINES, fixNearColours, nearPairs, rng, settleNearDots } from './generator';
 
 export type CrossKind = 'x' | 't';
 export type PatternStyle = 'auto' | 'fringe' | 'rays' | 'stripes' | 'columns' | 'diagonal';
@@ -627,7 +627,8 @@ function build(ctx: Ctx, opt: OverlapOptions, style: Style, rand: () => number, 
     if (needT > 0) warnings.push(`Placed ${T - needT} of ${T} T lines (no room for more in this pattern)`);
     if (needX > 0) warnings.push(`Placed ${X - needX} of ${X} X lines (no room for more in this pattern)`);
 
-    // ---- 3. Colours: lines that cross or touch never share one; mirrored lines match ----
+    // ---- 3. Colours: lines that cross, touch or run near never get colours too alike (palette.farApart:
+    // not the same colour or family, clearly different on both boards); mirrored lines match ----
     const palette = [...new Set(ctx.colours)];
     const colourOf: string[] = [...ctx.colours];
     const stride = palette.length > 2 ? 1 + Math.floor(rand() * (palette.length - 1)) : 1;
@@ -650,10 +651,12 @@ function build(ctx: Ctx, opt: OverlapOptions, style: Style, rand: () => number, 
         const start = (rec.unit * stride) % Math.max(1, palette.length);
         const ring = palette.map((_, i) => palette[(start + i) % palette.length]);
         const twin = rec.twin !== undefined ? colourOf[rec.twin] : undefined;
-        const ok = (c: string) => !hard.has(c) && !nearby.has(c);
-        let pick = twin && ok(twin) ? twin : ring.find((c) => ok(c) && !soft.has(c) && !softer.has(c)) ?? ring.find((c) => ok(c) && !soft.has(c)) ?? ring.find(ok) ?? ring.find((c) => !hard.has(c));
+        const apart = (c: string, set: Set<string>) => [...set].every((o) => farApart(c, o));
+        const ok = (c: string) => apart(c, hard) && apart(c, nearby);
+        let pick = twin && ok(twin) ? twin : ring.find((c) => ok(c) && apart(c, soft) && apart(c, softer)) ?? ring.find((c) => ok(c) && apart(c, soft)) ?? ring.find(ok);
         if (!pick) {
-            pick = PALETTE.map((c) => c.name).find((c) => !palette.includes(c)) ?? ring[0];
+            // None of the level's colours fits here: a palette colour that does (else the least bad one).
+            pick = PALETTE.map((c) => c.name).find(ok) ?? ring.find((c) => apart(c, hard)) ?? ring[0];
             if (!palette.includes(pick)) { palette.push(pick); added++; }
         }
         colourOf[rec.idx] = pick;
@@ -695,6 +698,8 @@ export function generateOverlap(existing: Pair[], opt: OverlapOptions): OverlapC
     for (let i = 0; i < tries || (i < tries * 3 && !out.some((c) => c.score < 100)); i++) {
         const rand = rng(seed + i * 7919);
         const c = build(ctx, opt, styleFor(opt.style ?? 'auto', i, rand, ctx.size), rand, taken);
+        const all = [...base, ...c.pairs], own = new Set(c.pairs.map((_, k) => base.length + k));
+        if (settleNearDots(all, own)) fixNearColours(all, own);
         c.sim = solve({ pairs: [...base, ...c.pairs] } as never);
         if (!c.sim.solvable) c.score += 1000;
         out.push(c);
@@ -712,14 +717,12 @@ export function crossChecks(pairs: Pair[]): Check[] {
     const out: Check[] = [];
     if (pairs.length < 2) return out;
     const ids = (list: [number, number][]) => [...new Set(list.flatMap(([i, j]) => [pairs[i].id, pairs[j].id]))];
-    const same = ([i, j]: [number, number]) => pairs[i].color === pairs[j].color;
-    const touching = nearPairs(pairs, 3).filter(same);
-    out.push(touching.length
-        ? { level: 'warn', text: `Crossing or touching lines share a colour: ${ids(touching).join(', ')}`, pairs: ids(touching) }
-        : { level: 'ok', text: 'Crossing lines have different colours' });
-    const done = new Set(touching.map(([i, j]) => `${i}-${j}`));
-    const near = nearPairs(pairs).filter((e) => same(e) && !done.has(`${e[0]}-${e[1]}`));
-    if (near.length) out.push({ level: 'info', text: `Near lines sharing a colour: ${ids(near).join(', ')}`, pairs: ids(near) });
+    // Lines near each other: never the same colour or family, and clearly different on both boards (palette.farApart).
+    const same = ([i, j]: [number, number]) => !farApart(pairs[i].color, pairs[j].color);
+    const near = nearPairs(pairs).filter(same);
+    out.push(near.length
+        ? { level: 'warn', text: `Near lines with colours too alike (same family, or alike on the light / dark board): ${ids(near).join(', ')}`, pairs: ids(near) }
+        : { level: 'ok', text: 'Near lines have clearly different colours' });
     if (pairs.some((p) => p.cross)) {
         const lines = pairs.map((p) => samplePath(p.path, 5));
         const onLine = (d: Dot, self: number) => pairs.some((q, qi) => qi !== self && distToPolyline(d, lines[qi]) < (d.r + Math.max(q.a.r, q.b.r)) * HIT_SCALE);

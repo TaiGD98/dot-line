@@ -21,6 +21,10 @@ const menuLevels = bundled;
 
 export const fromEditor = new URLSearchParams(location.search).has('editor');
 
+// Dev: a level or the play order was saved (vite.config.ts, gameLevels): the game reloads with the new
+// levels. Opened from the editor's Play button it gets its level from the editor, so it stays as it is.
+if (import.meta.hot && !fromEditor) import.meta.hot.on('dotline:levels', () => location.reload());
+
 type Listener = (level: Level) => void;
 
 class LevelSource {

@@ -475,7 +475,7 @@ class App {
 
     /** mode: 'strokes' = one stroke of the drawing per line (reference style); 'cut' = contours cut into pairs (v2). */
     /** dot: radius of every normal dot of the generated level; big: round details of the drawing become big dots (stroke mode). */
-    private genOpts = { pairs: 20, colors: 7, difficulty: 3, x: 6, t: 6, pattern: 'auto' as PatternStyle, mode: 'strokes' as 'strokes' | 'cut', dot: DEFAULT_RADIUS, big: true };
+    private genOpts = { pairs: 20, colors: PALETTE.length, difficulty: 3, x: 6, t: 6, pattern: 'auto' as PatternStyle, mode: 'strokes' as 'strokes' | 'cut', dot: DEFAULT_RADIUS, big: true };
     private overlaps: OverlapCandidate[] = [];
     private chosenOverlap = 0;
     private genNote = h('div', { class: 'muted small' });

@@ -31,17 +31,27 @@ function devTuning(): Plugin {
  * `virtual:game-levels`: exactly the levels the game plays, in order, and nothing else (so the build
  * matches the Organiser's play order). Read from levels/game.json ("<chapter>/<id>" or
  * "<chapter>/*" entries), else from the PLAYLIST in src/game/playlist.ts. Every file read is
- * watched: saving a level or the play order in the editor reloads the dev game.
+ * watched: saving a level or the play order in the editor reloads the dev game, and only the game
+ * (an "dotline:levels" event that src/game/source.ts listens to): Vite's own full reload would
+ * reload every open page, the level editor too.
  */
 function gameLevels(): Plugin {
     const ID = 'virtual:game-levels', RESOLVED = '\0' + ID;
     const root = __dirname;
+    const watched = new Set<string>();
     return {
         name: 'dot-line-game-levels',
         resolveId: (id) => (id === ID ? RESOLVED : undefined),
+        handleHotUpdate({ file, server }) {
+            if (!watched.has(file)) return;
+            const mod = server.moduleGraph.getModuleById(RESOLVED);
+            if (mod) server.moduleGraph.invalidateModule(mod);
+            server.ws.send({ type: 'custom', event: 'dotline:levels' });
+            return [];
+        },
         load(id) {
             if (id !== RESOLVED) return;
-            const watch = (f: string) => this.addWatchFile(f);
+            const watch = (f: string) => { this.addWatchFile(f); watched.add(f); };
             const gameFile = resolve(root, 'levels/game.json');
             watch(gameFile);
             let order: string[] = [];

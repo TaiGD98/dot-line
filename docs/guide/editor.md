@@ -81,7 +81,7 @@ Khung **Generate from a drawing** có 2 phần, mỗi phần một nút riêng. 
 
 | Phần | Tham số | Kết quả |
 |---|---|---|
-| **1 · Fill the lines** | Pairs, Colours, Target difficulty | Các cặp chỉ nằm trên **nét của hình input** (dây nền). Các dây **gần nhau không trùng màu** (chạm, cắt, hoặc cách nhau dưới 40 px). |
+| **1 · Fill the lines** | Pairs, Colours, Target difficulty | Các cặp chỉ nằm trên **nét của hình input** (dây nền). Các dây **gần nhau không có màu giống nhau** (chạm, cắt, hoặc cách nhau dưới 60 px): không cùng màu, không cùng tông, và nhìn khác rõ ở cả theme sáng lẫn tối (Rules 3.7). Dùng càng nhiều màu càng tốt; Colours = số màu tối đa (mặc định 28). |
 | **2 · Overlap pattern** | X cross, T cross (và kiểu hoa văn) | Các **dây cross** vẽ đè lên hình như hoa văn. Không bao giờ dời hay cắt dây nền. |
 
 **Tổng số dây của level = Pairs + X + T** (dòng "Target lines" trong khung hiện tổng này và số đang có). Kích thước hình khi generate tăng theo tổng số dây để hoa văn có chỗ.
@@ -119,9 +119,17 @@ Nếu hoa văn không đủ chỗ cho số dây yêu cầu, editor báo "Placed 
 
 **Bóng bự (ô Big dots, chỉ ở chế độ Strokes):** chi tiết **tròn hoặc gần tròn, kín, nhỏ** của hình (mắt, mũi, nút áo, quả châu) không thành dây mà thành một **bóng bự** đặt ngay tại đó. Quy tắc:
 
+- **Vòng tròn vẽ bằng nét, không cần kín hẳn**, cũng được tính (độ tròn đo bằng cách khớp một đường tròn: các điểm lệch trung bình không quá 6% bán kính):
+  - một dây cuộn một vòng tròn **ở giữa** rồi chạy tiếp (dây kim tuyến quấn quanh quả châu): vòng đó thành bóng bự, dây được cắt tại cổ vòng; phần dài hơn mang bóng bự, phần kia lùi ra cho hạt của nó không chạm bóng bự;
+  - một dây kết thúc bằng **một vòng** (quả bóng bay với dây): chỗ khép có thể hở tới khoảng 3 lần bề rộng nét (nét bị cắt ở chỗ giao khi trace);
+  - một dây kết thúc bằng **một móc cong** đi được ít nhất 80% vòng tròn (quả châu vẽ chưa khép);
+  - một **cung tròn** có hai đầu chạm (hoặc gần chạm, tới khoảng 2 lần khoảng cách cho phép trước đây) vào dây khác (quả châu treo trên cành) và đi được ít nhất 78% vòng tròn.
+  - Bóng bự của các vòng này nhỏ hơn vòng vẽ một chút (85% bán kính, chỗ chật co được tới 1,3 lần hạt thường) để dây xung quanh còn chỗ; phần dây vẽ liền với vòng luôn là dây mang bóng bự đó.
 - Chi tiết được tính khi bán kính của nó không quá 2.8 lần hạt thường; lớn hơn thì vẫn là dây vòng. Vòng có hình khác nằm bên trong (mặt đồng hồ) không tính; chi tiết nằm trong chi tiết lớn hơn (con ngươi trong mắt) gộp làm một; hai chi tiết quá sát nhau (hai lỗ mũi) gộp thành một bóng.
 - **Cỡ bóng bự theo chi tiết trong hình** (mắt to thì bóng to), không phụ thuộc Dot size (chi tiết nào thành bóng bự cũng không phụ thuộc Dot size: tính theo kích thước board); nhưng luôn to hơn bóng thường ít nhất 1,3 lần. Chỗ chật bóng bự có thể nhỏ đi tối đa 15%.
 - **Có dây nối trong hình:** nét nào kết thúc tại chi tiết, hoặc chi tiết nằm dính trên một nét (quả châu treo trên cành), thì nét đó là dây của bóng bự: một đầu là bóng bự, đầu kia là hạt thường. Nét bị chia tại chỗ chi tiết dính vào; phần dài hơn mang bóng bự.
+- **Hạt nằm lưng chừng cạnh dây được kéo vào đè lên dây:** sau khi xếp xong (mọi chế độ gen, cả dây chéo X/T), hạt nào nằm gần một dây khác mà chưa đè rõ lên dây (tâm cách dây từ 1 bán kính tới mức hitbox cũ 85%, tức 16–27 px với hạt thường) được kéo vào cho tâm cách dây nửa bán kính (8 px), không được thì 1 bán kính (16 px). Hạt chặn dây thì nằm hẳn trên dây, hạt không chặn thì nằm hẳn ngoài: dễ nhìn hơn mà level không dễ đi. Chỉ kéo khi chỗ mới không đè hạt khác và level vẫn giải được (dây chéo luôn giữ một hạt ở chỗ trống); màu được tô sau bước này.
+- **Dây bị kéo lùi được mọc lại:** khi xếp xong, mỗi đầu dây từng bị kéo lùi (để hạt không đè nhau hoặc để level giải được) thử dài ra lại theo nét gốc: cả đoạn, không được thì một nửa, rồi một phần tư; chỉ giữ khi hạt không đè hạt khác và level vẫn giải được. Nhờ vậy hình ít bị mất nét hơn.
 - **Không có dây nối:** hai chi tiết thành **một cặp** (bóng bự + bóng bự) nối bằng một dây thẳng. Ưu tiên ghép hai chi tiết cùng cỡ nằm ngang hàng (hai mắt).
 - Chi tiết lẻ, không có gì để ghép: nối bằng một dây thẳng tới dây gần nhất (đầu kia là hạt thường nằm trên dây đó).
 - Đầu các dây khác nằm sát bóng bự bị lùi lại cho hạt nằm cạnh bóng bự.
@@ -169,7 +177,7 @@ Nếu hoa văn không đủ chỗ cho số dây yêu cầu, editor báo "Placed 
 
 - Nơi lưu: **folder trên máy** (File System Access API, chỉ Chrome/Edge) hoặc **Browser storage** để thử.
 - **Chapter:** mỗi folder trong `levels/` là một chapter riêng (level, lịch sử và collection riêng). Chọn chapter ở ô **Chapter** trên danh sách level; nút **+** bên cạnh tạo chapter mới (folder được tạo khi Save level đầu tiên). Organiser chỉ sắp level của chapter đang mở.
-- **Sửa level của game:** chọn chính folder project `dot-line` làm folder lưu. Game chơi các chapter theo thứ tự tên folder (`chapter-1`, `chapter-2`...); trong mỗi chapter theo collection đầu tiên trong `levels/<chapter>/collections.json`. Mọi lần Save trong editor là game thấy ngay (dev server tự tải lại). Lịch sử version (`.versions/`) và bản nháp (`drafts/`) không được commit.
+- **Sửa level của game:** chọn chính folder project `dot-line` làm folder lưu. Game chơi các chapter theo thứ tự tên folder (`chapter-1`, `chapter-2`...); trong mỗi chapter theo collection đầu tiên trong `levels/<chapter>/collections.json`. Mọi lần Save trong editor là game thấy ngay: trang game tự tải lại, **trang editor thì không** (đang sửa dở vẫn giữ nguyên). Lịch sử version (`.versions/`) và bản nháp (`drafts/`) không được commit.
 - Project cũ để level thẳng trong `levels/` (và `collections.json` ở gốc) vẫn mở được, hiện là chapter "levels/ (no chapter)".
 - Mỗi level giữ **3 bản cũ gần nhất**; có bản nháp tự lưu.
 - Cấu trúc folder:
@@ -193,7 +201,7 @@ Nếu hoa văn không đủ chỗ cho số dây yêu cầu, editor báo "Placed 
   - Khi hộp thoại Add levels đang mở, chỉ danh sách trong hộp thoại cuộn được; trang phía sau đứng yên.
   - Bên dưới là các collection của chapter đang mở (như trước), có hộp thoại Add levels (Add all levels / Add selected levels, ô tìm kiếm, "N selected").
   - Mỗi dòng có **ảnh thu nhỏ của level** (dây và bóng của nó) và ô **Tutorial**: không có / Tap a dot / Bumping / Pinch to zoom. Đổi tutorial rồi bấm Save thì tutorial được ghi vào file level đó (kèm bản lưu cũ trong `.versions`).
-- **Level nào vào game, theo thứ tự nào:** `levels/game.json`, sửa trong Organiser → Game · play order. Mỗi mục là `chapter/id` (hoặc `chapter/*` = cả chapter theo collection đầu tiên của nó). Bản build của game chứa **đúng và chỉ** các level này, theo thứ tự này (ô chọn level của bản dev cũng chỉ liệt kê chúng). Nếu không có file này, game dùng `src/game/playlist.ts` (dự phòng). Khi chạy `npm run dev`, lưu play order hoặc một level trong danh sách là game tải lại.
+- **Level nào vào game, theo thứ tự nào:** `levels/game.json`, sửa trong Organiser → Game · play order. Mỗi mục là `chapter/id` (hoặc `chapter/*` = cả chapter theo collection đầu tiên của nó). Bản build của game chứa **đúng và chỉ** các level này, theo thứ tự này (ô chọn level của bản dev cũng chỉ liệt kê chúng). Nếu không có file này, game dùng `src/game/playlist.ts` (dự phòng). Khi chạy `npm run dev`, lưu play order hoặc một level trong danh sách là trang game tải lại (editor không bị tải lại).
 - **Đưa level vừa sửa lên game trên web:** sửa level trong editor (đã chọn thư mục project), bấm **Save**, rồi chạy `npm run publish:levels` trong thư mục project. Lệnh này:
   1. kiểm tra đang ở nhánh `main`, không thiếu commit nào từ GitHub, và chỉ có file trong `levels/` thay đổi (có file khác thay đổi thì dừng và liệt kê);
   2. kiểm tra mọi level trong danh sách chơi: đọc được, không có cảnh báo ở Level checks, giải được (level nào hỏng thì dừng và báo tên level, LEVEL mấy);
@@ -228,3 +236,8 @@ Logo Athena (cam trên theme tối, đen trên theme sáng); tông màu theo m�
 | Quy tắc đề xuất số cặp / số màu theo độ khó | _TBD_ |
 | Cách generator tạo đường giao nhau | _TBD_ |
 | Cách tính độ khó từ kết quả mô phỏng | _TBD_ |
+
+## Chapter 6: gen lại các level của game
+
+`npm run levels:chapter6` gen lại **mọi level trong Play order** (`levels/game.json`) từ ảnh gốc của từng level (PNG được trace như editor, SVG đọc bằng `parseSvg`) bằng generator hiện tại (bóng bự từ vòng vẽ bằng nét, tô màu theo nhóm tông) và lưu vào `levels/chapter-6/`: file level, ảnh gốc (`<id>.png` / `.svg`), collection "Main" theo đúng thứ tự Play order. Mỗi level giữ tên, tutorial và category; dây chéo X/T của level tutorial được làm lại đúng số lượng. Level gốc ở chapter cũ và `levels/game.json` không bị đổi; chạy lại lệnh thì chapter 6 được viết lại từ đầu.
+

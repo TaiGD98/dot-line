@@ -22,7 +22,7 @@
 
 - Nếu trên đường đi, hạt di chuyển **đụng hạt của một cặp khác** → lượt đó bị hủy, hạt di chuyển quay về vị trí ban đầu, không có cặp nào biến mất, và người chơi **mất 1 tim**. Màn hình không rung; phản hồi va chạm là biến dạng đàn hồi của 2 hạt (3.3b).
 - Chỉ va chạm với **hạt** mới tính; dây của các cặp khác không chặn đường (dây cắt chéo nhau thoải mái).
-- **Hitbox:** hai hạt va chạm khi khoảng cách tâm nhỏ hơn **85%** tổng hai bán kính (`HIT_SCALE` trong `src/core/solver.ts`). Hai hạt chỉ chạm mép (ví dụ hai hạt nằm sát nhau ở chỗ cắt) không tính là va chạm.
+- **Hitbox:** hai hạt va chạm khi khoảng cách tâm nhỏ hơn **78%** tổng hai bán kính (`HIT_SCALE` trong `src/core/solver.ts`; trước đây 85%). Với hạt thường (bán kính 16): hạt đứng yên có tâm cách dây **dưới 25 px** thì chặn hạt chạy trên dây; từ 25 px trở lên (mép hạt cách mép dây khoảng 6 px) thì hạt chạy đi qua. Hai hạt chỉ chạm mép (ví dụ hai hạt nằm sát nhau ở chỗ cắt) không tính là va chạm.
 - **Cặp có đường thông (sẽ chạm được nhau):** chỉ trong lúc một hạt của cặp đang chạy, **cả 2 hạt của cặp đó đều không có hitbox**. Hạt của cặp khác đang chạy có thể đi xuyên qua chúng mà không bị tính là va chạm. Khi đứng yên, hạt có hitbox bình thường.
 - **Cặp bị chặn:** trong lúc hạt của nó đang chạy (trước khi đụng), 2 hạt của cặp đó **vẫn có hitbox** với hạt của các cặp khác.
 - **Bóng sọc (cặp đã va chạm):** khi một hạt đang chạy đụng hạt khác, cặp của hạt đang chạy bị **đánh dấu**: cả 2 hạt chuyển sang có **sọc trắng chéo**. Hạt có sọc đụng hạt khác thì **không mất tim** nữa. Hạt khác (chưa có sọc) đụng vào hạt có sọc thì vẫn mất tim như thường, và cặp của hạt vừa đụng bị đánh dấu. Đánh dấu giữ đến hết level (chơi lại thì xóa).
@@ -123,14 +123,33 @@ Nguồn: vật liệu `Voxel_*` của game Cube Blast (file `VoxelMaterials.json
 | yellow | `#FDD201` | `#E98E3F` | `#FFED3D` | `#FFF9BF` |
 | yellow_green | `#A3F408` | `#527D00` | `#C8F72D` | `#E8FF70` |
 
-**Nền:** theme sáng `#F2EEE6`, theme tối `#1F2335`. Dây chỉ có màu của nó, **không có viền**. Màu nào quá gần màu nền của theme đang bật (độ tương phản dưới 1,8) thì **tự đổi sang màu khác cùng tông, đủ tương phản** khi chơi; đổi theme thì đổi lại theo nền mới. File level vẫn giữ màu gốc (editor không đổi). Cách chọn: màu gần tông nhất trong bảng màu đủ tương phản với nền; màu level chưa dùng được ưu tiên nếu tông cũng gần (`readableColours` trong `src/core/palette.ts`).
+**Nền:** theme sáng `#F2EEE6`, theme tối `#1F2335`. Dây chỉ có màu của nó, **không có viền**. Màu nào quá gần màu nền của theme đang bật (độ tương phản dưới **1,8** ở theme sáng, dưới **3,2** ở theme tối: trên nền tối các màu đậm như brown, olive, teal, purple trông đục) thì **tự đổi sang màu khác cùng nhóm tông, đủ tương phản** khi chơi; đổi theme thì đổi lại theo nền mới. File level vẫn giữ màu gốc (editor không đổi). Cách chọn: trong cùng nhóm tông (xem dưới), màu gần tông nhất đủ tương phản với nền, cố định cho mỗi màu (`readableColours`, `shownColour` trong `src/core/palette.ts`).
 
 | Theme | Màu bị đổi (ví dụ đổi thành) |
 |---|---|
-| Sáng | cyan → teal, light_orange → orange, light_pink → pink, light_yellow / yellow → olive, yellow_green / light_green / lime → green hoặc olive_green, spring_green → green, turquoise → teal |
-| Tối | navy → purple hoặc sky_blue, dark_blue → sky_blue, blue → lavender hoặc sky_blue, dark_green → green, maroon → red |
+| Sáng | cyan, turquoise → teal; light_orange → orange; light_pink → pink; light_yellow, yellow → olive; yellow_green, light_green, lime → olive_green; spring_green → green |
+| Tối | navy, dark_blue, blue → sky_blue; dark_green → green; maroon → red; purple → lavender; brown → orange; olive → yellow; teal → cyan |
 
-**Phối màu trong một level** (theo hướng dẫn phối màu: một màu chủ đạo, vài màu phụ, các màu cạnh nhau tương phản rõ): mỗi level chọn một kiểu phối trên bánh xe màu — bù nhau (2 hướng màu đối diện), bù tách đôi (1 màu và 2 màu hai bên màu đối diện) hoặc bộ ba (3 màu cách đều) — xoay tới một hướng ngẫu nhiên. Màu trong bảng nằm trong ±30° quanh mỗi hướng thuộc nhóm của hướng đó; level dùng càng nhiều màu trong các nhóm càng tốt (thường 10–20 màu), nhóm đầu tiên là màu chủ đạo và được dùng nhiều hơn một chút. Dây gần nhau hoặc cắt nhau không bao giờ trùng màu, và được ưu tiên ở hai nhóm khác nhau.
+**Nhóm tông màu:** 28 màu chia thành 10 nhóm cùng tông (sáng hay đậm đều tính là cùng tông; `FAMILIES` trong `src/core/palette.ts`):
+
+| Nhóm | Màu |
+|---|---|
+| Đỏ | red, maroon |
+| Cam | orange_red, orange, light_orange, brown |
+| Vàng | yellow, light_yellow, olive |
+| Xanh cốm | lime, yellow_green, light_green, olive_green |
+| Xanh lá | green, dark_green, spring_green |
+| Xanh ngọc | turquoise, cyan, teal |
+| Xanh dương | blue, sky_blue, dark_blue, navy |
+| Tím | purple, lavender |
+| Hồng tím | magenta |
+| Hồng | pink, light_pink |
+
+**Phối màu trong một level** (`colourPairs` trong `src/core/generator.ts`):
+- **Cấm tuyệt đối:** hai dây gần nhau (chạm, cắt hoặc cách nhau dưới **60 px**) có màu **giống nhau**: cùng màu, cùng tông, hoặc khác tông nhưng **nhìn giống nhau trên màn hình** (ví dụ spring_green cạnh turquoise, green cạnh olive_green, blue cạnh purple). "Nhìn giống" đo bằng độ khác biệt màu theo mắt người (CIEDE2000, phải ≥ 25) trên đúng màu người chơi thấy, ở **cả theme sáng và theme tối** (sau khi đổi màu theo theme). Level checks báo lỗi (warn) nếu có, và `publish:levels` không cho đưa level đó lên (`farApart` trong `src/core/palette.ts`).
+- **Càng nhiều màu càng tốt:** mỗi màu được dùng một lần trước khi màu nào dùng lần hai (level từ 28 cặp trở lên dùng đủ 28 màu), và trong số đó nhóm tông ít dùng nhất được chọn trước, để hạn chế tối đa các dây cùng tông trong cả level.
+- Cách làm: tô dây khó nhất trước (dây còn ít màu hợp lệ nhất), thử tối đa 60 cách xáo trộn, giữ cách không vi phạm và dùng màu đều nhất. Dây chéo X/T (bước 2 của editor) cũng chọn màu theo cùng quy tắc. Ô **Colours** của editor là số màu tối đa (mặc định 28).
+- Khi game đổi màu theo theme (bảng trên), màu chỉ được đổi **trong cùng nhóm tông** và **luôn đổi sang cùng một màu** (không phụ thuộc level), nên generator biết chính xác màu người chơi sẽ thấy và giữ quy tắc trên ở cả hai theme. Vì nhiều màu nhạt chìm trên nền sáng và nhiều màu đậm chìm trên nền tối, một level 28 màu khi chơi hiện khoảng 18 màu ở theme sáng và 19 màu ở theme tối.
 
 ## 3.8 Level <Badge type="tip" text="Live" />
 

@@ -12,9 +12,9 @@
 // Each call builds many random candidates, repairs blocking cycles so every candidate is
 // solvable, scores them against the target difficulty and returns the best few.
 import { DEFAULT_RADIUS, MIN_RADIUS, Pair } from './level';
-import { PALETTE } from './palette';
+import { FAMILIES, PALETTE, familyOf, farApart } from './palette';
 import { Pt, arcLengths, dist, distToPolyline, fitSmooth, pointAt, resample, roundCorners, samplePath, slicePolyline, smoothPolyline } from './path';
-import { HIT_SCALE, solve, SolveResult } from './solver';
+import { HIT_SCALE, OLD_HIT_SCALE, solve, SolveResult } from './solver';
 import type { Stroke } from './trace';
 
 export type { Stroke };
@@ -432,6 +432,7 @@ function buildCandidate(lines: Line[], opt: GenerateOptions, rand: () => number)
         pairs = pairs.filter((p) => !sim.stuck.includes(p.id));
     }
     pairs = pairs.map((p, i) => ({ ...p, id: `p${i + 1}` }));
+    settleNearDots(pairs);
     sim = solve({ pairs } as never);
 
     colourPairs(pairs, opt.colors, rand);
@@ -459,6 +460,71 @@ function buildCandidate(lines: Line[], opt: GenerateOptions, rand: () => number)
     return { pairs, score, sim, stats: { tJunctions, cuts, accents }, warnings };
 }
 
+/**
+ * Dots that sit near another line without clearly being on it (centre between its own radius and the
+ * old hitbox, OLD_HIT_SCALE) are moved onto that line: centre half a radius from it, else one radius.
+ * A dot that blocks a line then plainly sits on it, and one that does not is clearly off it (the game's
+ * hitbox, HIT_SCALE, is a little smaller than before). A move is kept only when the dot overlaps no
+ * other dot and the level stays solvable; a cross line (overlap) keeps one dot in empty space.
+ * `movable` = indices of the pairs that may move (default: all). Returns how many dots moved.
+ */
+export function settleNearDots(pairs: Pair[], movable?: Set<number>): number {
+    const lines = pairs.map((p) => samplePath(p.path, 5));
+    const solvable = solve({ pairs } as never).solvable;
+    const onSomeLine = (i: number, d: { x: number; y: number; r: number }) => lines.some((l, j) => j !== i && nearest(l, d).d < (d.r + Math.max(pairs[j].a.r, pairs[j].b.r)) * HIT_SCALE);
+    let moved = 0;
+    pairs.forEach((P, i) => {
+        if (movable && !movable.has(i)) return;
+        for (const side of ['a', 'b'] as const) {
+            for (let j = 0; j < pairs.length; j++) {
+                if (j === i) continue;
+                const D = P[side], rm = Math.max(pairs[j].a.r, pairs[j].b.r);
+                const { d, q } = nearest(lines[j], D);
+                if (d <= D.r || d >= (D.r + rm) * OLD_HIT_SCALE || d < 1e-6) continue;
+                if (P.cross && onSomeLine(i, P[side === 'a' ? 'b' : 'a'])) continue;
+                const k = side === 'a' ? 0 : P.path.length - 1, anchor = P.path[k];
+                const old = { x: D.x, y: D.y, anchor: structuredClone(anchor) };
+                let done = false;
+                for (const target of [0.5 * D.r, D.r]) {
+                    const nx = q.x + ((D.x - q.x) / d) * target, ny = q.y + ((D.y - q.y) / d) * target;
+                    const clear = pairs.every((O, oi) => (['a', 'b'] as const).every((e) => (oi === i && e === side) || Math.hypot(O[e].x - nx, O[e].y - ny) >= O[e].r + D.r + 1));
+                    if (!clear) continue;
+                    const dx = nx - D.x, dy = ny - D.y;
+                    D.x = nx; D.y = ny;
+                    anchor.x += dx; anchor.y += dy;
+                    if (anchor.in) { anchor.in.x += dx; anchor.in.y += dy; }
+                    if (anchor.out) { anchor.out.x += dx; anchor.out.y += dy; }
+                    lines[i] = samplePath(P.path, 5);
+                    if (!solvable || solve({ pairs } as never).solvable) { done = true; moved++; break; }
+                    D.x = old.x; D.y = old.y; P.path[k] = structuredClone(old.anchor);
+                    lines[i] = samplePath(P.path, 5);
+                }
+                if (done) break;
+            }
+        }
+    });
+    return moved;
+}
+
+/**
+ * After dots moved: pairs in `movable` whose colour became too alike to a near line's (palette.farApart)
+ * get a colour that is far apart from all their near lines (the level's own colours first). Returns how
+ * many were changed.
+ */
+export function fixNearColours(pairs: Pair[], movable: Set<number>): number {
+    const adj: number[][] = pairs.map(() => []);
+    for (const [i, j] of nearPairs(pairs)) { adj[i].push(j); adj[j].push(i); }
+    const used = [...new Set(pairs.map((p) => p.color))];
+    let changed = 0;
+    for (const i of movable) {
+        if (adj[i].every((j) => farApart(pairs[i].color, pairs[j].color))) continue;
+        const fits = (c: string) => adj[i].every((j) => farApart(c, pairs[j].color));
+        const pick = used.find(fits) ?? PALETTE.map((c) => c.name).find(fits);
+        if (pick) { pairs[i].color = pick; changed++; }
+    }
+    return changed;
+}
+
 export function nearest(pts: Pt[], p: Pt): { d: number; q: Pt } {
     let best = { d: Infinity, q: pts[0] };
     for (let i = 1; i < pts.length; i++) {
@@ -473,7 +539,7 @@ export function nearest(pts: Pt[], p: Pt): { d: number; q: Pt } {
 }
 
 /** Lines closer than this (px, line to line) count as "near each other" for colouring. */
-export const NEAR_LINES = 40;
+export const NEAR_LINES = 60;
 
 /** Pairs of indices whose lines touch, cross or run within NEAR_LINES px of each other. */
 export function nearPairs(pairs: Pair[], gap = NEAR_LINES): [number, number][] {
@@ -494,94 +560,75 @@ export function nearPairs(pairs: Pair[], gap = NEAR_LINES): [number, number][] {
     return out;
 }
 
-/** Hue (0..360), lightness and saturation (0..1) of a #RRGGBB colour. */
-function hsl(hex: string) {
-    const r = parseInt(hex.slice(1, 3), 16) / 255, g = parseInt(hex.slice(3, 5), 16) / 255, b = parseInt(hex.slice(5, 7), 16) / 255;
-    const max = Math.max(r, g, b), min = Math.min(r, g, b), l = (max + min) / 2, d = max - min;
-    if (!d) return { h: 0, l, s: 0 };
-    const s = d / (1 - Math.abs(2 * l - 1));
-    const h = max === r ? ((g - b) / d + 6) % 6 : max === g ? (b - r) / d + 2 : (r - g) / d + 4;
-    return { h: h * 60, l, s };
-}
-const hueGap = (a: number, b: number) => { const d = Math.abs(a - b) % 360; return Math.min(d, 360 - d); };
-
-/** Colour schemes of the level colour guide: hues spread around the colour wheel. */
-export const COLOUR_SCHEMES = {
-    complementary: [0, 180],
-    split: [0, 150, 210],
-    triadic: [0, 120, 240]
-} as const;
-export type ColourScheme = keyof typeof COLOUR_SCHEMES;
-
 /**
- * The colours of one level, after the colour guide: a scheme (complementary, split-complementary or
- * triadic) turned to a random hue; every palette colour close to one of its hues (within 30°)
- * belongs to that hue's group. The first group is the dominant colour. Up to `max` colours, taken
- * from all groups in turn, closest to their hue first.
+ * The colours a level may use: up to `k` palette colours, spread over the colour families (one of every
+ * family before a second one of any family). All 28 by default.
  */
-export function levelColours(max: number, rand: () => number, scheme?: ColourScheme) {
-    const pick: ColourScheme = scheme ?? (['split', 'triadic', 'split', 'triadic', 'complementary'] as const)[Math.floor(rand() * 5)];
-    const turn = rand() * 360;
-    const hues = COLOUR_SCHEMES[pick].map((d) => (turn + d) % 360);
-    const all = PALETTE.map((c) => {
-        const { h } = hsl(c.base);
-        const gaps = hues.map((x) => hueGap(h, x));
-        const group = gaps.indexOf(Math.min(...gaps));
-        return { name: c.name, group, gap: gaps[group] };
-    });
-    const groups = hues.map((_, i) => all.filter((c) => c.group === i && c.gap <= 30).sort((a, b) => a.gap - b.gap));
-    // Always a few colours per group, even when the scheme lands between palette hues.
-    groups.forEach((g, i) => { if (g.length < 2) g.push(...all.filter((c) => c.group === i && !g.includes(c)).sort((a, b) => a.gap - b.gap).slice(0, 2 - g.length)); });
-    const size = groups.reduce((n, g) => n + g.length, 0);
-    const k = Math.max(1, Math.min(Math.round(max), size));
-    const names: string[] = [], group = new Map<string, number>();
-    for (let round = 0; names.length < k; round++)
-        for (let i = 0; i < groups.length && names.length < k; i++) {
-            const c = groups[i][round];
-            if (c) { names.push(c.name); group.set(c.name, i); }
-        }
-    return { scheme: pick, hues, names, group };
+export function levelColours(k: number, rand: () => number): string[] {
+    const fams = Object.values(FAMILIES).map((names) => [...names].sort(() => rand() - 0.5)).sort(() => rand() - 0.5);
+    const out: string[] = [];
+    for (let round = 0; out.length < k && fams.some((f) => f.length > round); round++)
+        for (const f of fams) if (out.length < k && f[round]) out.push(f[round]);
+    return out;
 }
 
 /**
- * Colours the pairs so that lines near each other never share a colour: lines that touch, cross or
- * run close together (neighbours along a stroke included). The colours come from one colour scheme
- * (levelColours); near lines also prefer different hue groups (strong contrast), and the dominant
- * group is used a little more. Most constrained line first. Returns how many near pairs still share
- * a colour (only with too few colours).
+ * Colours the pairs:
+ *  - lines near each other (touching, crossing or within NEAR_LINES) get colours that are far apart
+ *    (palette.farApart): never the same colour or the same family (no two reds, no two blues side by
+ *    side), and clearly different as the player sees them on the light and on the dark board (after
+ *    the theme swaps; no spring green next to turquoise);
+ *  - as many different colours as possible: every colour is used once before one is used twice, and
+ *    among those the least used family comes first (families are used about as often).
+ * Most constrained line first (DSATUR: the line with the fewest colours left); several shuffled tries,
+ * the one with the fewest clashes and the most even use is kept. `m` = most colours to use (default and
+ * maximum: the whole palette). Returns how many near pairs are still too alike (only when the lines are
+ * too crowded for the palette).
  */
 export function colourPairs(pairs: Pair[], m: number, rand: () => number): number {
-    const k = Math.max(1, Math.min(PALETTE.length, Math.round(m), pairs.length));
-    const { names, group } = levelColours(k, rand);
+    const n = pairs.length;
+    if (!n) return 0;
+    const names = levelColours(Math.max(1, Math.min(PALETTE.length, Math.round(m) || PALETTE.length)), rand);
     const adj: number[][] = pairs.map(() => []);
     for (const [i, j] of nearPairs(pairs)) { adj[i].push(j); adj[j].push(i); }
-    const used = new Map<string, number>(names.map((n) => [n, 0]));
-    const weight = (n: string) => (group.get(n) === 0 ? 1.5 : 1);
-    const colour: (string | null)[] = pairs.map(() => null);
-    const tie = pairs.map(() => rand());
-    let clashes = 0;
-    for (let done = 0; done < pairs.length; done++) {
-        // Next: the uncoloured line that already sees the most different colours around it.
-        let best = -1, bestSat = -1;
-        for (let i = 0; i < pairs.length; i++) {
-            if (colour[i]) continue;
-            const sat = new Set(adj[i].map((j) => colour[j]).filter(Boolean)).size + adj[i].length / 1000 + tie[i] / 1e6;
-            if (sat > bestSat) { bestSat = sat; best = i; }
+    let best: { colour: string[]; cost: number; clashes: number } | null = null;
+    for (let t = 0; t < 60; t++) {
+        const colour: string[] = pairs.map(() => '');
+        const famUse = new Map<string, number>(), colUse = new Map(names.map((c) => [c, 0]));
+        const tie = pairs.map(() => rand());
+        let clashes = 0;
+        const allowed = (i: number) => names.filter((c) => adj[i].every((j) => !colour[j] || farApart(c, colour[j])));
+        for (let done = 0; done < n; done++) {
+            // Next: the uncoloured line with the fewest colours left (then the most neighbours).
+            let pick = -1, key = Infinity;
+            for (let i = 0; i < n; i++) {
+                if (colour[i]) continue;
+                const k = allowed(i).length - adj[i].length / 1000 + tie[i] / 1e6;
+                if (k < key) { key = k; pick = i; }
+            }
+            let pool = allowed(pick);
+            if (!pool.length) {
+                // Too crowded: the colour that is too alike to the fewest neighbours.
+                const bad = (c: string) => adj[pick].filter((j) => colour[j] && !farApart(c, colour[j])).length;
+                const least = Math.min(...names.map(bad));
+                pool = names.filter((c) => bad(c) === least);
+                clashes += least;
+            }
+            // An unused colour first (as many colours as possible), then the least used family.
+            const c = pool.map((x) => ({ x, k: colUse.get(x)! * 100 + (famUse.get(familyOf(x)) ?? 0) + rand() * 0.5 })).sort((a, b) => a.k - b.k)[0].x;
+            colour[pick] = c;
+            colUse.set(c, colUse.get(c)! + 1);
+            famUse.set(familyOf(c), (famUse.get(familyOf(c)) ?? 0) + 1);
         }
-        const around = adj[best].map((j) => colour[j]).filter(Boolean) as string[];
-        const free = names.filter((n) => !around.includes(n));
-        const count = (n: string) => around.filter((c) => c === n).length;
-        const pool = free.length ? free : names.filter((n) => count(n) === Math.min(...names.map(count)));
-        if (!free.length) clashes += count(pool[0]);
-        // Balanced use (dominant group a little more), and a different hue group from the neighbours.
-        const sameGroup = (n: string) => around.filter((c) => group.get(c) === group.get(n)).length;
-        const score = new Map(pool.map((n) => [n, used.get(n)! / weight(n) + 0.6 * sameGroup(n) + rand() * 0.3]));
-        pool.sort((a, b) => score.get(a)! - score.get(b)!);
-        colour[best] = pool[0];
-        used.set(pool[0], used.get(pool[0])! + 1);
+        // Fewest clashes first, then the most even use of families and colours.
+        let cost = clashes * 1e6;
+        for (const v of famUse.values()) cost += v * v * 10;
+        for (const v of colUse.values()) cost += v * v;
+        if (!best || cost < best.cost) best = { colour, cost, clashes };
+        if (!clashes && t >= 12) break;
     }
-    pairs.forEach((p, i) => { p.color = colour[i]!; });
-    return clashes;
+    pairs.forEach((p, i) => { p.color = best!.colour[i]; });
+    return best!.clashes;
 }
 
 /** Builds `tries` candidates from strokes and returns the `keep` best (lowest score first). */

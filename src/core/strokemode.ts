@@ -16,7 +16,7 @@
 import { BIG_DOT, DEFAULT_RADIUS, Pair } from './level';
 import { Anchor, Pt, dist, distToPolyline, fitSmooth, pointAt, resample, samplePath } from './path';
 import { HIT_SCALE, solve, SolveResult } from './solver';
-import { Line, colourPairs, prepareStrokes, rng, slice, strokeFrame, toLine } from './generator';
+import { Line, colourPairs, prepareStrokes, rng, settleNearDots, slice, strokeFrame, toLine } from './generator';
 import { generateOverlap, PatternStyle } from './overlap';
 import type { Stroke } from './trace';
 
@@ -165,6 +165,42 @@ function shapeOf(p: Pt[]) {
     return { c, area: Math.abs(a) / 2, rmin, rmax };
 }
 
+/**
+ * Circle through a run of points (least squares): centre, radius, how far the points stray from it
+ * (mean |distance - R| / R) and how much of the circle they go round (0..1).
+ */
+function circleFit(p: Pt[]) {
+    let sx = 0, sy = 0, sxx = 0, syy = 0, sxy = 0, sxz = 0, syz = 0, sz = 0;
+    const n = p.length;
+    if (n < 5) return null;
+    const o = p[0]; // work relative to the first point (keeps the numbers small)
+    for (const q of p) {
+        const x = q.x - o.x, y = q.y - o.y, z = x * x + y * y;
+        sx += x; sy += y; sxx += x * x; syy += y * y; sxy += x * y; sxz += x * z; syz += y * z; sz += z;
+    }
+    const M = [[sxx, sxy, sx, -sxz], [sxy, syy, sy, -syz], [sx, sy, n, -sz]];
+    for (let i = 0; i < 3; i++) {
+        let m = i;
+        for (let r = i + 1; r < 3; r++) if (Math.abs(M[r][i]) > Math.abs(M[m][i])) m = r;
+        [M[i], M[m]] = [M[m], M[i]];
+        if (Math.abs(M[i][i]) < 1e-9) return null;
+        for (let r = 0; r < 3; r++) if (r !== i) { const f = M[r][i] / M[i][i]; for (let c = i; c < 4; c++) M[r][c] -= f * M[i][c]; }
+    }
+    const a = M[0][3] / M[0][0], b = M[1][3] / M[1][1], c = M[2][3] / M[2][2];
+    const r2 = (a * a + b * b) / 4 - c;
+    if (!(r2 > 0)) return null;
+    const R = Math.sqrt(r2), centre = { x: o.x - a / 2, y: o.y - b / 2 };
+    let dev = 0;
+    for (const q of p) dev += Math.abs(dist(q, centre) - R);
+    const ang = p.map((q) => Math.atan2(q.y - centre.y, q.x - centre.x)).sort((x, y) => x - y);
+    let gap = 0;
+    for (let i = 0; i < ang.length; i++) gap = Math.max(gap, (ang[(i + 1) % ang.length] - ang[i] + 2 * Math.PI) % (2 * Math.PI) || (n > 1 ? 0 : 2 * Math.PI));
+    return { c: centre, R, dev: dev / n / R, cover: 1 - gap / (2 * Math.PI) };
+}
+
+/** A traced circle strays this little from a true circle (mean, share of the radius). */
+const ROUND_DEV = 0.06;
+
 /** Where segment pq crosses segment rs: position along pq (0..1), or null. */
 function hit(p: Pt, q: Pt, r: Pt, s: Pt): number | null {
     const d = (q.x - p.x) * (s.y - r.y) - (q.y - p.y) * (s.x - r.x);
@@ -259,35 +295,139 @@ function buildOnce(strokes: Stroke[], opt: StrokeModeOptions, size: number, rand
         // only have to be compact (a small rounded triangle reads as a dot); bigger ones must be round.
         const per = l.len + open, q = (4 * Math.PI * s.area) / (per * per), small = req <= 1.5 * rad && !attached;
         if (q < (attached ? 0.86 : small ? 0.62 : 0.82) || s.rmin / s.rmax < (small ? 0.4 : 0.55)) return null;
+        // A bigger shape must also lie close to a circle (a little ghost with a wavy hem is round
+        // enough by area, but it is a drawing, not a ball).
+        if (!small) { const f = circleFit(l.pts); if (!f || f.dev > 0.08) return null; }
         // The big dot is as big as the detail in the drawing (not tied to the dot size), but always
         // clearly bigger than a normal dot. It may give up to 15% where it is crowded.
         const want = Math.max(BIG_OVER * rad, req);
         return { c: s.c, req, r: want, floor: Math.max(BIG_OVER * rad, 0.85 * want) };
     };
-    /** A stroke that ends on itself (a balloon and its string drawn in one go): round loop + tail. */
-    const loopAndTail = (l: Line): Line[] | null => {
-        if (l.closed || l.len < 60) return null;
-        const n = l.pts.length;
-        for (const e of ['b', 'a'] as const) {
-            const p = e === 'b' ? l.pts[n - 1] : l.pts[0];
-            let k = -1, kd = 6;
-            for (let i = 0; i < n; i++) {
-                if ((e === 'b' ? l.len - l.acc[i] : l.acc[i]) < 30) continue;
-                const d = dist(p, l.pts[i]);
-                if (d < kd) { kd = d; k = i; }
-            }
-            if (k < 0) continue;
-            const loopPts = e === 'b' ? l.pts.slice(k) : l.pts.slice(0, k + 1);
-            const tailPts = e === 'b' ? l.pts.slice(0, k + 1) : l.pts.slice(k);
-            if (loopPts.length < 5) continue;
-            const loop = toLine([...loopPts, { ...loopPts[0] }], true);
-            if (!detailOf(loop, false)) continue;
-            const tail = tailPts.length >= 2 ? toLine(tailPts, false) : null;
-            return tail && tail.len >= 2 * rad ? [loop, tail] : [loop];
-        }
-        return null;
+    /**
+     * How close the two sides of a loop's neck may be: a traced line that crosses itself is cut apart
+     * at the crossing by about three line widths (3.6 x TOUCH).
+     */
+    const NECK = 3.6 * TOUCH;
+    /**
+     * The big dot of a circle drawn as a line (radius R): a little inside the drawn circle, so the line
+     * it hangs from and the lines passing by keep their room; where it is crowded it may shrink down
+     * to the smallest big dot.
+     */
+    const loopBall = (c: Pt, R: number): Detail => {
+        const want = Math.max(BIG_OVER * rad, 0.85 * R);
+        return { c, req: R, r: want, floor: BIG_OVER * rad };
     };
-    const lines: Line[] = prepareStrokes(strokes, size, 0).flatMap((l) => (bigOn ? loopAndTail(l) : null) ?? [l]);
+    /** A round loop of points (the loop of a curl, a ball drawn on its string): the detail, or null. */
+    const roundLoop = (pts: Pt[], minCover: number): Detail | null => {
+        const f = circleFit(pts);
+        if (!f || f.dev > ROUND_DEV || f.cover < minCover || f.R > bigCap || f.R < 0.8 * rad) return null;
+        return loopBall(f.c, f.R);
+    };
+    /** Loops already known to be details (found when the strokes were split). */
+    const loopDetails = new Map<Line, Detail>();
+    /**
+     * The part of a split stroke that was drawn joined to the loop: it carries that big dot (another
+     * line ending nearby must not take it: this part's own end would then sit on the big dot, in the way).
+     */
+    const carrier = new Map<Detail, { line: Line; e: Side }>();
+    /**
+     * A stroke that goes round a small circle and back to itself: at one end (a balloon and its string
+     * drawn in one go) or in the middle (a garland curling round an ornament and going on). The loop
+     * becomes a detail (big dot); the stroke is cut at the loop's neck. The longer part keeps its end
+     * at the neck (it carries the big dot); the shorter part is pulled back so that its own dot clears
+     * the big dot. Several loops in one stroke are all found.
+     */
+    /**
+     * An open curl at an end of a stroke (an ornament drawn as a hook that does not quite close): the
+     * last part of the stroke goes most of the way round a small circle. It becomes a detail; the rest
+     * of the stroke ends where the curl starts (and carries the big dot).
+     */
+    const endCurl = (l: Line): Line[] | null => {
+        const n = l.pts.length, minArc = 2 * Math.PI * 0.8 * rad * 0.8, maxArc = 2.2 * Math.PI * bigCap;
+        let best: { k: number; e: Side; d: Detail; cover: number } | null = null;
+        for (const e of SIDES) {
+            for (let m = 5; m < n - 2; m++) {
+                const k = e === 'b' ? n - 1 - m : m;
+                const arc = e === 'b' ? l.len - l.acc[k] : l.acc[k];
+                if (arc < minArc) continue;
+                if (arc > maxArc) break;
+                const part = e === 'b' ? l.pts.slice(k) : l.pts.slice(0, k + 1);
+                const f = circleFit(part);
+                if (!f || f.dev > ROUND_DEV || f.cover < 0.8 || f.R > bigCap || f.R < 0.8 * rad) continue;
+                if (!best || f.cover > best.cover) {
+                    best = { k, e, cover: f.cover, d: loopBall(f.c, f.R) };
+                }
+            }
+        }
+        if (!best) return null;
+        const { k, e, d } = best;
+        const curl = e === 'b' ? l.pts.slice(k) : l.pts.slice(0, k + 1);
+        const rest = e === 'b' ? l.pts.slice(0, k + 1) : l.pts.slice(k);
+        const loop = toLine([...curl, { ...curl[0] }], true);
+        loopDetails.set(loop, d);
+        if (rest.length < 2 || polyLen(rest) < 2 * rad) return [loop];
+        const restLine = toLine(rest, false);
+        carrier.set(d, { line: restLine, e: e === 'b' ? 'b' : 'a' });
+        return [restLine, loop];
+    };
+    const splitLoops = (l: Line): Line[] => {
+        if (l.closed || l.len < 60) return [l];
+        const n = l.pts.length, minArc = 2 * Math.PI * 0.8 * rad, maxArc = 2.3 * Math.PI * bigCap;
+        let best: { i: number; j: number; d: Detail; score: number } | null = null;
+        for (let i = 0; i < n; i++)
+            for (let j = i + 1; j < n; j++) {
+                const arc = l.acc[j] - l.acc[i];
+                if (arc < minArc) continue;
+                if (arc > maxArc) break;
+                const neck = dist(l.pts[i], l.pts[j]);
+                if (neck > NECK) continue;
+                const loopPts = l.pts.slice(i, j + 1);
+                let d = roundLoop(loopPts, 0.85);
+                // (What the tracer closes tightly: the old rule, by area and perimeter.)
+                if (!d && neck <= 6 && (i === 0 || j === n - 1)) d = detailOf(toLine([...loopPts, { ...loopPts[0] }], true), false);
+                if (!d) continue;
+                const score = (d.req > 0 ? 0 : 1) + neck / NECK;
+                if (!best || score < best.score) best = { i, j, d, score };
+            }
+        if (!best) return endCurl(l) ?? [l];
+        const { i, j, d } = best;
+        const loop = toLine([...l.pts.slice(i, j + 1), { ...l.pts[i] }], true);
+        loopDetails.set(loop, d);
+        const before = l.pts.slice(0, i + 1), after = l.pts.slice(j);
+        const lenOf = (p: Pt[]) => polyLen(p);
+        const keepBefore = lenOf(before) >= lenOf(after);
+        // The part that does not carry the big dot starts a dot and a bit away from it.
+        const clear = d.r + rad + 6;
+        const trim = (p: Pt[], fromStart: boolean): Pt[] => {
+            const q = fromStart ? p : [...p].reverse();
+            let k = 0;
+            while (k < q.length - 1 && dist(q[k], d.c) < clear) k++;
+            const out = q.slice(k);
+            return fromStart ? out : out.reverse();
+        };
+        const parts: Line[] = [];
+        /** Adds a part (its own loops are split off too); `end` = its end at the neck, when it carries the big dot. */
+        const add = (p: Pt[], end?: Side) => {
+            if (p.length < 2 || polyLen(p) < 2 * rad) return;
+            const pl = toLine(p, false);
+            if (end) carrier.set(d, { line: pl, e: end });
+            const more = splitLoops(pl);
+            // (If the carrier was split again, the piece still ending at the neck carries.)
+            if (end && more[0] !== pl) {
+                const neck = end === 'a' ? p[0] : p[p.length - 1];
+                for (const m of more) if (!m.closed) for (const e of SIDES) {
+                    const q = e === 'a' ? m.pts[0] : m.pts[m.pts.length - 1];
+                    if (dist(q, neck) < 1) carrier.set(d, { line: m, e });
+                }
+            }
+            parts.push(...more);
+        };
+        add(keepBefore ? before : trim(before, false), keepBefore ? 'b' : undefined);
+        parts.push(loop);
+        add(keepBefore ? trim(after, true) : after, keepBefore ? undefined : 'a');
+        return parts;
+    };
+    const lines: Line[] = prepareStrokes(strokes, size, 0).flatMap((l) => (bigOn ? splitLoops(l) : [l]));
     /** Lines of the drawing come first; lines added by the generator (links, stalks) follow. */
     const realCount = lines.length;
     /** line = becomes a line of the level; detail = a round detail (big dot); small = too short for two dots. */
@@ -327,7 +467,7 @@ function buildOnce(strokes: Stroke[], opt: StrokeModeOptions, size: number, rand
     const details: Detail[] = [];
     if (bigOn) {
         const cand = new Map<number, Detail>();
-        lines.forEach((l, li) => { const d = detailOf(l, false); if (d) cand.set(li, d); });
+        lines.forEach((l, li) => { const d = loopDetails.get(l) ?? detailOf(l, false); if (d) cand.set(li, d); });
         // A ring with drawing inside it is a frame (a clock face), not a detail: it stays a line.
         const framed = (li: number, d: Detail) => lines.some((o, oi) => oi !== li && !cand.has(oi) && o.pts.every((p) => dist(p, d.c) <= d.req * 1.05));
         for (let again = true; again;) {
@@ -338,9 +478,11 @@ function buildOnce(strokes: Stroke[], opt: StrokeModeOptions, size: number, rand
         // A round arc with both ends on a line (a ball hanging from a branch): a detail sitting on that line.
         lines.forEach((l, li) => {
             if (kind[li] !== 'line' || l.closed || l.len > 2.3 * Math.PI * bigCap) return;
-            const hA = nearestLine(l.pts[0], TOUCH, li), hB = nearestLine(l.pts[l.pts.length - 1], TOUCH, li);
+            // (Thinning leaves the arc's ends a little off the line it hangs from: up to two TOUCHes.)
+            const hA = nearestLine(l.pts[0], 2 * TOUCH, li), hB = nearestLine(l.pts[l.pts.length - 1], 2 * TOUCH, li);
             if (hA.li < 0 || hB.li < 0) return;
-            const d = detailOf(l, true);
+            // Round = close to a fitted circle (the gap closed by the host line, not by a straight chord).
+            const d = roundLoop(l.pts, 0.78) ?? detailOf(l, true);
             if (!d || framed(li, d)) return;
             const h = dist(lines[hA.li].pts[hA.i], d.c) <= dist(lines[hB.li].pts[hB.i], d.c) ? hA : hB;
             // Where the host passes closest to the middle of the gap.
@@ -390,6 +532,11 @@ function buildOnce(strokes: Stroke[], opt: StrokeModeOptions, size: number, rand
                 if (dd <= Math.max(d.req + 0.5 * SNAP, d.r + 2)) hooks.push({ cost: Math.abs(dd - d.req) - 0.02 * l.len, li, e, di });
             }
         }));
+        // The part drawn joined to a loop carries that loop's big dot first.
+        details.forEach((d, di) => {
+            const c = carrier.get(d), li = c ? lines.indexOf(c.line) : -1;
+            if (li >= 0 && kind[li] === 'line' && lines[li].len >= d.r + 2 * rad + 8) hooks.push({ cost: -1e9, li, e: c!.e, di });
+        });
         hooks.sort((x, y) => x.cost - y.cost);
         for (const h of hooks) {
             if (linked.has(h.di) || bigEnd.has(`${h.li}:${h.e}`) || bigEnd.get(`${h.li}:${h.e === 'a' ? 'b' : 'a'}`) === h.di) continue;
@@ -895,6 +1042,40 @@ function buildOnce(strokes: Stroke[], opt: StrokeModeOptions, size: number, rand
         rebuild();
     }
 
+    // ---- 4b. Grow back: ends pulled back to make room often have room again once the layout has
+    // settled. Each one tries to get back all of its stroke, else half, else a quarter, keeping the
+    // level solvable and its dot clear of every other dot.
+    if (sim.solvable) {
+        for (const g of [...L]) {
+            const l = lines[g.line];
+            if (l.closed || g.dead) continue;
+            for (const e of SIDES) {
+                const E = g[e];
+                if (!E.pulled || E.fixed || E.ext) continue;
+                // As far as the stroke's end, or a dot's room before the next part of the same stroke.
+                const sibs = segsOf[g.line].filter((o) => o !== g && !o.dead);
+                const limit = e === 'a'
+                    ? Math.max(0, ...sibs.filter((o) => o.s1 <= g.s0).map((o) => o.s1 + SIDE))
+                    : Math.min(l.len, ...sibs.filter((o) => o.s0 >= g.s1).map((o) => o.s0 - SIDE));
+                const room = e === 'a' ? g.s0 - limit : limit - g.s1;
+                if (room < rad / 2) continue;
+                const at = e === 'a' ? g.s0 : g.s1;
+                for (const share of [1, 0.5, 0.25]) {
+                    const by = room * share;
+                    if (by < rad / 2) break;
+                    const q = pointOn(l, e === 'a' ? at - by : at + by);
+                    // Cheap test first: the new dot must be clear of every other dot.
+                    if (pairs.some((p, i) => L[i] !== g && [p.a, p.b].some((v) => dist(q, v) < v.r + E.r + 1))) continue;
+                    if (e === 'a') g.s0 = at - by; else g.s1 = at + by;
+                    rebuild();
+                    if (sim.solvable && !clashing()) break;
+                    if (e === 'a') g.s0 = at; else g.s1 = at;
+                    rebuild();
+                }
+            }
+        }
+    }
+
     // What the drawing lost: strokes with no line left, details with no big dot.
     const liveNow = new Set(L);
     let lost = tooSmall + unplaced;
@@ -918,6 +1099,9 @@ function buildOnce(strokes: Stroke[], opt: StrokeModeOptions, size: number, rand
             if (o.warnings.length) warnings.push(...o.warnings);
         }
     } else if (pairs.length > opt.pairs) warnings.push(`The drawing has ${pairs.length} strokes, more than the ${opt.pairs} lines asked for (stroke mode never merges strokes)`);
+    // Dots near a line without clearly being on it go onto it (they block it, plainly); colours come
+    // after, since moving a dot can bring two lines near each other.
+    settleNearDots(pairs);
     colourPairs(pairs, opt.colors, rand);
     // The game's own solver has the last word.
     const final = solve({ pairs } as never);

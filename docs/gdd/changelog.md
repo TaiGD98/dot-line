@@ -4,6 +4,12 @@ Every published version stays playable at its own URL. The [landing page](https:
 
 ## latest (main) <Badge type="tip" text="Live" />
 
+Same as v0.4.0.
+
+[Play latest](https://taigd98.github.io/dot-line/demo/)
+
+## v0.4.0
+
 - **Play on:** the "Out of Hearts!" screen has PLAY ON (AD): the hearts are refilled and the level goes on from where it stopped. QUIT asks "Are you sure?" first, showing the level's progress and that it will be lost: PLAY ON or REPLAY (start the level again).
 - **No more slow-motion ending:** the last dot runs at normal speed and the end screen comes half a second after the pop.
 - **The game build contains exactly the play order** (levels/game.json): only those levels, in that order (the game bundle shrank from ~3.9 MB to ~1 MB).
@@ -11,7 +17,7 @@ Every published version stays playable at its own URL. The [landing page](https:
 - **Level editor:** a level-wide **Dot size** in the Inspector (every normal dot, cross lines included; big dots keep theirs) and a **big dot** box per dot (a pair can have one big and one normal dot). Big dots are sized from the drawing's detail, at least 1.3× the dot size. Small clusters of thick strokes (a nose with an "x" mouth) are no longer taken for a filled round detail.
 - **New level order:** chapter 5's levels 25–28 now come right after the two tutorials (LEVEL 3–6); the pinch-to-zoom tutorial moved with them to LEVEL 3. Pumpkin (now LEVEL 7) was reworked by hand (17 lines).
 
-[Play latest](https://taigd98.github.io/dot-line/demo/)
+[Play v0.4.0](https://taigd98.github.io/dot-line/v0.4.0/demo/) · [Docs v0.4.0](https://taigd98.github.io/dot-line/v0.4.0/docs/)
 
 ## v0.3.0
 

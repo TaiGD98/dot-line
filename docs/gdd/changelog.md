@@ -5,6 +5,7 @@ Every published version stays playable at its own URL. The [landing page](https:
 ## latest (main) <Badge type="tip" text="Live" />
 
 - **Jelly variant** at [/jelly/](https://taigd98.github.io/dot-line/jelly/) (**Play Jelly** on the landing page, next to **Play Classic**): the same levels with jelly dots. They deform while moving instead of leaving a trail, jiggle more on a bump, and a dot that reaches its partner presses into it and merges into one blob before popping.
+- **Droplets on a bump** (both versions): when two dots bump, each splashes a few droplets in its own colour, away from where they touched. A dot reaching its partner splashes the same way (the arriving dot backwards, the partner forwards) before the pair pops.
 
 [Play latest](https://taigd98.github.io/dot-line/demo/)
 

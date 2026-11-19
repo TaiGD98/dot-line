@@ -31,7 +31,8 @@
 
 - **Khi chạy:** bóng bị kéo dài nhẹ theo hướng di chuyển (dài 116%, dẹt 88%) và để lại **vệt trail** mờ dần (9 vị trí gần nhất).
 - **Hình dáng bóng:** bóng bóng loáng (glossy) với ánh sáng từ góc trên bên trái: viền tối, thân sáng dần về phía nguồn sáng, đốm phản quang trắng, ánh phản xạ nhẹ ở đáy; mỗi bóng có **bóng đổ** mềm lệch xuống dưới bên phải (bóng đổ đi theo bóng khi bóng méo).
-- **Khi va chạm:** cả bóng đang chạy và bóng bị đụng **biến dạng đàn hồi** (co giãn dao động tắt dần trong khoảng 0,7 giây, theo hướng va chạm).
+- **Khi va chạm:** cả bóng đang chạy và bóng bị đụng **biến dạng đàn hồi** (co giãn dao động tắt dần trong khoảng 0,7 giây, theo hướng va chạm), và **cả 2 bóng bắn ra giọt nước** cùng màu với chính nó (6–9 giọt mỗi bóng, vài giọt màu sáng hơn), bay ra phía ngoài chỗ chạm (hình quạt ±65°), rơi nhẹ xuống và nhỏ dần rồi biến mất (khoảng 0,3–0,5 giây). Có ở cả bản thường và bản Jelly.
+- **Khi tới bóng cùng cặp:** cũng bắn giọt nước như vậy (màu của cặp): bóng vừa tới bắn ngược về phía sau, bóng kia bắn về phía trước theo hướng chạy; sau đó cặp nổ như cũ (bản Jelly: lúc hai bóng bắt đầu ép vào nhau).
 
 ## 3.3b2 Bản Jelly <Badge type="tip" text="Live" />
 

@@ -424,6 +424,11 @@ export class Game extends Phaser.Scene {
                 // Elastic bump on both dots.
                 this.wobbles.set(`${id}:${m.side}`, { t: 0, amp: WOBBLE.mover, angle });
                 this.wobbles.set(hit.key, { t: 0, amp: WOBBLE.hit, angle });
+                // Droplets in each dot's colour, splashing away from where they touched.
+                const [hid, hside] = hit.key.split(':') as [string, Side];
+                const other = this.pair(hid);
+                this.splash(at, p[m.side].r, angle + Math.PI, p.color);
+                this.splash(hit.pos, other[hside].r, angle, other.color);
                 // Marked (striped) pairs bump for free; the first bump costs a heart and marks the pair.
                 if (this.freeBump) {
                     // Tutorial: the first bump is free (the HUD says the next one costs a heart).
@@ -437,6 +442,12 @@ export class Game extends Phaser.Scene {
                 this.emitState();
             } else if (m.s >= end) {
                 this.trails.delete(id);
+                // Reaching the partner splashes too: the arriving dot backwards, the partner forwards.
+                const to = m.side === 'a' ? 'b' : 'a';
+                const at = pointAt(m.pts, m.acc, m.s), before = pointAt(m.pts, m.acc, Math.max(0, m.s - 8));
+                const dir = at.x === before.x && at.y === before.y ? Math.atan2(p[to].y - at.y, p[to].x - at.x) : Math.atan2(at.y - before.y, at.x - before.x);
+                this.splash(at, p[m.side].r, dir + Math.PI, p.color);
+                this.splash(p[to], p[to].r, dir, p.color);
                 if (JELLY) this.merge(p, m);
                 else this.clear(p, m.side);
             }
@@ -508,6 +519,28 @@ export class Game extends Phaser.Scene {
             }
         }
         return null;
+    }
+
+    /**
+     * Bump: a few droplets in the dot's colour fly off its far side (a fan of ±65° around `angle`),
+     * fall a little and shrink away. Some are lighter (the colour's highlight) for a wet look.
+     */
+    private splash(at: Pt, r: number, angle: number, name: string) {
+        const c = colour(name);
+        const base = hexToInt(c?.base ?? COMPLETED_LINE), light = hexToInt(c?.gradient ?? '#ffffff');
+        const deg = Phaser.Math.RadToDeg(angle);
+        const fx = this.add.particles(at.x + Math.cos(angle) * r * 0.7, at.y + Math.sin(angle) * r * 0.7, 'spark', {
+            angle: { min: deg - 65, max: deg + 65 },
+            speed: { min: r * 7, max: r * 15 },
+            lifespan: { min: 280, max: 520 },
+            scale: { start: (r * 0.26) / 8, end: (r * 0.06) / 8 },
+            gravityY: r * 30,
+            tint: [base, base, light],
+            emitting: false
+        });
+        fx.setDepth(1);
+        fx.explode(Phaser.Math.Between(6, 9));
+        this.time.delayedCall(700, () => fx.destroy());
     }
 
     /** Splash of sparks where a dot pops (bigger dots, bigger splash). */

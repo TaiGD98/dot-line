@@ -6,9 +6,10 @@ The site is built **on your machine** and pushed to the `gh-pages` branch. GitHu
 |---|---|
 | [`/dot-line/`](https://taigd98.github.io/dot-line/) | Landing page with the list of all versions |
 | [`/dot-line/demo/`](https://taigd98.github.io/dot-line/demo/) | Latest game build |
+| [`/dot-line/jelly/`](https://taigd98.github.io/dot-line/jelly/) | Jelly variant: the same build and levels with jelly dots (`window.__DOTLINE_MODE__ = 'jelly'` set in its index.html by `scripts/build-site.sh`; locally: `?mode=jelly`) |
 | [`/dot-line/docs/`](https://taigd98.github.io/dot-line/docs/) | Latest documentation |
 | [`/dot-line/editor/`](https://taigd98.github.io/dot-line/editor/) | Level editor (latest only, not in version snapshots) |
-| `/dot-line/vX.Y.Z/demo/`, `/vX.Y.Z/docs/` | A frozen release |
+| `/dot-line/vX.Y.Z/demo/`, `/vX.Y.Z/jelly/`, `/vX.Y.Z/docs/` | A frozen release (jelly from v0.5.0 on) |
 
 ## Updating latest
 

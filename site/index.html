@@ -19,6 +19,7 @@
         display: block; padding: 14px 28px; border-radius: 10px;
         text-decoration: none; font-weight: 600; color: #fff; background: #ff9f1c;
       }
+      a.jelly { background: #ef476f; }
       a.alt { background: #fff; color: #2b2d42; border: 2px solid #ff9f1c; }
       a:hover { filter: brightness(1.1); }
       #versions { margin-top: 40px; display: none; }
@@ -34,7 +35,8 @@
       <h1>Dot Line</h1>
       <p>A one-tap puzzle where you send each dot along its line to its partner without bumping into other dots</p>
       <nav>
-        <a href="./demo/">Play Now</a>
+        <a href="./demo/">Play Classic</a>
+        <a class="jelly" href="./jelly/">Play Jelly</a>
         <a class="alt" href="./docs/">Documentation</a>
         <a class="alt" id="editor-link" href="./editor/">Level editor</a>
       </nav>
@@ -45,6 +47,7 @@
     </main>
     <script>
       // versions.json lives at the site root; versioned copies of this page sit one level down.
+      const OLD = ['v0.1.0', 'v0.2.0', 'v0.3.0', 'v0.4.0'];
       const root = /\/v\d[^/]*\/(index\.html)?$/.test(location.pathname) ? '../' : './';
       fetch(root + 'versions.json')
         .then((r) => (r.ok ? r.json() : { versions: [] }))
@@ -54,7 +57,9 @@
           for (const v of ['latest', ...versions]) {
             const dir = v === 'latest' ? root : `${root}${v}/`;
             const li = document.createElement('li');
-            li.innerHTML = `<code></code><a href="${dir}demo/">Play</a><a class="alt" href="${dir}docs/">Docs</a>`;
+            // The jelly variant exists from v0.5.0 on.
+            const jelly = v === 'latest' || !OLD.includes(v) ? `<a class="jelly" href="${dir}jelly/">Jelly</a>` : '';
+            li.innerHTML = `<code></code><a href="${dir}demo/">Play</a>${jelly}<a class="alt" href="${dir}docs/">Docs</a>`;
             li.querySelector('code').textContent = v;
             list.append(li);
           }

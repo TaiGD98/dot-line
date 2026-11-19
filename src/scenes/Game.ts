@@ -7,6 +7,7 @@ import { levels } from '../game/source';
 import { tuning } from '../game/tuning';
 import { onSettings } from '../game/settings';
 import { theme } from '../game/theme';
+import { JELLY } from '../game/mode';
 
 // ---- Tunables (GDD 3.2 / 3.6) ----
 export const HEARTS = 3;
@@ -32,7 +33,32 @@ interface Wobble {
 
 const TRAIL = 9;
 
+// ---- Jelly variant (src/game/mode.ts) ----
+/** Bump wobble: amplitude on the moving / the hit dot, decay per second, frequency (rad/s), length (s). */
+const WOBBLE = JELLY ? { mover: 0.5, hit: 0.4, decay: 3.6, freq: 24, life: 1.3 } : { mover: 0.32, hit: 0.22, decay: 7, freq: 38, life: 0.7 };
+/** Jelly stretch spring (stiffness, damping: well under critical, so it overshoots and wobbles). */
+const SPRING = { k: 320, c: 8 };
+/** Jelly merge: the two dots press together (s), then the merged blob jiggles (s) and pops. */
+const PRESS = 0.16, JIGGLE = 0.4;
 
+/** Jelly stretch of one dot along `angle`: d = 0 round, d > 0 longer along the travel direction. */
+interface Stretch {
+    d: number;
+    v: number;
+    target: number;
+    angle: number;
+}
+
+/** Jelly: a dot that reached its partner, pressing into it and merging (drawn until it pops). */
+interface Merge {
+    pair: Pair;
+    /** The arriving dot, the partner. */
+    a: Pt;
+    b: Pt;
+    ra: number;
+    rb: number;
+    t: number;
+}
 
 interface Mover {
     side: Side;
@@ -70,6 +96,8 @@ export class Game extends Phaser.Scene {
     private marked = new Set<string>();
     private wobbles = new Map<string, Wobble>();
     private trails = new Map<string, Pt[]>();
+    private stretches = new Map<string, Stretch>();
+    private merges: Merge[] = [];
     private pinch: { d: number; zoom: number; mid: Pt; scroll: Pt } | null = null;
     private dragFrom: { x: number; y: number; scroll: Pt; moved: boolean } | null = null;
     /** Scissors booster armed: the next tap on a line removes that pair. */
@@ -124,6 +152,8 @@ export class Game extends Phaser.Scene {
         this.freeBump = this.level.tutorial === 'collision';
         this.wobbles.clear();
         this.trails.clear();
+        this.stretches.clear();
+        this.merges = [];
         this.setCutting(false);
         this.cameras.main.panEffect.reset();
         this.cameras.main.zoomEffect.reset();
@@ -366,7 +396,10 @@ export class Game extends Phaser.Scene {
         for (const [id, m] of [...this.movers]) {
             const p = this.pair(id);
             const total = m.acc[m.acc.length - 1];
-            this.pushTrail(id, pointAt(m.pts, m.acc, m.s));
+            // Jelly: the dot stops where it touches its partner (then they merge).
+            const end = JELLY ? Math.max(0, total - (p.a.r + p.b.r) * 0.9) : total;
+            if (JELLY) this.stretchTo(`${id}:${m.side}`, m.returning ? tuning.returnSpeed : tuning.startSpeed + tuning.accel * m.t);
+            else this.pushTrail(id, pointAt(m.pts, m.acc, m.s));
             if (m.returning) {
                 m.s -= tuning.returnSpeed * dt;
                 if (m.s <= 0) { this.movers.delete(id); this.trails.delete(id); if (this.hearts <= 0) this.lose(); }
@@ -378,9 +411,9 @@ export class Game extends Phaser.Scene {
             m.t += dt;
             let left = speed * dt;
             let hit: { key: string; pos: Pt } | null = null;
-            while (left > 0 && m.s < total) {
+            while (left > 0 && m.s < end) {
                 const step = Math.min(left, STEP);
-                m.s = Math.min(total, m.s + step);
+                m.s = Math.min(end, m.s + step);
                 left -= step;
                 if (!m.open && (hit = this.hits(p, m))) break;
             }
@@ -389,8 +422,8 @@ export class Game extends Phaser.Scene {
                 const at = pointAt(m.pts, m.acc, m.s);
                 const angle = Math.atan2(hit.pos.y - at.y, hit.pos.x - at.x);
                 // Elastic bump on both dots.
-                this.wobbles.set(`${id}:${m.side}`, { t: 0, amp: 0.32, angle });
-                this.wobbles.set(hit.key, { t: 0, amp: 0.22, angle });
+                this.wobbles.set(`${id}:${m.side}`, { t: 0, amp: WOBBLE.mover, angle });
+                this.wobbles.set(hit.key, { t: 0, amp: WOBBLE.hit, angle });
                 // Marked (striped) pairs bump for free; the first bump costs a heart and marks the pair.
                 if (this.freeBump) {
                     // Tutorial: the first bump is free (the HUD says the next one costs a heart).
@@ -402,10 +435,55 @@ export class Game extends Phaser.Scene {
                 }
                 this.marked.add(id);
                 this.emitState();
-            } else if (m.s >= total) { this.trails.delete(id); this.clear(p, m.side); }
+            } else if (m.s >= end) {
+                this.trails.delete(id);
+                if (JELLY) this.merge(p, m);
+                else this.clear(p, m.side);
+            }
         }
-        for (const [k, w] of this.wobbles) { w.t += dt; if (w.t > 0.7) this.wobbles.delete(k); }
+        for (const [k, w] of this.wobbles) { w.t += dt; if (w.t > WOBBLE.life) this.wobbles.delete(k); }
+        if (JELLY) this.stepJelly(dt);
         this.draw();
+    }
+
+    /** Jelly: the moving dot stretches more the faster it goes (spring target, eased in stepJelly). */
+    private stretchTo(key: string, speed: number) {
+        const s = this.stretches.get(key) ?? { d: 0, v: 0, target: 0, angle: 0 };
+        s.target = Math.min(0.42, 0.1 + speed / 3600);
+        this.stretches.set(key, s);
+    }
+
+    private stepJelly(dt: number) {
+        for (const [key, s] of this.stretches) {
+            const [id, side] = key.split(':');
+            const m = this.movers.get(id);
+            if (!m || m.side !== side) s.target = 0; // stopped: springs back round, wobbling
+            const a = SPRING.k * (s.target - s.d) - SPRING.c * s.v;
+            s.v += a * dt;
+            s.d += s.v * dt;
+            if (!this.alive.has(id) || (s.target === 0 && Math.abs(s.d) < 0.003 && Math.abs(s.v) < 0.02)) this.stretches.delete(key);
+        }
+        for (const mg of [...this.merges]) {
+            mg.t += dt;
+            if (mg.t >= PRESS + JIGGLE) {
+                this.merges.splice(this.merges.indexOf(mg), 1);
+                const c = this.mergeCentre(mg);
+                this.pop(c, Math.hypot(mg.ra, mg.rb) * 1.15, hexToInt(colour(mg.pair.color)?.base ?? COMPLETED_LINE));
+            }
+        }
+    }
+
+    /** Jelly: the dot touched its partner: the pair leaves the board and the two blobs merge, then pop. */
+    private merge(p: Pair, m: Mover) {
+        const to = m.side === 'a' ? 'b' : 'a';
+        this.merges.push({ pair: p, a: pointAt(m.pts, m.acc, m.s), b: { x: p[to].x, y: p[to].y }, ra: p[m.side].r, rb: p[to].r, t: 0 });
+        this.removePair(p);
+    }
+
+    /** Where the merged blob sits: between the two dots, nearer the bigger one. */
+    private mergeCentre(mg: Merge): Pt {
+        const wa = mg.ra * mg.ra, wb = mg.rb * mg.rb;
+        return { x: (mg.a.x * wa + mg.b.x * wb) / (wa + wb), y: (mg.a.y * wa + mg.b.y * wb) / (wa + wb) };
     }
 
     private pushTrail(id: string, p: Pt) {
@@ -459,7 +537,7 @@ export class Game extends Phaser.Scene {
             this.over = true;
             // The board stays empty (no picture behind the end screen); the end screen comes once the
             // splash has settled.
-            this.time.delayedCall(500, () => this.events.emit('win'));
+            this.time.delayedCall(JELLY ? 500 + (PRESS + JIGGLE) * 1000 : 500, () => this.events.emit('win'));
         }
     }
 
@@ -529,15 +607,24 @@ export class Game extends Phaser.Scene {
             const m = this.movers.get(id);
             for (const side of ['a', 'b'] as const) {
                 let sx = 1, sy = 1, angle = 0;
+                const st = this.stretches.get(`${id}:${side}`);
                 if (m && m.side === side) {
                     // Squash and stretch along the travel direction.
                     const a = pointAt(m.pts, m.acc, m.s), b = pointAt(m.pts, m.acc, m.s + (m.returning ? -6 : 6));
                     angle = Math.atan2(b.y - a.y, b.x - a.x);
-                    sx = 1.16; sy = 0.88;
+                    if (st) st.angle = angle;
+                    else { sx = 1.16; sy = 0.88; }
+                }
+                if (st) {
+                    // Jelly: stretched along its way, as thin across (same area), with a little ripple while it runs.
+                    angle = st.angle;
+                    const ripple = m && m.side === side ? 0.045 * Math.sin(this.time.now * 0.028) : 0;
+                    const k = Math.max(0.55, 1 + st.d + ripple);
+                    sx = k; sy = 1 / k;
                 }
                 const w = this.wobbles.get(`${id}:${side}`);
                 if (w) {
-                    const e = w.amp * Math.exp(-w.t * 7) * Math.cos(w.t * 38);
+                    const e = w.amp * Math.exp(-w.t * WOBBLE.decay) * Math.cos(w.t * WOBBLE.freq);
                     if (!(m && m.side === side)) angle = w.angle;
                     sx *= 1 - e; sy *= 1 + e;
                 }
@@ -545,8 +632,31 @@ export class Game extends Phaser.Scene {
                 dots.push({ pos, draw: pos, r: p[side].r, name: p.color, sx, sy, angle, striped: this.marked.has(id) });
             }
         }
+        for (const mg of this.merges) dots.push(...this.mergeDots(mg));
         for (const d of dots) this.drawShadow(d.pos, d.r, d.sx, d.sy, d.angle);
         for (const d of dots) this.drawDot(d.draw, d.r, d.name, d.sx, d.sy, d.angle, d.striped);
+    }
+
+    /**
+     * Jelly merge frames. Press: the two dots slide into each other, flattening where they touch.
+     * Jiggle: one blob (both areas together), first stretched along the meeting line, wobbling round.
+     */
+    private mergeDots(mg: Merge) {
+        const angle = Math.atan2(mg.b.y - mg.a.y, mg.b.x - mg.a.x);
+        const c = this.mergeCentre(mg);
+        const one = (pos: Pt, r: number, sx: number, sy: number) => ({ pos, draw: pos, r, name: mg.pair.color, sx, sy, angle, striped: false });
+        if (mg.t < PRESS) {
+            const k = mg.t / PRESS, e = k * k; // speeds up into each other
+            const towards = (p: Pt) => ({ x: p.x + (c.x - p.x) * e * 0.75, y: p.y + (c.y - p.y) * e * 0.75 });
+            const sq = 1 - 0.32 * e;
+            return [one(towards(mg.a), mg.ra, sq, 1 / sq), one(towards(mg.b), mg.rb, sq, 1 / sq)];
+        }
+        const t = mg.t - PRESS;
+        const e = 0.38 * Math.exp(-t * 6) * Math.cos(t * 30);
+        // Swells a little just before it pops.
+        const grow = 1 + 0.12 * Math.max(0, (t - JIGGLE * 0.6) / (JIGGLE * 0.4));
+        const r = Math.hypot(mg.ra, mg.rb) * grow;
+        return [one(c, r, 1 + e, 1 / (1 + e))];
     }
 
     /** Soft drop shadow below-right of a dot (light from the top-left). */

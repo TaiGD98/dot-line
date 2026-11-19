@@ -33,6 +33,14 @@
 - **Hình dáng bóng:** bóng bóng loáng (glossy) với ánh sáng từ góc trên bên trái: viền tối, thân sáng dần về phía nguồn sáng, đốm phản quang trắng, ánh phản xạ nhẹ ở đáy; mỗi bóng có **bóng đổ** mềm lệch xuống dưới bên phải (bóng đổ đi theo bóng khi bóng méo).
 - **Khi va chạm:** cả bóng đang chạy và bóng bị đụng **biến dạng đàn hồi** (co giãn dao động tắt dần trong khoảng 0,7 giây, theo hướng va chạm).
 
+## 3.3b2 Bản Jelly <Badge type="tip" text="Live" />
+
+Bản game phụ tại [`/jelly/`](https://taigd98.github.io/dot-line/jelly/) (nút **Play Jelly** ở trang chủ): cùng level, cùng luật, chỉ khác cảm giác của bóng (`src/game/mode.ts`, `JELLY` trong `src/scenes/Game.ts`):
+
+- **Khi chạy:** không có trail; bóng **biến dạng như thạch**: kéo dài theo hướng chạy, càng nhanh càng dài (tới khoảng 1,5 lần), dẹt lại tương ứng (giữ diện tích), rung nhẹ trong lúc chạy. Độ dài đi theo một lò xo mềm nên khi bắt đầu chạy, quay đầu hay dừng lại bóng nảy qua nảy lại rồi mới tròn lại.
+- **Khi va chạm:** rung mạnh và lâu hơn bản thường (biên độ 0,5 / 0,4 thay vì 0,32 / 0,22, tắt dần trong khoảng 1,3 giây thay vì 0,7 giây).
+- **Khi tới bóng cùng cặp:** bóng dừng lúc chạm bóng kia, hai bóng **ép vào nhau** (dẹt ở chỗ chạm, 0,16 giây), **nhập thành một khối** (diện tích bằng tổng hai bóng, lúc đầu dài theo hướng gặp nhau rồi rung về tròn, 0,4 giây, phồng lên một chút) rồi mới **nổ**. Màn Well Done đến 0,5 giây sau tiếng nổ cuối.
+
 ## 3.3c Giao diện sáng / tối <Badge type="tip" text="Live" />
 
 Bật trong **Settings** (nút Pause ở góc trên trái mở Settings, game tạm dừng; nút **THEME: LIGHT/DARK**, ghi nhớ trong trình duyệt, mặc định sáng).

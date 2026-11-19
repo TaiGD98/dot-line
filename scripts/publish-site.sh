@@ -34,7 +34,7 @@ export DOCS_VERSIONS="$(echo "$all_versions" | paste -sd, -)"
 bash scripts/build-site.sh
 
 if [[ -z "$DIR" ]]; then
-    rm -rf "$ARCHIVE/demo" "$ARCHIVE/docs" "$ARCHIVE/editor" "$ARCHIVE/index.html"
+    rm -rf "$ARCHIVE/demo" "$ARCHIVE/jelly" "$ARCHIVE/docs" "$ARCHIVE/editor" "$ARCHIVE/index.html"
     cp -R _site/. "$ARCHIVE/"
 else
     # The level editor lives only at the site root (latest), not in version snapshots.

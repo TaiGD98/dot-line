@@ -24,7 +24,8 @@
     "levels:import-ref": "esbuild tools/import-ref.ts --bundle --platform=node --format=esm --outfile=node_modules/.cache/import-ref.mjs --log-level=warning && node node_modules/.cache/import-ref.mjs",
     "levels:chapter4": "esbuild tools/build-chapter4.ts --bundle --platform=node --format=esm --outfile=node_modules/.cache/build-chapter4.mjs --log-level=warning && node node_modules/.cache/build-chapter4.mjs",
     "levels:chapter5": "esbuild tools/build-chapter5.ts --bundle --platform=node --format=esm --outfile=node_modules/.cache/build-chapter5.mjs --log-level=warning && node node_modules/.cache/build-chapter5.mjs",
-    "publish:levels": "esbuild tools/publish-levels.ts --bundle --platform=node --format=esm --outfile=node_modules/.cache/publish-levels.mjs --log-level=warning && node node_modules/.cache/publish-levels.mjs"
+    "publish:levels": "esbuild tools/publish-levels.ts --bundle --platform=node --format=esm --outfile=node_modules/.cache/publish-levels.mjs --log-level=warning && node node_modules/.cache/publish-levels.mjs",
+    "art:magic": "bash tools/magic-art.sh"
   },
   "dependencies": {
     "phaser": "^4.2.1"

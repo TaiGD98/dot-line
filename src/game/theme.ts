@@ -10,13 +10,12 @@ export interface Theme {
     progressFill: number;
     caption: string;
     version: string;
-    /** Light board: low-contrast lines get an edge in their ramp's dark key; dark board: in its light key. */
+    /** Dark board (the light theme is false). */
     dark: boolean;
 }
 
 // Boards chosen for the Voxel palette: a soft warm grey-white and a deep blue-grey. Neither is pure
-// white or black, so the light and the dark colours keep some contrast; the lines that still sink
-// get a thin edge (Game.lineEdge).
+// white or black, so the light and the dark colours keep some contrast. Lines have no edge.
 const THEMES: Record<'light' | 'dark', Theme> = {
     light: {
         background: '#F2EEE6', shadow: 0x3a2f20, shadowAlpha: [0.08, 0.14], progressTrack: 0xe0dbd0, progressFill: 0xf6a26b,
@@ -29,3 +28,4 @@ const THEMES: Record<'light' | 'dark', Theme> = {
 };
 
 export const theme = (): Theme => THEMES[settings.theme];
+export const themeOf = (name: 'light' | 'dark'): Theme => THEMES[name];

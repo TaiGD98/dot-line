@@ -42,6 +42,16 @@ Bản game phụ tại [`/jelly/`](https://taigd98.github.io/dot-line/jelly/) (n
 - **Khi va chạm:** rung mạnh và lâu hơn bản thường (biên độ 0,5 / 0,4 thay vì 0,32 / 0,22, tắt dần trong khoảng 1,3 giây thay vì 0,7 giây).
 - **Khi tới bóng cùng cặp:** bóng dừng lúc chạm bóng kia, hai bóng **ép vào nhau** (dẹt ở chỗ chạm, 0,16 giây), **nhập thành một khối** (diện tích bằng tổng hai bóng, lúc đầu dài theo hướng gặp nhau rồi rung về tròn, 0,4 giây, phồng lên một chút) rồi mới **nổ**. Màn Well Done đến 0,5 giây sau tiếng nổ cuối.
 
+## 3.3b3 Bản Magic <Badge type="tip" text="Live" />
+
+Bản game phụ tại [`/magic/`](https://taigd98.github.io/dot-line/magic/) (nút **Play Magic** ở trang chủ): cùng level và luật, level là dấu niêm phong khắc trên một cánh cửa đôi (`src/scenes/Door.ts`, `MAGIC` trong `src/scenes/Game.ts`). Ảnh: [Magic variant: assets](../guide/magic-assets) (cửa, phía sau cửa, tia sáng, chùm sáng, hạt lấp lánh, bóng orb).
+
+- **Bóng:** quả cầu orb (ảnh `orb.png`) trong màu của cặp, đủ 28 màu đều có bóng đổ và điểm sáng (màu tối của orb thành màu tối hơn, màu sáng thành trắng); bóng sọc vẫn có sọc trắng.
+- **Cửa:** chỉ dùng phần mặt phẳng của `door.png` (bỏ khung hoa văn hai bên; hoa văn trên và dưới nằm dưới HUD và thanh booster), đổi sang **màu nền của bản thường** theo theme (sáng `#F2EEE6`, tối `#1F2335`), chỉ giữ vân đá mờ của ảnh. Mặt cửa liền, **không thấy khe** cho tới khi bóng cuối cùng biến mất. Dây (không viền) và trang ngoài cột game như bản thường.
+
+- **Vào level:** hai cánh cửa trượt vào từ hai bên (0,43 giây), sập lại (rung nhẹ, hạt sáng dọc khe). Sau đó hai bóng của mỗi cặp cùng nằm ở đầu thứ nhất của dây, bóng thứ hai chạy theo dây sang đầu kia (0,35–0,85 giây tùy độ dài dây), dây hiện ra phía sau nó. Trong lúc này chưa chạm được bóng. Chữ hướng dẫn (tutorial) của level, nếu có, chỉ hiện sau khi bóng chạy xong, và tắt khi người chơi làm đúng điều kiện hoặc ngay khi bóng cuối cùng biến mất. Cửa đứng yên khi pinch zoom; dây và bóng zoom như bình thường.
+- **Phá seal:** gỡ hết bóng thì level trở về zoom gốc và canh giữa; trước hết **map của level (mọi dây và mọi bóng ở chỗ ban đầu) hiện lại, sáng vàng như ánh sáng trong khe** (0,45 giây), sau đó khe cửa mới hiện ra và ánh sáng lọt qua (0,55 giây), rồi hai cánh cửa mở ra (0,8 giây), mỗi cánh mang nửa map của nó, với chùm sáng bung ra; rồi màn **Well Done** hiện trên căn phòng phía sau cửa (không làm tối; căn phòng vừa khít màn hình game). Hai thanh HUD (trên, dưới) **trượt ra khỏi màn hình** khi cửa bắt đầu mở và **trượt vào lại** (thanh trên từ trên xuống, thanh dưới từ dưới lên) khi cửa đã sập cho level sau; lúc vào game lần đầu cũng vậy. **CONTINUE** làm cửa sập lại cho level sau; **REPLAY** giữ cửa đóng, bóng chạy ra lại.
+
 ## 3.3c Giao diện sáng / tối <Badge type="tip" text="Live" />
 
 Bật trong **Settings** (nút Pause ở góc trên trái mở Settings, game tạm dừng; nút **THEME: LIGHT/DARK**, ghi nhớ trong trình duyệt, mặc định sáng).
@@ -113,7 +123,12 @@ Nguồn: vật liệu `Voxel_*` của game Cube Blast (file `VoxelMaterials.json
 | yellow | `#FDD201` | `#E98E3F` | `#FFED3D` | `#FFF9BF` |
 | yellow_green | `#A3F408` | `#527D00` | `#C8F72D` | `#E8FF70` |
 
-**Nền:** theme sáng `#F2EEE6`, theme tối `#1F2335`. Dây có độ tương phản với nền dưới 1,8 được vẽ thêm viền mảnh cùng tông: trên nền sáng là nấc Dark, trên nền tối là nấc Light.
+**Nền:** theme sáng `#F2EEE6`, theme tối `#1F2335`. Dây chỉ có màu của nó, **không có viền**. Màu nào quá gần màu nền của theme đang bật (độ tương phản dưới 1,8) thì **tự đổi sang màu khác cùng tông, đủ tương phản** khi chơi; đổi theme thì đổi lại theo nền mới. File level vẫn giữ màu gốc (editor không đổi). Cách chọn: màu gần tông nhất trong bảng màu đủ tương phản với nền; màu level chưa dùng được ưu tiên nếu tông cũng gần (`readableColours` trong `src/core/palette.ts`).
+
+| Theme | Màu bị đổi (ví dụ đổi thành) |
+|---|---|
+| Sáng | cyan → teal, light_orange → orange, light_pink → pink, light_yellow / yellow → olive, yellow_green / light_green / lime → green hoặc olive_green, spring_green → green, turquoise → teal |
+| Tối | navy → purple hoặc sky_blue, dark_blue → sky_blue, blue → lavender hoặc sky_blue, dark_green → green, maroon → red |
 
 **Phối màu trong một level** (theo hướng dẫn phối màu: một màu chủ đạo, vài màu phụ, các màu cạnh nhau tương phản rõ): mỗi level chọn một kiểu phối trên bánh xe màu — bù nhau (2 hướng màu đối diện), bù tách đôi (1 màu và 2 màu hai bên màu đối diện) hoặc bộ ba (3 màu cách đều) — xoay tới một hướng ngẫu nhiên. Màu trong bảng nằm trong ±30° quanh mỗi hướng thuộc nhóm của hướng đó; level dùng càng nhiều màu trong các nhóm càng tốt (thường 10–20 màu), nhóm đầu tiên là màu chủ đạo và được dùng nhiều hơn một chút. Dây gần nhau hoặc cắt nhau không bao giờ trùng màu, và được ưu tiên ở hai nhóm khác nhau.
 

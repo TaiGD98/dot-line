@@ -62,6 +62,7 @@ export default defineConfig({
                         { text: 'Deployment', link: '/guide/deployment' },
                         { text: 'Level editor (spec)', link: '/guide/editor' },
                         { text: 'Level system (100 levels)', link: '/guide/level-system' },
+                        { text: 'Magic variant: assets', link: '/guide/magic-assets' },
                         { text: 'Game Design Document →', link: '/gdd/' }
                     ]
                 }

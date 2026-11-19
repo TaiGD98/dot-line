@@ -20,6 +20,7 @@
         text-decoration: none; font-weight: 600; color: #fff; background: #ff9f1c;
       }
       a.jelly { background: #ef476f; }
+      a.magic { background: #7b4fd6; }
       a.alt { background: #fff; color: #2b2d42; border: 2px solid #ff9f1c; }
       a:hover { filter: brightness(1.1); }
       #versions { margin-top: 40px; display: none; }
@@ -37,6 +38,7 @@
       <nav>
         <a href="./demo/">Play Classic</a>
         <a class="jelly" href="./jelly/">Play Jelly</a>
+        <a class="magic" href="./magic/">Play Magic</a>
         <a class="alt" href="./docs/">Documentation</a>
         <a class="alt" id="editor-link" href="./editor/">Level editor</a>
       </nav>
@@ -57,9 +59,9 @@
           for (const v of ['latest', ...versions]) {
             const dir = v === 'latest' ? root : `${root}${v}/`;
             const li = document.createElement('li');
-            // The jelly variant exists from v0.5.0 on.
-            const jelly = v === 'latest' || !OLD.includes(v) ? `<a class="jelly" href="${dir}jelly/">Jelly</a>` : '';
-            li.innerHTML = `<code></code><a href="${dir}demo/">Play</a>${jelly}<a class="alt" href="${dir}docs/">Docs</a>`;
+            // The jelly and magic variants exist from v0.5.0 on.
+            const extra = v === 'latest' || !OLD.includes(v) ? `<a class="jelly" href="${dir}jelly/">Jelly</a><a class="magic" href="${dir}magic/">Magic</a>` : '';
+            li.innerHTML = `<code></code><a href="${dir}demo/">Play</a>${extra}<a class="alt" href="${dir}docs/">Docs</a>`;
             li.querySelector('code').textContent = v;
             list.append(li);
           }

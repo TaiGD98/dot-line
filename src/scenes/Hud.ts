@@ -2,6 +2,7 @@ import * as Phaser from 'phaser';
 import { BOTTOM_HEIGHT, BoardState, Game, HEARTS, HUD_HEIGHT } from './Game';
 import { levels } from '../game/source';
 import { onSettings, setSetting, settings } from '../game/settings';
+import { MAGIC } from '../game/mode';
 import { theme } from '../game/theme';
 
 const FONT = 'Lilita, system-ui, sans-serif';
@@ -21,6 +22,10 @@ export class Hud extends Phaser.Scene {
     private overlay: Phaser.GameObjects.Container | null = null;
     private hard!: Phaser.GameObjects.Text;
     private panels!: Phaser.GameObjects.Graphics;
+    private panelsBottom!: Phaser.GameObjects.Graphics;
+    /** Magic: everything in the top and bottom bands, with its resting y (they slide out for the win). */
+    private bands: { o: Phaser.GameObjects.Components.Transform; y: number; dir: -1 | 1 }[] = [];
+    private bandShown = { k: 1 };
     private scissors!: { box: Phaser.GameObjects.Container; ring: Phaser.GameObjects.Graphics };
     private cutHint!: Phaser.GameObjects.Text;
     private tut: { kind: 'tap' | 'collision' | 'zoom'; ring: Phaser.GameObjects.Graphics; hand: Phaser.GameObjects.Text; text: Phaser.GameObjects.Text; t: number } | null = null;
@@ -36,6 +41,7 @@ export class Hud extends Phaser.Scene {
         const h = this.scale.height;
         // Top and bottom bands in the board's background colour: the board slides under them when zoomed.
         this.panels = this.add.graphics();
+        this.panelsBottom = this.add.graphics();
         this.drawPanels();
         this.roundButton(70, 90, 0xf6c9a8, (g) => { g.fillStyle(0xffffff, 1).fillRoundedRect(-14, -16, 10, 32, 3).fillRoundedRect(4, -16, 10, 32, 3); }, () => this.pause());
         // Boosters (bottom band): hint and scissors.
@@ -73,19 +79,49 @@ export class Hud extends Phaser.Scene {
         this.game$.events.on('win', () => this.endScreen(true));
         this.game$.events.on('lose', () => this.endScreen(false));
         this.hard = this.add.text(w / 2, 34, 'Hard', { fontFamily: FONT, fontSize: '34px', color: '#a24bf0', stroke: '#ffffff', strokeThickness: 6 }).setOrigin(0.5).setVisible(false);
-        this.game$.events.on('loaded', () => { this.closeOverlay(); this.startTutorial(); this.hard.setVisible(isHard(this.game$.current)); });
+        this.game$.events.on('loaded', () => { this.closeOverlay(); if (MAGIC) this.endTutorial(); else this.startTutorial(); this.hard.setVisible(isHard(this.game$.current)); });
+        // Magic: the tutorial comes once the dots have run out (intro done) and goes when the last dot is gone.
+        this.game$.events.on('introDone', () => this.startTutorial());
+        this.game$.events.on('allCleared', () => this.endTutorial());
         this.game$.events.on('tapped', () => { if (this.tut && this.tut.kind !== 'zoom') this.endTutorial(); });
         this.game$.events.on('zoomed', () => { if (this.tut?.kind === 'zoom') this.endTutorial(); });
-        if (this.game$.current) { this.startTutorial(); this.hard.setVisible(isHard(this.game$.current)); }
+        if (this.game$.current) { if (!MAGIC) this.startTutorial(); this.hard.setVisible(isHard(this.game$.current)); }
+        if (MAGIC) {
+            // The bands leave for the Well Done screen (the door opens onto the room) and slide back in
+            // once the door has closed on the next level: the top one from above, the bottom one from below.
+            for (const o of this.children.list as unknown as (Phaser.GameObjects.Components.Transform & Phaser.GameObjects.GameObject)[]) {
+                if (o === this.cutHint) continue;
+                const dir = o === this.panels || o === this.bar ? -1 : o === this.panelsBottom ? 1 : o.y < HUD_HEIGHT ? -1 : o.y > h - BOTTOM_HEIGHT ? 1 : 0;
+                if (dir) this.bands.push({ o, y: o.y, dir });
+            }
+            this.setBands(0);
+            this.game$.events.on('doorClosed', () => this.slideBands(true));
+            this.game$.events.on('doorOpening', () => this.slideBands(false));
+        }
         if (this.game$.sys.isActive() && levels.level()) this.updateState(this.game$.state());
+    }
+
+    /** Magic: bands at k (1 = in place, 0 = slid off the screen). */
+    private setBands(k: number) {
+        for (const b of this.bands) b.o.y = b.y + b.dir * (1 - k) * (b.dir < 0 ? HUD_HEIGHT + 30 : BOTTOM_HEIGHT + 70);
+    }
+
+    private slideBands(show: boolean) {
+        this.tweens.killTweensOf(this.bandShown);
+        this.tweens.add({
+            targets: this.bandShown, k: show ? 1 : 0, duration: show ? 420 : 320, ease: show ? 'Back.easeOut' : 'Quad.easeIn',
+            onUpdate: () => this.setBands(this.bandShown.k)
+        });
     }
 
     private drawPanels() {
         const { width: w, height: h } = this.scale;
         const bg = Phaser.Display.Color.HexStringToColor(theme().background).color;
-        const g = this.panels;
+        let g = this.panels;
         g.clear();
         g.fillStyle(bg, 1).fillRect(0, 0, w, HUD_HEIGHT);
+        g = this.panelsBottom;
+        g.clear();
         // Bottom band: rounded top corners and a soft shadow so it reads as a panel over the board.
         const top = h - BOTTOM_HEIGHT;
         for (let i = 1; i <= 6; i++) g.fillStyle(theme().shadow, 0.012 * (7 - i)).fillRoundedRect(0, top - i * 2, w, BOTTOM_HEIGHT + 40, 36);
@@ -242,6 +278,7 @@ export class Hud extends Phaser.Scene {
 
     private endScreen(win: boolean) {
         if (win) {
+            if (MAGIC && this.tut) this.endTutorial(); // nothing over the room behind the door
             const confetti = this.add.particles(this.scale.width / 2, 300, 'spark', {
                 speed: { min: 250, max: 700 }, angle: { min: 200, max: 340 }, gravityY: 900, lifespan: 1800, scale: { start: 0.9, end: 0.4 },
                 tint: [0xff3b3b, 0xffc430, 0x43c0ff, 0x6bd234, 0x9f54fa, 0xff80c4], emitting: false
@@ -251,7 +288,7 @@ export class Hud extends Phaser.Scene {
             this.showOverlay('Well Done!', '#ffd25a', '#ff8a1c', 'CONTINUE', 0x3fbf4a, () => {
                 const next = levels.next();
                 if (next) this.game$.loadLevel(next);
-            }, 0.55);
+            }, MAGIC ? 0 : 0.55); // magic: no dimming, the room behind the open door fills the window
         } else {
             // Play on (AD): refill the hearts and keep going from here. Quit asks first (the progress is lost).
             this.showOverlay('Out of Hearts!', '#ff8a8a', '#e8333d', 'PLAY ON', 0x3fbf4a, () => this.playOn(), 0.75, 'Refill your hearts and keep going?',

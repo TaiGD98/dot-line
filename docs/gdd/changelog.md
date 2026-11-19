@@ -4,7 +4,9 @@ Every published version stays playable at its own URL. The [landing page](https:
 
 ## latest (main) <Badge type="tip" text="Live" />
 
+- **No more line edges; colours that sink into the board are swapped:** lines are drawn in their colour only. A colour too close to the current theme's board (light ones on the light board, dark ones on the dark board) is shown as a readable colour of the same hue family, and swapped again when the theme changes; the level files keep their colours.
 - **Jelly variant** at [/jelly/](https://taigd98.github.io/dot-line/jelly/) (**Play Jelly** on the landing page, next to **Play Classic**): the same levels with jelly dots. They deform while moving instead of leaving a trail, jiggle more on a bump, and a dot that reaches its partner presses into it and merges into one blob before popping.
+- **Magic variant** at [/magic/](https://taigd98.github.io/dot-line/magic/) (**Play Magic** on the landing page): the level is a seal on a double door in the board colours of the classic game. The leaves slam shut, one dot of each pair runs along its line to the other end; when the last dot is gone the level's map (lines and dots) glows gold, then the seam lights up, and the door opens (each leaf taking its half of the map) onto a glowing room before Well Done. Tutorial captions show once the dots have run out and go when the last dot is gone. Orb dots in every palette colour, no seam until the last dot is gone, and HUD bands that slide away for the Well Done screen and back in on the next level.
 - **Droplets on a bump** (both versions): when two dots bump, each splashes a few droplets in its own colour, away from where they touched. A dot reaching its partner splashes the same way (the arriving dot backwards, the partner forwards) before the pair pops.
 
 [Play latest](https://taigd98.github.io/dot-line/demo/)

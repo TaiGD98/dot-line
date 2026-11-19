@@ -70,3 +70,55 @@ export function colour(name: string): PaletteColour | undefined {
 export function hexToInt(hex: string): number {
     return parseInt(hex.replace('#', ''), 16);
 }
+
+/** WCAG contrast ratio of two #RRGGBB colours (1 = same brightness, 21 = black on white). */
+export function contrastRatio(a: string, b: string): number {
+    const lum = (hex: string) => {
+        const f = (v: number) => (v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4);
+        const [r, g, bl] = [1, 3, 5].map((i) => f(parseInt(hex.slice(i, i + 2), 16) / 255));
+        return 0.2126 * r + 0.7152 * g + 0.0722 * bl;
+    };
+    const x = lum(a), y = lum(b);
+    return (Math.max(x, y) + 0.05) / (Math.min(x, y) + 0.05);
+}
+
+/** Hue (0..360), saturation and lightness (0..1) of a #RRGGBB colour. */
+function hsl(hex: string): [number, number, number] {
+    const [r, g, b] = [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16) / 255);
+    const max = Math.max(r, g, b), min = Math.min(r, g, b), l = (max + min) / 2, d = max - min;
+    if (!d) return [0, 0, l];
+    const s = d / (1 - Math.abs(2 * l - 1));
+    const h = max === r ? ((g - b) / d) % 6 : max === g ? (b - r) / d + 2 : (r - g) / d + 4;
+    return [(h * 60 + 360) % 360, s, l];
+}
+
+/** A colour whose contrast with the board is below this sinks into it (the game swaps it, see readableColours). */
+export const MIN_BOARD_CONTRAST = 1.8;
+
+/**
+ * Colours that sink into the board `bg` -> a readable palette colour of the nearest hue: what the game
+ * shows instead (the level file keeps its colours). Each sinking colour gets one stand-in; colours the
+ * level does not use yet are preferred when they are about as close in hue.
+ */
+export function readableColours(names: string[], bg: string): Map<string, string> {
+    const readable = (n: string) => { const c = colour(n); return !c || contrastRatio(c.base, bg) >= MIN_BOARD_CONTRAST; };
+    const used = new Set(names.filter(readable));
+    const out = new Map<string, string>();
+    const candidates = PALETTE.filter((c) => contrastRatio(c.base, bg) >= MIN_BOARD_CONTRAST);
+    for (const n of new Set(names)) {
+        if (readable(n)) continue;
+        const [h, s, l] = hsl(colour(n)!.base);
+        const dist = (c: PaletteColour) => {
+            const [h2, s2, l2] = hsl(c.base);
+            const dh = Math.min(Math.abs(h - h2), 360 - Math.abs(h - h2)) / 180;
+            return dh * 2 + Math.abs(s - s2) * 0.5 + Math.abs(l - l2) * 0.5;
+        };
+        // Nearest hue first; a colour the level already uses counts as a little further away (about 30°
+        // of hue), so a close colour is reused rather than jumping to a far one.
+        const score = (c: PaletteColour) => dist(c) + (used.has(c.name) ? 0.35 : 0);
+        const to = [...candidates].sort((a, b) => score(a) - score(b))[0];
+        out.set(n, to.name);
+        used.add(to.name);
+    }
+    return out;
+}

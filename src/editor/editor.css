@@ -175,11 +175,18 @@ header { display: flex; align-items: center; gap: 8px; padding: 8px 12px; border
 .org-row .drag { cursor: grab; color: var(--muted); }
 .org-row .num { font-family: ui-monospace, monospace; color: var(--muted); }
 .org-row .name { font-weight: 600; }
+.org-mini { width: 76px; height: 76px; flex: none; background: var(--canvas); border-radius: 6px; }
+.org-mini.empty { border: 1px dashed var(--line); background: none; }
+.org-tut select { max-width: 130px; }
+.dlg-mini { width: 56px; height: 56px; flex: none; background: var(--canvas); border-radius: 5px; }
 .settings { display: flex; flex-direction: column; gap: 10px; }
 
 .modal { position: fixed; inset: 0; background: rgba(20, 16, 12, .55); display: flex; align-items: center; justify-content: center; z-index: 50; }
 .dialog { background: var(--bg2); border: 1px solid var(--line2); border-radius: 12px; padding: 14px; width: min(460px, 92vw); display: flex; flex-direction: column; gap: 10px; }
-.dlg-list { max-height: 50vh; overflow: auto; display: flex; flex-direction: column; }
+.dlg-list { max-height: 50vh; overflow: auto; display: flex; flex-direction: column; overscroll-behavior: contain; }
+.modal { overscroll-behavior: contain; }
+/* A dialog is open: nothing behind it scrolls. */
+body.modal-open, body.modal-open .panel, body.modal-open .org-center, body.modal-open .center { overflow: hidden !important; }
 .dlg-row { display: flex; gap: 8px; align-items: center; padding: 7px 2px; border-bottom: 1px solid var(--line); cursor: pointer; }
 
 .welcome { position: fixed; inset: 0; background: var(--bg); display: flex; align-items: center; justify-content: center; z-index: 60; }

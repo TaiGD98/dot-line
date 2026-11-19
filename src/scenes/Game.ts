@@ -32,14 +32,6 @@ interface Wobble {
 
 const TRAIL = 9;
 
-/** Ending: when the last dot is this close to its partner (seconds at its current speed), slow motion starts. */
-const FINALE_LEAD = 0.4;
-/** ...or this many of its radii, whichever is further. */
-const FINALE_MIN_RADII = 6;
-/** Game speed during the slow motion (1 = normal). */
-const FINALE_SLOW = 0.2;
-/** Camera zoom on the meeting point (x the fitted zoom, at most MAX_ZOOM). */
-const FINALE_ZOOM = 2.2;
 
 
 interface Mover {
@@ -80,8 +72,6 @@ export class Game extends Phaser.Scene {
     private trails = new Map<string, Pt[]>();
     private pinch: { d: number; zoom: number; mid: Pt; scroll: Pt } | null = null;
     private dragFrom: { x: number; y: number; scroll: Pt; moved: boolean } | null = null;
-    /** Ending slow motion (last line): k = game speed, eased from 1 down to FINALE_SLOW. */
-    private finale: { k: number } | null = null;
     /** Scissors booster armed: the next tap on a line removes that pair. */
     private cutting = false;
     /** The collision tutorial level forgives its first bump (no heart lost). */
@@ -134,8 +124,6 @@ export class Game extends Phaser.Scene {
         this.freeBump = this.level.tutorial === 'collision';
         this.wobbles.clear();
         this.trails.clear();
-        if (this.finale) this.tweens.killTweensOf(this.finale);
-        this.finale = null;
         this.setCutting(false);
         this.cameras.main.panEffect.reset();
         this.cameras.main.zoomEffect.reset();
@@ -207,7 +195,6 @@ export class Game extends Phaser.Scene {
 
     private zoomAt(z: number, screen: { x: number; y: number }) {
         const cam = this.cameras.main;
-        if (this.finale) return;
         const before = cam.getWorldPoint(screen.x, screen.y);
         cam.setZoom(Phaser.Math.Clamp(z, this.baseZoom, this.baseZoom * MAX_ZOOM));
         if (Math.abs(cam.zoom - this.baseZoom) > 0.05 * this.baseZoom) this.events.emit('zoomed');
@@ -259,7 +246,6 @@ export class Game extends Phaser.Scene {
 
     private moveP(p: Phaser.Input.Pointer) {
         const cam = this.cameras.main;
-        if (this.finale) return; // the camera follows the ending
         if (this.pinch) {
             const ps = this.activePointers();
             if (ps.length < 2) return;
@@ -376,8 +362,7 @@ export class Game extends Phaser.Scene {
 
     update(_t: number, dtMs: number) {
         if (!this.level) return;
-        this.checkFinale();
-        const dt = (Math.min(dtMs, 50) / 1000) * (this.finale?.k ?? 1);
+        const dt = Math.min(dtMs, 50) / 1000;
         for (const [id, m] of [...this.movers]) {
             const p = this.pair(id);
             const total = m.acc[m.acc.length - 1];
@@ -421,30 +406,6 @@ export class Game extends Phaser.Scene {
         }
         for (const [k, w] of this.wobbles) { w.t += dt; if (w.t > 0.7) this.wobbles.delete(k); }
         this.draw();
-    }
-
-    /**
-     * Ending: the last line's dot is about to reach its partner. Slow motion, and the camera zooms
-     * in with the meeting point in the middle of the screen. The end screen comes with the pop.
-     */
-    private checkFinale() {
-        if (this.finale || this.over || this.alive.size !== 1) return;
-        const [id] = this.alive;
-        const m = this.movers.get(id);
-        if (!m || m.returning || !m.open) return;
-        const p = this.pair(id);
-        const left = m.acc[m.acc.length - 1] - m.s;
-        const speed = tuning.startSpeed + tuning.accel * m.t;
-        if (left > Math.max(speed * FINALE_LEAD, p[m.side].r * FINALE_MIN_RADII)) return;
-        this.finale = { k: 1 };
-        this.dragFrom = null;
-        this.pinch = null;
-        this.tweens.add({ targets: this.finale, k: FINALE_SLOW, duration: 180, ease: 'Sine.easeOut' });
-        const meet = p[m.side === 'a' ? 'b' : 'a'];
-        const cam = this.cameras.main;
-        const zoom = Math.min(this.baseZoom * MAX_ZOOM, Math.max(cam.zoom, this.baseZoom * FINALE_ZOOM));
-        cam.pan(meet.x, meet.y, 380, 'Sine.easeOut', true);
-        cam.zoomTo(zoom, 380, 'Sine.easeOut', true);
     }
 
     private pushTrail(id: string, p: Pt) {
@@ -496,14 +457,9 @@ export class Game extends Phaser.Scene {
         this.emitState();
         if (!this.alive.size) {
             this.over = true;
-            // The board stays empty (no picture behind the end screen). After the slow-motion ending
-            // the end screen comes with the pop; otherwise once the splash has settled.
-            if (this.finale) {
-                this.tweens.killTweensOf(this.finale);
-                this.finale.k = 1;
-                this.events.emit('win');
-            }
-            else this.time.delayedCall(500, () => this.events.emit('win'));
+            // The board stays empty (no picture behind the end screen); the end screen comes once the
+            // splash has settled.
+            this.time.delayedCall(500, () => this.events.emit('win'));
         }
     }
 
@@ -511,6 +467,19 @@ export class Game extends Phaser.Scene {
         if (this.over) return;
         this.over = true;
         this.time.delayedCall(350, () => this.events.emit('lose'));
+    }
+
+    /**
+     * Play on (from the "Out of Hearts!" screen, AD): hearts are refilled and the level goes on from
+     * where it stopped: cleared pairs stay cleared, striped pairs stay striped.
+     */
+    playOn() {
+        if (!this.over || !this.alive.size || this.hearts > 0) return;
+        this.hearts = HEARTS;
+        this.over = false;
+        this.dragFrom = null;
+        this.emitState();
+        this.events.emit('playOn');
     }
 
     // ---------- drawing ----------

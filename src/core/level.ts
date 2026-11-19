@@ -9,6 +9,12 @@ export type Status = 'WIP' | 'PROD' | 'ARCHIVE';
 
 export interface Dot extends Pt {
     r: number;
+    /**
+     * A big dot (a round detail of the drawing): it keeps its own size. Every other dot of a level
+     * has the level's dot size. Absent in older files: a dot clearly bigger than the level's dot
+     * size counts as big (isBigDot).
+     */
+    big?: boolean;
 }
 
 export interface Pair {
@@ -49,11 +55,22 @@ export const MIN_RADIUS = 11;
 /** A dot at least this many times the level's normal dot is a big dot (a round detail of the drawing). */
 export const BIG_DOT = 1.15;
 
-/** The level's normal dot radius: the most common one. */
+/** The level's normal dot radius (its "dot size"): the most common radius of the dots not marked big. */
 export function mainRadius(pairs: Pair[]): number {
     const count = new Map<number, number>();
-    for (const p of pairs) for (const d of [p.a, p.b]) count.set(d.r, (count.get(d.r) ?? 0) + 1);
+    for (const p of pairs) for (const d of [p.a, p.b]) if (!d.big) count.set(d.r, (count.get(d.r) ?? 0) + 1);
     return [...count].sort((a, b) => b[1] - a[1] || a[0] - b[0])[0]?.[0] ?? DEFAULT_RADIUS;
+}
+
+/** Is this dot a big dot? Marked in the file, or (older files) clearly bigger than the level's dot size. */
+export function isBigDot(d: Dot, main: number): boolean {
+    return d.big ?? d.r >= main * BIG_DOT;
+}
+
+/** Sets the level's dot size: every normal dot gets radius r; big dots keep theirs. */
+export function setDotSize(pairs: Pair[], r: number): void {
+    const main = mainRadius(pairs);
+    for (const p of pairs) for (const d of [p.a, p.b]) if (!isBigDot(d, main)) { d.r = r; delete d.big; }
 }
 /** Every line has the same width; only the dots change size. */
 export const LINE_WIDTH = 5.1;
@@ -184,8 +201,10 @@ export function dataChecks(level: Level): Check[] {
     // One dot size per level; only big dots (round details of the drawing) are bigger.
     if (level.pairs.length) {
         const main = mainRadius(level.pairs);
-        const big = dots.filter((x) => x.d.r >= main * BIG_DOT).length;
-        const odd = level.pairs.filter((p) => [p.a, p.b].some((d) => d.r !== main && d.r < main * BIG_DOT));
+        const big = dots.filter((x) => isBigDot(x.d, main)).length;
+        const odd = level.pairs.filter((p) => [p.a, p.b].some((d) => !isBigDot(d, main) && d.r !== main));
+        const flat = level.pairs.filter((p) => [p.a, p.b].some((d) => d.big && d.r <= main));
+        if (flat.length) out.push({ level: 'warn', text: `Big dots not bigger than the dot size (${main}): ${flat.map((p) => p.id).join(', ')}`, pairs: flat.map((p) => p.id) });
         out.push(odd.length
             ? { level: 'info', text: `Dots are not all one size: most have radius ${main}, ${odd.length} pair(s) have other sizes (${odd.slice(0, 12).map((p) => p.id).join(', ')}${odd.length > 12 ? ', …' : ''})`, pairs: odd.map((p) => p.id) }
             : { level: 'ok', text: `One dot size (radius ${main})${big ? ` + ${big} big dot${big > 1 ? 's' : ''}` : ''}` });

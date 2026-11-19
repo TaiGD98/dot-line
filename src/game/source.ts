@@ -1,45 +1,23 @@
 // Where the game gets its levels: bundled sample levels when played on its own, or the level
 // editor (postMessage) when opened from the editor's Play button (?editor=1).
 import { Level, parseLevel } from '../core/level';
-import { PLAYLIST } from './playlist';
+import gameLevels from 'virtual:game-levels';
 
-// Levels live in <project>/levels/<chapter>/ (the level editor's folder layout). Play order: the
-// chapters in folder-name order; inside a chapter, its first collection (levels/<chapter>/
-// collections.json, the editor's Organiser), then any other level of the chapter by id.
-// Older projects with levels directly in levels/ (and collections.json at the root) still work.
-// levels/*-ref/ holds research-only reference levels: never bundled into the game.
-const files = import.meta.glob(['/levels/*.json', '/levels/*/*.json', '!/levels/*-ref/**'], { eager: true, import: 'default' }) as Record<string, unknown>;
-const rootCollections = import.meta.glob('/collections.json', { eager: true, import: 'default' }) as Record<string, unknown>;
-type Collections = { collections?: { levels: string[] }[] } | undefined;
-
-/** Chapter of a level file path ("" for levels/<id>.json). */
-const chapterOf = (path: string) => { const parts = path.split('/'); return parts.length > 3 ? parts[2] : ''; };
-const chapters = [...new Set(Object.keys(files).map(chapterOf))].sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
-
-/** Every level with its chapter, chapters in folder order. */
-const everything: { level: Level; chapter: string }[] = chapters.flatMap((chapter) => {
-    const colFile = (chapter ? files[`/levels/${chapter}/collections.json`] : Object.values(rootCollections)[0]) as Collections;
-    const all = Object.entries(files)
-        .filter(([path]) => chapterOf(path) === chapter && !path.endsWith('/collections.json'))
-        .flatMap(([, v]) => { try { return [parseLevel(v)]; } catch { return []; } });
-    const order = colFile?.collections?.[0]?.levels ?? [];
-    return [
-        ...order.map((id) => all.find((l) => l.id === id)).filter((l): l is Level => !!l),
-        ...all.filter((l) => !order.includes(l.id)).sort((a, b) => a.id.localeCompare(b.id, undefined, { numeric: true }))
-    ].map((level) => ({ level, chapter }));
-});
+// The game plays exactly the levels of its play order (levels/game.json, set in the editor's
+// Organiser → "Game · play order"; else src/game/playlist.ts), in that order: the build contains
+// those levels and no others (vite.config.ts, gameLevels plugin).
 /** Unique key of a bundled level (ids may repeat across chapters). */
 const keyOf = (b: { level: Level; chapter: string }) => `${b.chapter}/${b.level.id}`;
-
-/** The levels the game plays, in order (src/game/playlist.ts); every level when the list is empty. */
-const bundled: { level: Level; chapter: string }[] = !PLAYLIST.length ? everything : PLAYLIST.flatMap((entry) => {
-    const [chapter, id] = entry.split('/');
-    const found = everything.filter((b) => b.chapter === chapter && (id === '*' || b.level.id === id));
-    if (!found.length) console.warn(`Playlist: nothing found for "${entry}"`);
-    return found;
-}).filter((b, i, all) => all.findIndex((o) => keyOf(o) === keyOf(b)) === i);
-/** Dev menu: the playlist first, then every other level (to try it). */
-const menuLevels = [...bundled, ...everything.filter((b) => !bundled.some((o) => keyOf(o) === keyOf(b)))];
+const bundled: { level: Level; chapter: string }[] = gameLevels.flatMap((b) => {
+    try {
+        return [{ chapter: b.chapter, level: parseLevel(b.level) }];
+    } catch (e) {
+        console.warn(`Skipped ${b.chapter} level`, e);
+        return [];
+    }
+});
+/** Dev menu: the play order. */
+const menuLevels = bundled;
 
 export const fromEditor = new URLSearchParams(location.search).has('editor');
 
@@ -49,7 +27,7 @@ class LevelSource {
     private listener: Listener | null = null;
     private list: { id: string; name: string }[] = fromEditor ? [] : menuLevels.map((b) => {
         const n = bundled.indexOf(b);
-        return { id: keyOf(b), name: `${n >= 0 ? `${n + 1}. ` : '(not in playlist) '}${b.chapter ? `${b.chapter} · ` : ''}${b.level.name}` };
+        return { id: keyOf(b), name: `${n + 1}. ${b.chapter ? `${b.chapter} · ` : ''}${b.level.name}` };
     });
     private current: Level | null = fromEditor ? null : bundled[0]?.level ?? null;
     /** Key of the current level in `list` (chapter/id when bundled, the id from the editor). */
@@ -128,11 +106,7 @@ class LevelSource {
     /** Level number: position in the playlist (from the editor: position in the editor's list). */
     levelNumber(): number {
         if (fromEditor) { const i = this.list.findIndex((l) => l.id === this.currentKey); return i < 0 ? 1 : i + 1; }
-        const i = bundled.findIndex((b) => keyOf(b) === this.currentKey);
-        if (i >= 0) return i + 1;
-        // Outside the playlist (dev menu): number inside its chapter.
-        const cur = everything.find((b) => keyOf(b) === this.currentKey);
-        return Math.max(1, everything.filter((b) => b.chapter === cur?.chapter).findIndex((b) => keyOf(b) === this.currentKey) + 1);
+        return Math.max(1, bundled.findIndex((b) => keyOf(b) === this.currentKey) + 1);
     }
 }
 

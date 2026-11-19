@@ -54,9 +54,9 @@ Bật trong **Settings** (nút Pause ở góc trên trái mở Settings, game t�
 ## 3.5 Thắng và thua <Badge type="tip" text="Live" />
 
 - **Thắng:** mọi cặp trên board đã biến mất → confetti và màn "Well Done!" (board để trống, không hiện lại hình vẽ phía sau).
-- **Cảnh kết thúc:** khi chỉ còn 1 dây và bóng cuối đang chạy, lúc bóng sắp chạm bóng đích (còn khoảng 0,4 giây đường đi, hoặc 6 bán kính bóng) game chuyển **slow motion** (tốc độ 0,2) và camera **zoom 2,2 lần** vào điểm va chạm, đưa điểm đó ra giữa màn hình. Khi bóng nổ thì màn "Well Done!" bung ra ngay.
+- **Kết thúc level:** bóng cuối chạy với tốc độ bình thường; khi nổ, màn "Well Done!" hiện sau khoảng 0,5 giây (không còn slow motion hay zoom).
 - **Kéo màn:** kéo được ở mọi mức zoom, kể cả nhỏ nhất.
-- **Thua:** mỗi lần va chạm mất 1 tim, mỗi level có 3 tim. Hết tim = thua màn. Màn thắng "Well Done!" (confetti, nút CONTINUE) và màn thua "Out of Hearts!" (nút RETRY) vẽ trong Phaser theo phong cách của skill `prototype-ui` (font Lilita One, tiêu đề gradient).
+- **Thua:** mỗi lần va chạm mất 1 tim, mỗi level có 3 tim. Hết tim = thua màn. Màn "Out of Hearts!" có 2 nút: **PLAY ON** (xanh, nhãn AD, xem quảng cáo; chưa nối quảng cáo thật): hồi đủ 3 tim và chơi tiếp đúng từ chỗ đang dở (các cặp đã dọn vẫn mất, cặp đã sọc vẫn sọc); **QUIT** (xám): mở pop-up **"Are you sure?"** cho thấy tiến độ level ("You have cleared X of Y lines.", thanh tiến độ và %) kèm cảnh báo "If you replay now, you will lose your progress on this level.", với 2 nút **PLAY ON** (xanh, AD, như trên) và **REPLAY** (đỏ: chơi lại level từ đầu). Màn thắng "Well Done!" (confetti, nút CONTINUE) và màn thua "Out of Hearts!" (nút RETRY) vẽ trong Phaser theo phong cách của skill `prototype-ui` (font Lilita One, tiêu đề gradient).
 
 ## 3.6 HUD và nút (theo clip) <Badge type="tip" text="Live" />
 

@@ -176,7 +176,11 @@ export class FolderFiles implements Files {
         const d = await this.dir(dirs, false);
         if (!d) return null;
         try {
-            return await (await d.getFileHandle(name)).getFile();
+            // A copy in memory, not the File itself: Chrome refuses to read a File from disk again once
+            // the folder permission was granted again or the file was rewritten ("The requested file
+            // could not be read…"), e.g. when Save writes the level's image later on.
+            const f = await (await d.getFileHandle(name)).getFile();
+            return new File([await f.arrayBuffer()], f.name, { type: f.type, lastModified: f.lastModified });
         } catch {
             return null;
         }
@@ -248,6 +252,32 @@ export const chapterLabel = (c: string) => (c ? c : 'levels/ (no chapter)');
 
 const json = (v: unknown) => JSON.stringify(v, null, 2);
 
+/** The game's play order: "<chapter>/<level id>" entries, levels from any chapter (the game reads it). */
+export const GAME_FILE = 'levels/game.json';
+
+/** Game play order, or null when the project has no levels/game.json yet. */
+export async function readGame(files: Files): Promise<string[] | null> {
+    const t = await files.read(GAME_FILE);
+    if (!t) return null;
+    try {
+        const v = JSON.parse(t).levels;
+        return Array.isArray(v) ? v.filter((x): x is string => typeof x === 'string') : null;
+    } catch {
+        return null;
+    }
+}
+
+export function writeGame(files: Files, entries: string[]) {
+    return files.write(GAME_FILE, JSON.stringify({ levels: entries }, null, 2) + '\n');
+}
+
+/** The level was saved, but its image could not be written. */
+export class ImageSaveError extends Error {
+    constructor(public saved: Level, public cause: Error) {
+        super(`the level was saved, but its image could not be written: ${cause?.message || cause}`);
+    }
+}
+
 export class Store {
     /** `chapter` = folder under levels/ ("" = levels/ itself, the old single-chapter layout). */
     constructor(public files: Files, public chapter = '') {}
@@ -266,14 +296,14 @@ export class Store {
     /** Chapter folders (sorted), plus "" when levels/ itself holds level files. */
     static async chapters(files: Files): Promise<string[]> {
         const dirs = (await files.listDirs('levels')).filter((d) => !d.startsWith('.')).sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
-        const root = (await files.list('levels')).some((f) => f.endsWith('.json'));
+        const root = (await files.list('levels')).some((f) => f.endsWith('.json') && f !== 'game.json' && f !== 'collections.json');
         return [...(root ? [''] : []), ...dirs];
     }
 
     async levels(): Promise<Level[]> {
         const out: Level[] = [];
         for (const f of await this.files.list(this.lv)) {
-            if (!f.endsWith('.json') || f === 'collections.json') continue;
+            if (!f.endsWith('.json') || f === 'collections.json' || (!this.chapter && f === 'game.json')) continue;
             try {
                 out.push(parseLevel(JSON.parse((await this.files.read(`${this.lv}/${f}`))!)));
             } catch (e) {
@@ -305,13 +335,18 @@ export class Store {
             for (const v of vs.slice(0, Math.max(0, vs.length - KEEP_VERSIONS))) await this.files.remove(`${this.lv}/.versions/${level.id}/${v}`);
         }
         const saved = { ...level, rev: (level.rev ?? 0) + 1 };
-        if (image) {
-            const ext = image.type === 'image/svg+xml' || (image as File).name?.toLowerCase().endsWith('.svg') ? 'svg' : 'png';
-            await this.files.remove(`${this.lv}/${level.id}.${ext === 'svg' ? 'png' : 'svg'}`);
-            await this.files.write(`${this.lv}/${level.id}.${ext}`, image);
-            saved.source = { ...(saved.source ?? {}), image: `${level.id}.${ext}` };
-        }
+        const ext = image ? (image.type === 'image/svg+xml' || (image as File).name?.toLowerCase().endsWith('.svg') ? 'svg' : 'png') : null;
+        if (ext) saved.source = { ...(saved.source ?? {}), image: `${level.id}.${ext}` };
+        // The level first: if writing the image fails, the level is still saved.
         await this.files.write(`${this.lv}/${level.id}.json`, json(saved));
+        if (image && ext) {
+            try {
+                await this.files.write(`${this.lv}/${level.id}.${ext}`, image);
+                await this.files.remove(`${this.lv}/${level.id}.${ext === 'svg' ? 'png' : 'svg'}`);
+            } catch (e) {
+                throw new ImageSaveError(saved, e as Error);
+            }
+        }
         return saved;
     }
 

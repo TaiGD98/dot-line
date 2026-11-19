@@ -2,9 +2,9 @@
 // storage choice, undo/redo, drafts and keyboard shortcuts. Organiser and Play live in their own files.
 import './editor.css';
 import { strokeFrame, suggest, worldSize } from '../core/generator';
-import { strokeTargets, strokeWorldSize } from '../core/strokemode';
+import { MIN_BOARD, strokeTargets, strokeWorldSize } from '../core/strokemode';
 import { OverlapCandidate, PATTERN_STYLES, PatternStyle, crossChecks, crossCounts, generateOverlap } from '../core/overlap';
-import { Check, DEFAULT_RADIUS, Level, MIN_RADIUS, Pair, dataChecks, mainRadius, newLevel, nextPairId, parseLevel } from '../core/level';
+import { Check, DEFAULT_RADIUS, Dot, Level, MIN_RADIUS, Pair, dataChecks, isBigDot, mainRadius, newLevel, nextPairId, parseLevel, setDotSize } from '../core/level';
 import { PALETTE } from '../core/palette';
 import { smoothPath, translatePath } from '../core/path';
 import { SolveResult, solve } from '../core/solver';
@@ -12,8 +12,9 @@ import { Canvas, CanvasHost, Tool } from './canvas';
 import { clear, debounce, h, logo, pref, setPref } from './dom';
 import { Organiser } from './organiser';
 import { openPlay } from './play';
-import { BrowserFiles, FolderFiles, Store, chapterLabel, folderSupported } from './store';
+import { BrowserFiles, FolderFiles, ImageSaveError, Store, chapterLabel, folderSupported } from './store';
 import { isSvg, strokesFrom } from './sources';
+import { miniature } from './mini';
 import type { GenRequest } from './genWorker';
 import type { Candidate, GenerateOptions } from '../core/generator';
 import type { StrokeModeCandidate, StrokeModeOptions } from '../core/strokemode';
@@ -39,8 +40,6 @@ function inWorker(mode: 'strokes' | 'cut', strokes: Stroke[], opt: StrokeModeOpt
         w.postMessage({ id, mode, strokes, opt } as GenRequest);
     });
 }
-import { s as svgEl } from './dom';
-import { COMPLETED_LINE, colour } from '../core/palette';
 
 const GEN_SIZE = 700;
 
@@ -87,7 +86,8 @@ class App {
         end: (changed) => this.end(changed),
         live: () => this.renderInspector(),
         selectionChanged: () => { this.canvas.render(); this.renderInspector(); },
-        overlay: () => this.overlay()
+        overlay: () => this.overlay(),
+        radiusDefault: () => this.radiusDefault()
     });
 
     async start() {
@@ -368,6 +368,8 @@ class App {
     }
 
     private async setImage(blob: Blob, pending: boolean) {
+        // Keep a copy in memory (see FolderFiles.readBlob): a File picked from disk can become unreadable.
+        blob = new File([await blob.arrayBuffer()], (blob as File).name ?? 'image', { type: blob.type });
         if (this.image) URL.revokeObjectURL(this.image.url);
         const url = URL.createObjectURL(blob);
         const img = new Image();
@@ -564,7 +566,7 @@ class App {
             const unit = strokeFrame(src.strokes, 1000).k, rect = this.level.source?.rect;
             const total = this.genOpts.pairs + this.genOpts.x + this.genOpts.t;
             const keepScale = this.level.pairs.some((p) => p.cross) && rect;
-            const size = keepScale ? Math.round((1000 * rect!.w) / (src.width * unit)) : this.genOpts.mode === 'strokes' ? Math.max(strokeWorldSize(src.strokes, total), 44 * this.genOpts.dot) : worldSize(total);
+            const size = keepScale ? Math.round((1000 * rect!.w) / (src.width * unit)) : this.genOpts.mode === 'strokes' ? Math.max(strokeWorldSize(src.strokes, total), MIN_BOARD) : worldSize(total);
             // World rectangle of the drawing for a layout of the given size (the image shown under the level).
             const rectFor = (sz: number) => { const f = strokeFrame(src.strokes, sz); return { x: r1(-f.cx * f.k), y: r1(-f.cy * f.k), w: r1(src.width * f.k), h: r1(src.height * f.k) }; };
             if (this.genOpts.mode === 'strokes') {
@@ -607,7 +609,12 @@ class App {
         if (!c || !this.image) return;
         this.chosen = i;
         this.begin();
-        this.level.pairs = [...structuredClone(c.pairs), ...this.level.pairs.filter((p) => p.cross)];
+        // Cross lines (overlap) that stay get the new base's dot size; their big dots keep theirs.
+        const base = structuredClone(c.pairs), size = mainRadius(base);
+        const crossKept = this.level.pairs.filter((p) => p.cross);
+        const crossMain = mainRadius(crossKept);
+        for (const p of crossKept) for (const d of [p.a, p.b]) if (!isBigDot(d, crossMain)) d.r = size;
+        this.level.pairs = [...base, ...crossKept];
         this.level.source = { ...this.level.source, image: `${this.level.id}.${isSvg(this.image.blob) ? 'svg' : 'png'}`, rect: c.rect, pairs: this.genOpts.pairs, colors: this.genOpts.colors, difficulty: this.genOpts.difficulty, mode: this.genOpts.mode, dot: this.genOpts.dot, big: this.genOpts.big };
         this.image.pending = true;
         this.selection.clear();
@@ -673,11 +680,27 @@ class App {
                     onchange: () => this.end(true) });
                 return h('div', { class: 'slider' }, h('div', { class: 'row' }, h('span', { class: 'grow' }, label), out), input);
             };
+            // Normal dots have the level's dot size (section "Level" below); only big dots have their own.
+            const main = mainRadius(this.level.pairs);
+            const dotControls = (label: string, d: Dot) => {
+                const big = isBigDot(d, main);
+                const box = h('input', { type: 'checkbox', checked: big, onchange: (e: Event) => {
+                    this.begin();
+                    if ((e.target as HTMLInputElement).checked) { d.big = true; d.r = Math.max(d.r, Math.round(main * 1.5)); }
+                    else { delete d.big; d.r = main; }
+                    this.end(true);
+                } });
+                const row = h('label', { class: 'check', title: 'Big dot: a round detail of the drawing, with its own size. A normal dot always has the level\'s dot size.' }, box, `${label}: big dot`);
+                if (!big) return [row, h('div', { class: 'muted small' }, `Radius ${d.r} (the level's dot size)`)];
+                return [row, slider(`${label} radius`, () => d.r, (v) => { d.r = v; d.big = true; })];
+            };
             if (sel.length === 1) {
                 const p = sel[0];
-                this.inspector.append(slider('Dot A radius', () => p.a.r, (v) => { p.a.r = v; }), slider('Dot B radius', () => p.b.r, (v) => { p.b.r = v; }));
+                this.inspector.append(...dotControls('Dot A', p.a), ...dotControls('Dot B', p.b));
             } else {
-                this.inspector.append(slider('Radius (all selected dots)', () => sel[0].a.r, (v) => { for (const p of sel) { p.a.r = v; p.b.r = v; } }));
+                const bigs = sel.flatMap((p) => [p.a, p.b]).filter((d) => isBigDot(d, main));
+                if (bigs.length) this.inspector.append(slider(`Radius (${bigs.length} selected big dot${bigs.length > 1 ? 's' : ''})`, () => bigs[0].r, (v) => { for (const d of bigs) { d.r = v; d.big = true; } }));
+                else this.inspector.append(h('div', { class: 'muted small' }, `No big dots selected: normal dots have the level's dot size (${main}).`));
             }
             const kind = new Set(sel.map((p) => p.cross ?? 'base'));
             this.inspector.append(h('label', { class: 'field', title: 'Base = a line of the drawing (generator part 1). X / T = cross lines of the overlap (part 2): Generate overlap replaces them.' }, h('span', {}, 'Line type'),
@@ -690,6 +713,20 @@ class App {
                 h('button', { onclick: () => { this.selection.clear(); this.canvas.render(); this.renderInspector(); } }, 'Deselect')));
             if (sel.length === 1) this.inspector.append(h('div', { class: 'muted small' }, 'Drag the square points and round handles to bend the line. Double-click the line to add a point, double-click a point to remove it. Alt-drag a handle to break the mirror.'));
         }
+
+        // Level: one dot size for every normal dot (big dots keep their own size).
+        this.inspector.append(section('Level'));
+        const main = mainRadius(this.level.pairs);
+        this.inspector.append(h('label', { class: 'field', title: 'Radius of every normal dot of this level, cross lines included. Big dots keep their own size.' }, h('span', {}, 'Dot size'),
+            h('input', { type: 'number', min: MIN_RADIUS, max: 32, value: main, class: 'num-input', onchange: (e: Event) => {
+                const v = Math.max(MIN_RADIUS, Math.min(32, Math.round(+(e.target as HTMLInputElement).value) || main));
+                this.begin();
+                setDotSize(this.level.pairs, v);
+                this.genOpts.dot = v;
+                if (this.level.source) this.level.source.dot = v;
+                this.end(true);
+                this.renderGenerator();
+            } })));
 
         this.inspector.append(section('Level checks'));
         for (const c of this.checks()) {
@@ -788,8 +825,16 @@ class App {
         if (!this.store) return;
         try {
             if (!this.savedId && (await this.store.exists(this.level.id))) return this.setStatus(`Id "${this.level.id}" already exists; change the Id first`);
-            const saved = await this.store.save(this.level, this.savedId, this.image?.pending ? this.image.blob : null);
-            if (this.image) this.image.pending = false;
+            let saved: Level;
+            try {
+                saved = await this.store.save(this.level, this.savedId, this.image?.pending ? this.image.blob : null);
+                if (this.image) this.image.pending = false;
+            } catch (e) {
+                if (!(e instanceof ImageSaveError)) throw e;
+                // The level is saved; the image stays pending, so the next Save tries it again.
+                saved = e.saved;
+                alert(`Saved ${saved.name}, but its image could not be written.\n\n${e.cause?.message || e.cause}\n\nPress Save again to retry the image. If it keeps failing, reload the page and load the image again (Generate → image).`);
+            }
             this.level = saved;
             this.savedId = saved.id;
             this.dirty = false;
@@ -799,7 +844,9 @@ class App {
             this.renderDetails();
             this.setStatus(`Saved ${saved.name} (version ${saved.rev})`);
         } catch (e) {
-            this.setStatus(`Save failed: ${(e as Error).message}`);
+            const msg = `Save failed: ${(e as Error).message}`;
+            this.setStatus(msg);
+            alert(`${msg}\n\nNothing was saved. If the editor uses a folder, check that Chrome still has permission for it (Change storage → reconnect), then press Save again.`);
         }
     }
 
@@ -894,28 +941,15 @@ class App {
         openPlay(this);
     }
 
+    /** Radius of a newly drawn dot: the level's dot size. */
     radiusDefault() {
-        return DEFAULT_RADIUS;
+        return this.level.pairs.length ? mainRadius(this.level.pairs) : this.genOpts.dot ?? DEFAULT_RADIUS;
     }
 }
 
 const r1 = (v: number) => Math.round(v * 10) / 10;
 
 /** Small preview of a generated layout. */
-function miniature(c: { pairs: Pair[] }) {
-    let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
-    for (const p of c.pairs) for (const q of [...p.path, p.a, p.b]) { x0 = Math.min(x0, q.x); y0 = Math.min(y0, q.y); x1 = Math.max(x1, q.x); y1 = Math.max(y1, q.y); }
-    const pad = 24, size = Math.max(x1 - x0, y1 - y0) + pad * 2;
-    const cx = (x0 + x1) / 2, cy = (y0 + y1) / 2;
-    return svgEl('svg', { viewBox: `${cx - size / 2} ${cy - size / 2} ${size} ${size}`, class: 'mini' },
-        c.pairs.map((p) => {
-            const col = colour(p.color)?.base ?? COMPLETED_LINE;
-            let d = `M${p.path[0].x} ${p.path[0].y}`;
-            for (let i = 1; i < p.path.length; i++) { const a = p.path[i - 1], b = p.path[i]; const o = a.out ?? a, n = b.in ?? b; d += ` C${o.x} ${o.y} ${n.x} ${n.y} ${b.x} ${b.y}`; }
-            return svgEl('g', {}, svgEl('path', { d, stroke: col, 'stroke-width': 5.1, fill: 'none' }), svgEl('circle', { cx: p.a.x, cy: p.a.y, r: p.a.r, fill: col }), svgEl('circle', { cx: p.b.x, cy: p.b.y, r: p.b.r, fill: col }));
-        }));
-}
-
 function select(options: string[], value: string, onChange: (v: string) => void) {
     return h('select', { onchange: (e: Event) => onChange((e.target as HTMLSelectElement).value) },
         options.map((o) => h('option', { value: o, selected: o === value }, o)));

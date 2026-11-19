@@ -19,6 +19,8 @@ export interface CanvasHost {
     /** Live change during a drag (refresh side panels). */
     live(): void;
     selectionChanged(): void;
+    /** Radius of a newly drawn dot (the level's dot size). */
+    radiusDefault(): number;
     overlay(): { image?: { url: string; x: number; y: number; w: number; h: number; opacity: number }; order?: Map<string, number>; stuck?: Set<string> };
 }
 
@@ -260,7 +262,7 @@ export class Canvas {
                 // Faint raw stroke + the clean curve that will be created (Alt: keep sharp corners).
                 this.gTemp.append(s('polyline', { points: d.pts.map((q) => `${q.x},${q.y}`).join(' '), stroke: c, class: 'stroke', opacity: 0.25 }));
                 if (d.pts.length > 2) this.gTemp.append(s('polyline', { points: samplePath(fitFreehand(d.pts, 6 / this.scale, e.altKey), 4).map((q) => `${q.x},${q.y}`).join(' '), stroke: c, class: 'stroke' }));
-                if (this.pendingA) this.gTemp.append(s('circle', { cx: this.pendingA.x, cy: this.pendingA.y, r: DEFAULT_RADIUS, fill: c }));
+                if (this.pendingA) this.gTemp.append(s('circle', { cx: this.pendingA.x, cy: this.pendingA.y, r: this.host.radiusDefault(), fill: c }));
                 return;
             }
             case 'marquee': {
@@ -361,7 +363,7 @@ export class Canvas {
             if (!this.pendingA) {
                 this.pendingA = click;
                 const c = colour(this.host.activeColour)?.base ?? '#fff';
-                this.gTemp.append(s('circle', { cx: click.x, cy: click.y, r: DEFAULT_RADIUS, fill: c, opacity: 0.7 }));
+                this.gTemp.append(s('circle', { cx: click.x, cy: click.y, r: this.host.radiusDefault(), fill: c, opacity: 0.7 }));
                 return;
             }
             a = this.pendingA; b = click;
@@ -388,7 +390,7 @@ export class Canvas {
         }
         const level = this.host.level();
         this.host.begin();
-        const pair: Pair = { id: nextPairId(level), color: this.host.activeColour, a: { x: r1(a.x), y: r1(a.y), r: DEFAULT_RADIUS }, b: { x: r1(b.x), y: r1(b.y), r: DEFAULT_RADIUS }, path };
+        const pair: Pair = { id: nextPairId(level), color: this.host.activeColour, a: { x: r1(a.x), y: r1(a.y), r: this.host.radiusDefault() }, b: { x: r1(b.x), y: r1(b.y), r: this.host.radiusDefault() }, path };
         syncEnds(pair);
         level.pairs.push(pair);
         this.host.selection.clear();

@@ -89,10 +89,12 @@ export function strokeTargets(difficulty: number) {
 
 /** Reference density: ~15 px of line per 1000 px² of board (dot radius 16). */
 const DENSITY = 15 / 1000;
-/** Round details up to this many normal radii become big dots; bigger closed shapes stay lines. */
+/** Round details up to this size become big dots (radii of a 16 px dot on a 1000 px board); bigger closed shapes stay lines. */
 const BIG_MAX = 2.8;
-/** A big dot is at least this many normal radii (1.5 when there is room). */
+/** A dot this many normal radii or more counts as big (stats). */
 const BIG_MIN = BIG_DOT;
+/** A big dot is at least this many normal radii, even when its detail is smaller. */
+const BIG_OVER = 1.3;
 
 /** World size that gives the reference line density for this drawing and line count. */
 export function strokeWorldSize(strokes: Stroke[], pairs: number): number {
@@ -231,6 +233,11 @@ function buildOnce(strokes: Stroke[], opt: StrokeModeOptions, size: number, rand
     /** Only very long strokes are split (a half circle across the drawing stays one line). */
     const maxLen = 1.7 * size;
     const bigOn = opt.bigDots !== false;
+    /**
+     * Largest round detail that becomes a big dot (radius, world px): measured on the board, so it
+     * does not change with the dot size (2.8 x 16 px on a 1000 px board), and never under 2.8 dots.
+     */
+    const bigCap = Math.max(BIG_MAX * rad, BIG_MAX * DEFAULT_RADIUS * (size / 1000));
     /** How far apart two strokes that touch in the drawing can be (traced images: about 3.5 pixels). */
     const TOUCH = strokes.some((s) => s.smooth) ? Math.max(3, 3.5 * strokeFrame(strokes, size).k) : 3;
 
@@ -247,13 +254,15 @@ function buildOnce(strokes: Stroke[], opt: StrokeModeOptions, size: number, rand
         const s = shapeOf(l.pts);
         if (!s) return null;
         const req = Math.sqrt(s.area / Math.PI);
-        if (req < 0.25 * rad || req > BIG_MAX * rad) return null;
+        if (req < 0.25 * rad || req > bigCap) return null;
         // Roundness: 4πA/P² is 1 for a circle, 0.79 for a square, 0.6 for a triangle. Small shapes
         // only have to be compact (a small rounded triangle reads as a dot); bigger ones must be round.
         const per = l.len + open, q = (4 * Math.PI * s.area) / (per * per), small = req <= 1.5 * rad && !attached;
         if (q < (attached ? 0.86 : small ? 0.62 : 0.82) || s.rmin / s.rmax < (small ? 0.4 : 0.55)) return null;
-        const want = Math.max(1.5 * rad, Math.min(BIG_MAX * rad, req));
-        return { c: s.c, req, r: want, floor: Math.max(BIG_MIN * rad, Math.min(req, want)) };
+        // The big dot is as big as the detail in the drawing (not tied to the dot size), but always
+        // clearly bigger than a normal dot. It may give up to 15% where it is crowded.
+        const want = Math.max(BIG_OVER * rad, req);
+        return { c: s.c, req, r: want, floor: Math.max(BIG_OVER * rad, 0.85 * want) };
     };
     /** A stroke that ends on itself (a balloon and its string drawn in one go): round loop + tail. */
     const loopAndTail = (l: Line): Line[] | null => {
@@ -328,7 +337,7 @@ function buildOnce(strokes: Stroke[], opt: StrokeModeOptions, size: number, rand
         for (const li of cand.keys()) kind[li] = 'detail';
         // A round arc with both ends on a line (a ball hanging from a branch): a detail sitting on that line.
         lines.forEach((l, li) => {
-            if (kind[li] !== 'line' || l.closed || l.len > 2.3 * Math.PI * BIG_MAX * rad) return;
+            if (kind[li] !== 'line' || l.closed || l.len > 2.3 * Math.PI * bigCap) return;
             const hA = nearestLine(l.pts[0], TOUCH, li), hB = nearestLine(l.pts[l.pts.length - 1], TOUCH, li);
             if (hA.li < 0 || hB.li < 0) return;
             const d = detailOf(l, true);
@@ -705,7 +714,8 @@ function buildOnce(strokes: Stroke[], opt: StrokeModeOptions, size: number, rand
                 c = { key, a: path[0], b: path[path.length - 1], path, poly: samplePath(path, 5) };
                 cache.set(g, c);
             }
-            return { id: `p${i + 1}`, color: '', a: { x: c.a.x, y: c.a.y, r: g.a.r }, b: { x: c.b.x, y: c.b.y, r: g.b.r }, path: c.path };
+            const dot = (p: Pt, E: End) => ({ x: p.x, y: p.y, r: E.r, ...(E.fixed || E.r >= BIG_MIN * rad ? { big: true } : {}) });
+            return { id: `p${i + 1}`, color: '', a: dot(c.a, g.a), b: dot(c.b, g.b), path: c.path };
         });
         polys = L.map((g) => cache.get(g)!.poly);
         boxes = polys.map((pl) => {
@@ -943,21 +953,27 @@ function buildOnce(strokes: Stroke[], opt: StrokeModeOptions, size: number, rand
 
 /** Growing the world one step (x1.2) makes the dots smaller on screen: it must be worth this much score. */
 const GROW_COST = 0.8;
-/** The world never grows past the point where a dot's diameter is 1/45 of the drawing's long side (reference: 1/30 normal, 1/40 hard). */
+/**
+ * Board size limits, in diameters of the standard dot (radius 16), not of the chosen dot size: a
+ * smaller dot size gives smaller dots on the same picture (more room for small details), it does
+ * not shrink the picture with them. The board never grows past 45 standard dots on the long side
+ * (reference: a dot is 1/30 of it on normal levels, 1/40 on hard ones) and is at least 22.
+ */
 const MAX_SIDE_IN_DOTS = 45;
 const MIN_SIDE_IN_DOTS = 22;
+/** Smallest board for a drawing (see MIN_SIDE_IN_DOTS). */
+export const MIN_BOARD = MIN_SIDE_IN_DOTS * 2 * DEFAULT_RADIUS;
 
 /** Stroke-mode layouts, best first. All of them have the same world size (`stats.size`). */
 export function generateStrokes(strokes: Stroke[], opt: StrokeModeOptions): StrokeModeCandidate[] {
-    const rad = Math.max(6, Math.round(opt.radius ?? DEFAULT_RADIUS));
-    // A drawing with few strokes still needs room: the long side is at least 22 dot diameters.
-    const size = opt.size ?? Math.max(strokeWorldSize(strokes, opt.pairs), MIN_SIDE_IN_DOTS * 2 * rad);
+    // A drawing with few strokes still needs room: the long side is at least 22 standard dots.
+    const size = opt.size ?? Math.max(strokeWorldSize(strokes, opt.pairs), MIN_BOARD);
     const base = opt.seed ?? Date.now(), tries = opt.tries ?? 6, probe = Math.min(2, tries);
     const build = (k: number, i: number) => buildOnce(strokes, opt, Math.round(size * k), rng(base + i * 7919));
     // Two quick layouts per world size decide the size: bigger only when the drawing clearly needs the
     // room (strokes too small for the dots, dots crowding each other at the junctions). Up to x1.45
     // always; further only while the dots stay big enough on the picture.
-    const steps = opt.grow === false ? [1] : [1, 1.2, 1.45, 1.75, 2.1].filter((k) => k <= 1.45 || size * k <= MAX_SIDE_IN_DOTS * 2 * rad);
+    const steps = opt.grow === false ? [1] : [1, 1.2, 1.45, 1.75, 2.1].filter((k) => k <= 1.45 || size * k <= MAX_SIDE_IN_DOTS * 2 * DEFAULT_RADIUS);
     // A big drawing is slow: with a time budget, fewer sizes and layouts are tried (always at least one).
     const t0 = Date.now(), budget = opt.budgetMs ?? Infinity, late = (share: number) => Date.now() - t0 > budget * share;
     let best = { k: 1, score: Infinity, out: [] as StrokeModeCandidate[] };

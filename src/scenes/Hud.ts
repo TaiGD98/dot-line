@@ -51,6 +51,11 @@ export class Hud extends Phaser.Scene {
         this.scissors = { box: cut, ring };
         this.cutHint = this.add.text(w / 2, h - BOTTOM_HEIGHT - 40, 'Tap a line to cut it', { fontFamily: FONT, fontSize: '44px', color: '#ffffff', stroke: OUTLINE, strokeThickness: 8 }).setOrigin(0.5).setVisible(false);
         this.game$.events.on('cutting', (on: boolean) => this.showCutting(on));
+        // Play on: the refilled hearts pop one after another.
+        this.game$.events.on('playOn', () => this.hearts.forEach((ht, i) => {
+            ht.setScale(0.3);
+            this.tweens.add({ targets: ht, scale: 1, duration: 380, delay: 120 * i, ease: 'Back.easeOut' });
+        }));
         this.game$.events.on('freebump', () => this.toast('Free this time!\nNext bump costs a heart'));
         for (let i = 0; i < HEARTS; i++) this.hearts.push(this.add.text(w / 2 + (i - 1) * 62, 90, '♥', { fontFamily: FONT, fontSize: '60px', color: '#e8333d' }).setOrigin(0.5));
         this.label = this.add.text(w / 2, 150, '', { fontFamily: FONT, fontSize: '28px', color: '#ffffff', stroke: OUTLINE, strokeThickness: 6 }).setOrigin(0.5);
@@ -248,11 +253,37 @@ export class Hud extends Phaser.Scene {
                 if (next) this.game$.loadLevel(next);
             }, 0.55);
         } else {
-            this.showOverlay('Out of Hearts!', '#ff8a8a', '#e8333d', 'RETRY', 0xe8333d, () => this.game$.restart(), 0.75, 'Every bump costs a heart.');
+            // Play on (AD): refill the hearts and keep going from here. Quit asks first (the progress is lost).
+            this.showOverlay('Out of Hearts!', '#ff8a8a', '#e8333d', 'PLAY ON', 0x3fbf4a, () => this.playOn(), 0.75, 'Refill your hearts and keep going?',
+                { label: 'QUIT', colour: 0x8a8fa3, onClick: () => this.confirmQuit() }, true);
         }
     }
 
-    private showOverlay(title: string, top: string, bottom: string, button: string, btnColour: number, onClick: () => void, dim = 0.75, sub?: string) {
+    private playOn() {
+        this.closeOverlay();
+        this.game$.playOn();
+    }
+
+    /** "Are you sure?" before giving up a level: shows how far the player got. */
+    private confirmQuit() {
+        const st = this.game$.state();
+        const f = st.total ? st.cleared / st.total : 0;
+        this.showOverlay('Are you sure?', '#ffd25a', '#ff8a1c', 'PLAY ON', 0x3fbf4a, () => this.playOn(), 0.8, `You have cleared ${st.cleared} of ${st.total} lines.`,
+            { label: 'REPLAY', colour: 0xe8333d, onClick: () => this.game$.restart() }, true);
+        // Level progress: bar + percent, and what quitting costs.
+        const { width: w, height: h } = this.scale;
+        const bw = 440, x = w / 2 - bw / 2, y = h * 0.36 + 165;
+        const bar = this.add.graphics();
+        bar.fillStyle(0x2c3142, 1).fillRoundedRect(x, y, bw, 34, 17);
+        bar.fillStyle(0xf6a26b, 1).fillRoundedRect(x, y, Math.max(34, bw * f), 34, 17);
+        bar.lineStyle(4, 0xffffff, 1).strokeRoundedRect(x, y, bw, 34, 17);
+        const pct = this.add.text(w / 2, y + 17, `${Math.round(f * 100)}%`, { fontFamily: FONT, fontSize: '28px', color: '#ffffff', stroke: OUTLINE, strokeThickness: 6 }).setOrigin(0.5);
+        const warn = this.add.text(w / 2, y + 85, 'If you replay now, you will lose\nyour progress on this level.', { fontFamily: FONT, fontSize: '34px', color: '#ffb3b3', stroke: OUTLINE, strokeThickness: 6, align: 'center' }).setOrigin(0.5);
+        this.overlay?.add([bar, pct, warn]);
+    }
+
+    private showOverlay(title: string, top: string, bottom: string, button: string, btnColour: number, onClick: () => void, dim = 0.75, sub?: string,
+        second?: { label: string; colour: number; onClick: () => void }, ad = false) {
         this.closeOverlay();
         const { width: w, height: h } = this.scale;
         const c = this.add.container(0, 0).setDepth(10);
@@ -270,7 +301,23 @@ export class Hud extends Phaser.Scene {
         g.lineStyle(6, 0xffffff, 1).strokeRoundedRect(-170, -55, 340, 110, 40);
         btn.add([g, this.add.text(0, 0, button, { fontFamily: FONT, fontSize: '54px', color: '#ffffff', stroke: OUTLINE, strokeThickness: 8 }).setOrigin(0.5)]);
         btn.setSize(340, 110).setInteractive({ useHandCursor: true }).on('pointerup', onClick);
+        if (ad) {
+            // Watch an ad to use it (not wired to an ad network yet).
+            const badge = this.add.text(150, -52, 'AD', { fontFamily: FONT, fontSize: '28px', color: '#ffffff', backgroundColor: '#f07c1c', padding: { x: 8, y: 2 } }).setOrigin(0.5);
+            const heart = this.add.text(-122, 2, '♥', { fontFamily: FONT, fontSize: '50px', color: '#ffffff', stroke: OUTLINE, strokeThickness: 6 }).setOrigin(0.5);
+            (btn.list[1] as Phaser.GameObjects.Text).setX(24); // the label makes room for the heart
+            btn.add([heart, badge]);
+        }
         c.add(btn);
+        if (second) {
+            const b2 = this.add.container(w / 2, h * 0.6 + 150);
+            const g2 = this.add.graphics();
+            g2.fillStyle(second.colour, 1).fillRoundedRect(-130, -45, 260, 90, 34);
+            g2.lineStyle(5, 0xffffff, 1).strokeRoundedRect(-130, -45, 260, 90, 34);
+            b2.add([g2, this.add.text(0, 0, second.label, { fontFamily: FONT, fontSize: '44px', color: '#ffffff', stroke: OUTLINE, strokeThickness: 7 }).setOrigin(0.5)]);
+            b2.setSize(260, 90).setInteractive({ useHandCursor: true }).on('pointerup', second.onClick);
+            c.add(b2);
+        }
         this.overlay = c;
     }
 

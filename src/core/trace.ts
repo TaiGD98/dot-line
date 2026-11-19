@@ -144,8 +144,32 @@ export function strokesFromChains(chs: Pt[][], joinRadius = 5): Stroke[] {
     for (let i = 0; i < ends.length; i++)
         for (let j = i + 1; j < ends.length; j++)
             if (Math.hypot(ends[i].p.x - ends[j].p.x, ends[i].p.y - ends[j].p.y) <= joinRadius) cluster[find(i)] = find(j);
+    // Two junctions joined by a very short chain are one crossing that thick ink (a filled nose in
+    // the middle of an "x") split in two: the short chain is dropped and the two junctions become
+    // one, so the lines go straight through it (each arm with the opposite one).
+    const BRIDGE = 14; // about 1.5 line widths of a typical traced drawing (600 px)
+    const bridged = new Uint8Array(chs.length);
+    {
+        const members = new Map<number, number[]>();
+        ends.forEach((_, i) => { const r = find(i); members.set(r, [...(members.get(r) ?? []), i]); });
+        const merged = new Set<number>();
+        chs.forEach((c, ci) => {
+            if (c.length > BRIDGE) return;
+            const a = find(ci * 2), b = find(ci * 2 + 1);
+            // Both ends at a real junction (2+ other lines there), two different junctions, each merged
+            // once at most (a dense knot of junctions is left alone), and the merged one stays small.
+            if (a === b || merged.has(a) || merged.has(b)) return;
+            const ma = members.get(a) ?? [], mb = members.get(b) ?? [];
+            if (ma.length < 3 || mb.length < 3) return;
+            const pts = [...ma, ...mb].filter((i) => ends[i].c !== ci).map((i) => ends[i].p);
+            if (pts.some((p) => pts.some((q) => Math.hypot(p.x - q.x, p.y - q.y) > 2 * BRIDGE))) return;
+            bridged[ci] = 1;
+            merged.add(a); merged.add(b);
+            cluster[a] = b;
+        });
+    }
     const groups = new Map<number, number[]>();
-    ends.forEach((_, i) => { const r = find(i); groups.set(r, [...(groups.get(r) ?? []), i]); });
+    ends.forEach((_, i) => { if (bridged[ends[i].c]) return; const r = find(i); groups.set(r, [...(groups.get(r) ?? []), i]); });
 
     // Link the most opposite directions first (straight continuation). The ink is continuous at a
     // junction, so the line goes on through it where it can: two ends meeting at a corner are one
@@ -174,6 +198,7 @@ export function strokesFromChains(chs: Pt[][], joinRadius = 5): Stroke[] {
     for (const g of groups.values()) if (g.length >= 3) for (const i of g) junction[i] = 1;
     const TRIM = 4;
     const used = new Uint8Array(chs.length);
+    bridged.forEach((b, ci) => { if (b) used[ci] = 1; }); // dropped bridges are never walked
     const out: Stroke[] = [];
     const walk = (startC: number, startE: 0 | 1): Stroke => {
         const pts: Pt[] = [];
@@ -268,31 +293,42 @@ export function takeBlobs(mask: Mask, maxR = Math.max(mask.w, mask.h) * 0.09): B
         }
         return { share: count / n, arcs, longest: (longest * 2 * Math.PI * rr) / n };
     };
+    /** Chamfer distance from every ink pixel to the background (0 on the background). */
+    const distanceField = () => {
+        const d = new Float32Array(w * h);
+        const INF = 1e6, D1 = 1, D2 = Math.SQRT2;
+        for (let i = 0; i < w * h; i++) d[i] = data[i] ? INF : 0;
+        const at = (x: number, y: number) => (x < 0 || y < 0 || x >= w || y >= h ? 0 : d[y * w + x]);
+        for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
+            const i = y * w + x;
+            if (!d[i]) continue;
+            d[i] = Math.min(d[i], at(x - 1, y) + D1, at(x, y - 1) + D1, at(x - 1, y - 1) + D2, at(x + 1, y - 1) + D2);
+        }
+        for (let y = h - 1; y >= 0; y--) for (let x = w - 1; x >= 0; x--) {
+            const i = y * w + x;
+            if (!d[i]) continue;
+            d[i] = Math.min(d[i], at(x + 1, y) + D1, at(x, y + 1) + D1, at(x + 1, y + 1) + D2, at(x - 1, y + 1) + D2);
+        }
+        return d;
+    };
     // A. Compact filled shapes standing on their own.
+    const solid = distanceField();
     for (const c of components((i) => data[i] === 1)) {
         const bw = c.x1 - c.x0 + 1, bh = c.y1 - c.y0 + 1, r = Math.sqrt(bw * bh) / 2;
         if (Math.max(bw, bh) > 2 * maxR || Math.min(bw, bh) < 5) continue;
         const aspect = Math.max(bw, bh) / Math.min(bw, bh), fill = c.px.length / (bw * bh);
         // Bigger shapes must be a disc or an oval (a disc fills 79% of its box), not just compact.
         if (r > small ? aspect > 1.4 || fill < 0.68 || fill > 0.88 : aspect > 1.8 || fill < 0.45) continue;
+        // And solid: the widest point inside is a good part of the shape's width (a dot, an eye). A
+        // cluster of thick strokes that only fills its box (a nose with a mouth drawn as "x") is not.
+        let core = 0;
+        for (const k of c.px) if (solid[k] > core) core = solid[k];
+        if (core < 0.4 * (Math.min(bw, bh) / 2)) continue;
         for (const k of c.px) data[k] = 0;
         out.push({ x: (c.x0 + c.x1) / 2, y: (c.y0 + c.y1) / 2, r });
     }
     // B. Round bulges on the lines: distance to the background, then cores far thicker than a line.
-    const dist = new Float32Array(w * h);
-    const INF = 1e6, D1 = 1, D2 = Math.SQRT2;
-    for (let i = 0; i < w * h; i++) dist[i] = data[i] ? INF : 0;
-    const at = (x: number, y: number) => (x < 0 || y < 0 || x >= w || y >= h ? 0 : dist[y * w + x]);
-    for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
-        const i = y * w + x;
-        if (!dist[i]) continue;
-        dist[i] = Math.min(dist[i], at(x - 1, y) + D1, at(x, y - 1) + D1, at(x - 1, y - 1) + D2, at(x + 1, y - 1) + D2);
-    }
-    for (let y = h - 1; y >= 0; y--) for (let x = w - 1; x >= 0; x--) {
-        const i = y * w + x;
-        if (!dist[i]) continue;
-        dist[i] = Math.min(dist[i], at(x + 1, y) + D1, at(x, y + 1) + D1, at(x + 1, y + 1) + D2, at(x - 1, y + 1) + D2);
-    }
+    const dist = distanceField();
     // Typical half-width of a line = median of the ridge (local maxima) of the distance.
     const ridge: number[] = [];
     for (let y = 1; y < h - 1; y++) for (let x = 1; x < w - 1; x++) {

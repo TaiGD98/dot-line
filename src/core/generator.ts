@@ -214,7 +214,8 @@ export function segPoints(lines: Line[], g: Seg): Pt[] {
 export function toPair(lines: Line[], g: Seg, id: string): Pair {
     const path = fitSmooth(segPoints(lines, g), 1.2);
     const a = path[0], b = path[path.length - 1];
-    return { id, color: '', a: { x: r1(a.x), y: r1(a.y), r: g.ra }, b: { x: r1(b.x), y: r1(b.y), r: g.rb }, path };
+    const big = g.accent ? { big: true } : {};
+    return { id, color: '', a: { x: r1(a.x), y: r1(a.y), r: g.ra, ...big }, b: { x: r1(b.x), y: r1(b.y), r: g.rb, ...big }, path };
 }
 
 function buildCandidate(lines: Line[], opt: GenerateOptions, rand: () => number): Candidate {

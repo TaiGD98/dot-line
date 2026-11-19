@@ -1,6 +1,6 @@
 // Publishes the levels you saved in the editor to the live game (GitHub Pages), in one command:
 //   1. checks git: on main, in sync with GitHub, and only level files changed;
-//   2. checks every level the game plays (src/game/playlist.ts): it must load, have no data
+//   2. checks every level the game plays (levels/game.json, else src/game/playlist.ts): it must load, have no data
 //      warnings and be solvable;
 //   3. commits the changed level files, pushes main and rebuilds the latest site.
 // The game on the web shows the new levels about a minute later.
@@ -51,8 +51,10 @@ const order = (chapter: string): string[] => {
     const first: string[] = existsSync(colFile) ? (JSON.parse(readFileSync(colFile, 'utf8')).collections?.[0]?.levels ?? []).filter((id: string) => files.includes(id)) : [];
     return [...first, ...files.filter((f) => !first.includes(f)).sort((a, b) => a.localeCompare(b, undefined, { numeric: true }))];
 };
-const played = PLAYLIST.flatMap((entry) => {
-    const [chapter, id] = entry.split('/');
+const gameFile = 'levels/game.json';
+const gameOrder: string[] = existsSync(gameFile) ? JSON.parse(readFileSync(gameFile, 'utf8')).levels ?? PLAYLIST : PLAYLIST;
+const played = gameOrder.flatMap((entry) => {
+    const k = entry.indexOf('/'), chapter = entry.slice(0, k), id = entry.slice(k + 1);
     return (id === '*' ? order(chapter) : [id]).map((x) => ({ chapter, id: x }));
 });
 const problems: string[] = [];

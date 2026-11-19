@@ -1,6 +1,9 @@
 // Minimal SVG reader that runs without a browser (build tools). Supports what the level art
 // uses: path (M L H V C S Q T Z, absolute or relative), line, polyline, polygon, rect, circle,
-// ellipse; no transforms. data-big="1" (or class="big") marks a stroke for big dots.
+// ellipse, inside nested groups with transforms (matrix, translate, scale, rotate, skewX, skewY)
+// and stroke widths inherited from the groups, as a browser draws them. Nothing inside defs,
+// clipPath, mask, symbol, pattern or marker is drawn. data-big="1" (or class="big") marks a stroke
+// for big dots. What it cannot read (use, image, text...) is listed in `warnings`.
 // The editor uses the browser's own SVG engine instead (src/editor/sources.ts).
 import type { Pt } from './path';
 import type { Stroke } from './trace';
@@ -9,6 +12,37 @@ export interface SvgDrawing {
     strokes: Stroke[];
     width: number;
     height: number;
+    /** Parts of the file that were not read (so the drawing may differ from the browser's). */
+    warnings: string[];
+}
+
+/** 2D affine matrix [a b c d e f]: x' = a x + c y + e, y' = b x + d y + f. */
+type Mat = [number, number, number, number, number, number];
+const IDENTITY: Mat = [1, 0, 0, 1, 0, 0];
+const mul = (m: Mat, n: Mat): Mat => [
+    m[0] * n[0] + m[2] * n[1], m[1] * n[0] + m[3] * n[1],
+    m[0] * n[2] + m[2] * n[3], m[1] * n[2] + m[3] * n[3],
+    m[0] * n[4] + m[2] * n[5] + m[4], m[1] * n[4] + m[3] * n[5] + m[5]
+];
+const apply = (m: Mat, p: Pt): Pt => ({ x: m[0] * p.x + m[2] * p.y + m[4], y: m[1] * p.x + m[3] * p.y + m[5] });
+/** A transform attribute (a list, applied left to right as in SVG) -> one matrix. */
+function parseTransform(t: string | undefined): Mat {
+    let m: Mat = IDENTITY;
+    if (!t) return m;
+    for (const f of t.matchAll(/(matrix|translate|scale|rotate|skewX|skewY)\s*\(([^)]*)\)/g)) {
+        const v = nums(f[2]), rad = ((v[0] ?? 0) * Math.PI) / 180;
+        let n: Mat = IDENTITY;
+        if (f[1] === 'matrix' && v.length >= 6) n = [v[0], v[1], v[2], v[3], v[4], v[5]];
+        else if (f[1] === 'translate') n = [1, 0, 0, 1, v[0] ?? 0, v[1] ?? 0];
+        else if (f[1] === 'scale') n = [v[0] ?? 1, 0, 0, v[1] ?? v[0] ?? 1, 0, 0];
+        else if (f[1] === 'rotate') {
+            const r: Mat = [Math.cos(rad), Math.sin(rad), -Math.sin(rad), Math.cos(rad), 0, 0];
+            n = v.length >= 3 ? mul(mul([1, 0, 0, 1, v[1], v[2]], r), [1, 0, 0, 1, -v[1], -v[2]]) : r;
+        } else if (f[1] === 'skewX') n = [1, 0, Math.tan(rad), 1, 0, 0];
+        else if (f[1] === 'skewY') n = [1, Math.tan(rad), 0, 1, 0, 0];
+        m = mul(m, n);
+    }
+    return m;
 }
 
 const attrs = (s: string) => {
@@ -76,15 +110,36 @@ export function parseSvg(text: string): SvgDrawing {
     const width = vb[2] ?? Number(root.width ?? 400), height = vb[3] ?? Number(root.height ?? 400);
     const ox = vb[0] ?? 0, oy = vb[1] ?? 0;
     const strokes: Stroke[] = [];
-    // Stroke widths (an element's own, else the <svg> default) give each stroke a weight.
+    const warnings: string[] = [];
+    // Stroke widths (an element's own, else its groups', else the <svg> default) give each stroke a weight.
     const widthOf = (a: Record<string, string>) => Number(a['stroke-width'] ?? /stroke-width\s*:\s*([\d.]+)/.exec(a.style ?? '')?.[1] ?? NaN);
-    const rootWidth = widthOf(root);
     const found: number[] = [];
-    for (const m of text.matchAll(/<(path|line|polyline|polygon|rect|circle|ellipse)\b([^>]*?)\/?>/g)) {
-        const tag = m[1], a = attrs(m[2]);
+    const SHAPES = new Set(['path', 'line', 'polyline', 'polygon', 'rect', 'circle', 'ellipse']);
+    const HIDDEN = new Set(['defs', 'clipPath', 'mask', 'symbol', 'pattern', 'marker', 'metadata', 'title', 'desc', 'style']);
+    const UNREAD = new Set(['use', 'image', 'text', 'foreignObject']);
+    // Walk the tags: groups push their transform and stroke width, closing tags pop them.
+    const stack: { tag: string; m: Mat; w: number; hidden: boolean }[] = [{ tag: '#root', m: IDENTITY, w: NaN, hidden: false }];
+    const body = text.replace(/<!--[\s\S]*?-->/g, '').replace(/<\?[\s\S]*?\?>/g, '');
+    for (const m of body.matchAll(/<(\/?)([a-zA-Z][\w:.-]*)\b([^>]*?)(\/?)>/g)) {
+        const closing = m[1] === '/', tag = m[2].replace(/^svg:/, ''), a = attrs(m[3]), selfClosing = m[4] === '/';
+        if (closing) {
+            for (let k = stack.length - 1; k > 0; k--) if (stack[k].tag === tag) { stack.length = k; break; }
+            continue;
+        }
+        const top = stack[stack.length - 1];
+        const own = widthOf(a);
+        const here = { tag, m: tag === 'svg' ? top.m : mul(top.m, parseTransform(a.transform)), w: isNaN(own) ? top.w : own, hidden: top.hidden || HIDDEN.has(tag) };
+        if (!SHAPES.has(tag)) {
+            if (UNREAD.has(tag) && !here.hidden) warnings.push(`<${tag}> is not read (draw it as a path)`);
+            if (!selfClosing) stack.push(here);
+            continue;
+        }
+        if (here.hidden) continue;
         const big = a['data-big'] === '1' || (a.class ?? '').split(/\s+/).includes('big');
-        const width = widthOf(a);
-        const add = (pts: Pt[], closed: boolean) => { strokes.push({ pts: pts.map((q) => ({ x: q.x - ox, y: q.y - oy })), closed, big }); found.push(isNaN(width) ? rootWidth : width); };
+        const add = (pts: Pt[], closed: boolean) => {
+            strokes.push({ pts: pts.map((q) => { const t = apply(here.m, q); return { x: t.x - ox, y: t.y - oy }; }), closed, big });
+            found.push(here.w);
+        };
         const n = (k: string) => Number(a[k] ?? 0);
         if (tag === 'path') for (const sp of parsePath(a.d ?? '')) add(sp.pts, sp.closed);
         else if (tag === 'line') add([{ x: n('x1'), y: n('y1') }, { x: n('x2'), y: n('y2') }], false);
@@ -116,5 +171,5 @@ export function parseSvg(text: string): SvgDrawing {
         const main = [...count].sort((x, y) => y[1] - x[1] || y[0] - x[0])[0][0];
         strokes.forEach((st, k) => { if (!isNaN(found[k]) && found[k] < main) st.weight = Math.max(0.4, found[k] / main); });
     }
-    return { strokes, width, height };
+    return { strokes, width, height, warnings: [...new Set(warnings)] };
 }

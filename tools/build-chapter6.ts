@@ -4,7 +4,8 @@
 // colours as possible). Each level keeps its name, tutorial and category; its X / T cross lines (the
 // tutorials' overlap pattern) are made again in the same numbers.
 //
-// Run: npm run levels:chapter6
+// Run: npm run levels:chapter6                 (the whole chapter)
+//      npm run levels:chapter6 -- level-9 rose  (only these level ids; the rest of chapter 6 stays as it is)
 //
 // The levels in their own chapters are not touched and levels/game.json is not changed: chapter 6 is
 // a new copy. Building it again rewrites chapter 6. When the play order already points at chapter 6,
@@ -28,6 +29,9 @@ const json = (v: unknown) => JSON.stringify(v, null, 2) + '\n';
 const r1 = (v: number) => Math.round(v * 10) / 10;
 
 const order: string[] = JSON.parse(readFileSync(`${ROOT}levels/game.json`, 'utf8')).levels;
+/** Level ids named on the command line: only these are rebuilt (default: all, chapter 6 cleared first). */
+const only = new Set(process.argv.slice(2).flatMap((a) => a.split(',')).filter(Boolean));
+for (const id of only) if (!order.some((e) => e.split('/')[1] === id)) { console.error(`${id} is not in the play order (levels/game.json)`); process.exit(1); }
 /** A play-order entry -> its level file (a missing chapter-6 level: the same id in another chapter). */
 const levelFile = (entry: string): { chapter: string; id: string } | null => {
     const [chapter, id] = entry.split('/');
@@ -45,7 +49,7 @@ const sources = order.map((entry) => {
     const imgPath = !image ? '' : image.startsWith('art/') ? `${ROOT}${image}` : `${ROOT}levels/${f.chapter}/${image}`;
     return { entry, missing: false as const, chapter: f.chapter, id: f.id, raw, image, imgPath, bytes: imgPath && existsSync(imgPath) ? readFileSync(imgPath) : null };
 });
-rmSync(LV, { recursive: true, force: true });
+if (!only.size) rmSync(LV, { recursive: true, force: true });
 mkdirSync(LV, { recursive: true });
 const ids: string[] = [];
 const report: unknown[] = [];
@@ -54,6 +58,7 @@ sources.forEach((S, i) => {
     const entry = S.entry;
     if (S.missing) { console.log(`skip ${entry}: no level file`); return; }
     const id = S.id;
+    if (only.size && !only.has(id)) { ids.push(id); return; }
     const old = parseLevel(S.raw);
     const src = (old.source ?? {}) as { image?: string; pairs?: number; difficulty?: number; dot?: number; big?: boolean; x?: number; t?: number; pattern?: string };
     if (!S.image) { console.log(`skip ${entry}: no source picture`); return; }
@@ -64,6 +69,7 @@ sources.forEach((S, i) => {
     if (svg) {
         const d = parseSvg(S.bytes.toString('utf8'));
         strokes = d.strokes; w = d.width; h = d.height;
+        if (d.warnings.length) console.log(`   ${entry}: ${d.warnings.join('; ')}`);
     } else {
         mkdirSync(TMP, { recursive: true });
         const tmp = `${TMP}${id}.png`;
@@ -119,6 +125,6 @@ sources.forEach((S, i) => {
 writeFileSync(`${LV}collections.json`, json({ collections: [{ name: 'Main', version: 1, levels: ids }] }));
 const colDir = `${LV}collections/Main/`;
 mkdirSync(colDir, { recursive: true });
-ids.forEach((id, k) => writeFileSync(`${colDir}${String(k + 1).padStart(3, '0')}_${id}.json`, readFileSync(`${LV}${id}.json`, 'utf8')));
-writeFileSync(`${ROOT}node_modules/.cache/chapter6-report.json`, json({ generated: new Date().toISOString().slice(0, 10), levels: report }));
-console.log(`Done: ${ids.length} level(s) in levels/${CHAPTER}/ (collection "Main")`);
+ids.forEach((id, k) => { if (!only.size || only.has(id)) writeFileSync(`${colDir}${String(k + 1).padStart(3, '0')}_${id}.json`, readFileSync(`${LV}${id}.json`, 'utf8')); });
+if (!only.size) writeFileSync(`${ROOT}node_modules/.cache/chapter6-report.json`, json({ generated: new Date().toISOString().slice(0, 10), levels: report }));
+console.log(only.size ? `Done: rebuilt ${[...only].join(', ')} in levels/${CHAPTER}/` : `Done: ${ids.length} level(s) in levels/${CHAPTER}/ (collection "Main")`);

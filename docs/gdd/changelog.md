@@ -4,6 +4,7 @@ Every published version stays playable at its own URL. The [landing page](https:
 
 ## latest (main) <Badge type="tip" text="Live" />
 
+- **Fix: LEVEL 6 (chapter-6/level-9) was upside down.** Its SVG flips the drawing with a group transform, which the build tools' SVG reader ignored; the reader now follows group transforms like a browser, and the level was rebuilt (`npm run levels:chapter6 -- level-9`).
 - **Smaller hitbox:** two dots bump when their centres are closer than 78% of their radii (was 85%): a dot whose edge is a few px clear of a line (centre 25 px or more from it) no longer stops a dot running on that line.
 - **Generator: dots go plainly onto lines.** A dot near another line but not clearly on it (centre 16–27 px from it) is moved onto the line (8 px, else 16 px), when there is room and the level stays solvable: a dot that blocks a line sits on it, one that does not is clearly off it. Chapter 6 rebuilt with it.
 - **Colours by family:** the 28 colours form 10 families (reds, oranges, yellows, limes, greens, cyans, blues, purples, magenta, pinks). Lines near each other (within 60 px) never get colours that look alike: not the same colour or family, and clearly different (CIEDE2000 ≥ 25) as shown on both the light and the dark board, so no spring green next to turquoise. A level check, enforced by `publish:levels`. A level uses as many colours as it can (every colour once before any twice). Theme swaps stay inside the family and are always the same for a colour.

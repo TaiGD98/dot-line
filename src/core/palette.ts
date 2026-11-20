@@ -75,7 +75,7 @@ export function hexToInt(hex: string): number {
  * Colour families ("tông"): palette colours of the same hue, light or dark. Two lines near each other
  * never get colours of one family, and a level uses every family before it repeats one. Every family
  * has a colour that reads on the light board and one that reads on the dark board, so the game can
- * swap a sinking colour within its family (readableColours).
+ * swap a sinking colour within its family (shownColour; the game may pick across families, themeColours).
  */
 export const FAMILIES: Record<string, string[]> = {
     red: ['red', 'maroon'],
@@ -115,43 +115,79 @@ function hsl(hex: string): [number, number, number] {
 }
 
 
-/** The two boards (themes): colour and the least contrast a colour needs on it to be shown as it is. */
+/** The two boards (themes): the board colour. */
 export const BOARDS = {
-    light: { bg: '#F2EEE6', min: 1.8 },
-    // Higher on the dark board: deep colours (brown, olive, teal, purple) look muddy on it.
-    dark: { bg: '#1F2335', min: 3.2 }
+    light: { bg: '#F2EEE6' },
+    dark: { bg: '#1F2335' }
 } as const;
 export type Board = keyof typeof BOARDS;
 
 /**
- * Colours that sink into the board `bg` (contrast below `min`) -> the readable colour of the same family
- * with the nearest hue: what the game shows instead (the level file keeps its colours). Always the same
- * stand-in for a colour (not depending on the level), so the generator knows exactly what will be seen
- * on each board (shownColour) and can keep near lines apart there too.
+ * The colours shown as they are on each board (picked by eye, GDD 3.3c). Any other colour of a level
+ * is hard to see on that board and is shown as one of these instead (themeColours).
  */
-export function readableColours(names: string[], bg: string, min: number): Map<string, string> {
-    const out = new Map<string, string>();
-    const candidates = PALETTE.filter((c) => contrastRatio(c.base, bg) >= min);
-    for (const n of new Set(names)) {
-        const c = colour(n);
-        if (!c || contrastRatio(c.base, bg) >= min) continue;
-        const [h, s, l] = hsl(c.base);
-        const dist = (o: PaletteColour) => {
-            const [h2, s2, l2] = hsl(o.base);
-            return (Math.min(Math.abs(h - h2), 360 - Math.abs(h - h2)) / 180) * 2 + Math.abs(s - s2) * 0.5 + Math.abs(l - l2) * 0.5;
+export const THEME_COLOURS: Record<Board, readonly string[]> = {
+    light: ['blue', 'brown', 'cyan', 'green', 'lavender', 'light_orange', 'light_pink', 'lime', 'magenta', 'olive_green', 'orange', 'orange_red', 'pink', 'purple', 'red', 'sky_blue', 'spring_green'],
+    dark: ['cyan', 'green', 'lavender', 'light_green', 'light_orange', 'light_pink', 'light_yellow', 'lime', 'magenta', 'olive_green', 'orange', 'orange_red', 'pink', 'red', 'sky_blue', 'spring_green', 'turquoise', 'yellow', 'yellow_green']
+};
+const KEPT = { light: new Set(THEME_COLOURS.light), dark: new Set(THEME_COLOURS.dark) };
+/** Is this colour shown as it is on the board? */
+export const keptOn = (name: string, board: Board) => KEPT[board].has(name);
+
+/** How far apart two hues look, for picking the most alike stand-in (0 = same). */
+function hueDistance(a: string, b: string) {
+    const [h, s, l] = hsl(a), [h2, s2, l2] = hsl(b);
+    return (Math.min(Math.abs(h - h2), 360 - Math.abs(h - h2)) / 180) * 2 + Math.abs(s - s2) * 0.5 + Math.abs(l - l2) * 0.5;
+}
+
+/**
+ * The colour of each line as shown on `board`. A colour kept on that board (THEME_COLOURS) stays. Any
+ * other gets a kept colour that is not the same colour or family as, and clearly differs from
+ * (MIN_NEAR_DIFFERENCE), the lines crossing or running near it (`near`: index pairs, generator.nearPairs)
+ * as they are shown. It need not be of its own family; among the colours that fit, the most alike to the
+ * original and then the least used in the level. If none fits, the one with the fewest clashes.
+ * The level file keeps its colours; this is only what is drawn.
+ */
+export function themeColours(names: string[], near: [number, number][], board: Board): string[] {
+    const shown = names.map((n) => (keptOn(n, board) || !colour(n) ? n : ''));
+    const adj = names.map(() => [] as number[]);
+    for (const [i, j] of near) { adj[i].push(j); adj[j].push(i); }
+    const clash = (c: string, o: string) => familyOf(c) === familyOf(o) || colourDifference(colour(c)!.base, colour(o)!.base) < MIN_NEAR_DIFFERENCE;
+    // Most crowded lines first, so they get the widest choice.
+    const todo = names.map((_, i) => i).filter((i) => !shown[i]).sort((a, b) => adj[b].length - adj[a].length || a - b);
+    const pick = (i: number) => {
+        const base = colour(names[i])!.base;
+        const used = (c: string) => shown.filter((x, k) => k !== i && x === c).length;
+        const score = (c: string) => {
+            const bad = adj[i].filter((j) => shown[j] && colour(shown[j]) && clash(c, shown[j])).length;
+            return bad * 1000 + hueDistance(base, colour(c)!.base) + used(c) * 0.6;
         };
-        const own = candidates.filter((o) => familyOf(o.name) === familyOf(n));
-        out.set(n, [...(own.length ? own : candidates)].sort((a, b) => dist(a) - dist(b))[0].name);
-    }
-    return out;
+        shown[i] = [...THEME_COLOURS[board]].sort((a, b) => score(a) - score(b) || (a < b ? -1 : 1))[0];
+    };
+    for (const i of todo) pick(i);
+    // A few more rounds: a line picked early now sees its later neighbours too.
+    for (let round = 0; round < 4; round++) for (const i of todo) pick(i);
+    return shown;
 }
 
 const shownMemo = new Map<string, string>();
-/** The colour seen on a board for palette colour `name` (itself, or its stand-in). */
+/**
+ * The colour likely seen on a board for palette colour `name`, without the level around it: itself if
+ * kept there, else the most alike kept colour of its family (or of any family). For the generator and
+ * the editor's checks; the game picks per level (themeColours).
+ */
 export function shownColour(name: string, board: Board): string {
     const k = `${board}|${name}`;
     let v = shownMemo.get(k);
-    if (!v) { v = readableColours([name], BOARDS[board].bg, BOARDS[board].min).get(name) ?? name; shownMemo.set(k, v); }
+    if (!v) {
+        const c = colour(name);
+        if (!c || keptOn(name, board)) v = name;
+        else {
+            const own = THEME_COLOURS[board].filter((o) => familyOf(o) === familyOf(name));
+            v = [...(own.length ? own : THEME_COLOURS[board])].sort((a, b) => hueDistance(c.base, colour(a)!.base) - hueDistance(c.base, colour(b)!.base))[0];
+        }
+        shownMemo.set(k, v);
+    }
     return v;
 }
 

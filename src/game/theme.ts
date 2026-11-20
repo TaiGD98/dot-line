@@ -1,6 +1,6 @@
 // Light and dark look of the game (Settings → THEME).
 import { settings } from './settings';
-import { BOARDS } from '../core/palette';
+import { BOARDS, Board } from '../core/palette';
 
 export interface Theme {
     background: string;
@@ -13,8 +13,8 @@ export interface Theme {
     version: string;
     /** Dark board (the light theme is false). */
     dark: boolean;
-    /** Colours with less contrast than this against the board are swapped for readable ones (palette.readableColours). */
-    minContrast: number;
+    /** Board of the palette: which colours are shown as they are (palette.THEME_COLOURS, themeColours). */
+    board: Board;
 }
 
 // Boards chosen for the Voxel palette: a soft warm grey-white and a deep blue-grey. Neither is pure
@@ -22,11 +22,11 @@ export interface Theme {
 const THEMES: Record<'light' | 'dark', Theme> = {
     light: {
         background: BOARDS.light.bg, shadow: 0x3a2f20, shadowAlpha: [0.08, 0.14], progressTrack: 0xe0dbd0, progressFill: 0xf6a26b,
-        caption: '#8a5a2b', version: '#aaa395', dark: false, minContrast: BOARDS.light.min
+        caption: '#8a5a2b', version: '#aaa395', dark: false, board: 'light'
     },
     dark: {
         background: BOARDS.dark.bg, shadow: 0x000000, shadowAlpha: [0.24, 0.4], progressTrack: 0x323850, progressFill: 0xf6a26b,
-        caption: '#f3c98b', version: '#5c6275', dark: true, minContrast: BOARDS.dark.min
+        caption: '#f3c98b', version: '#5c6275', dark: true, board: 'dark'
     }
 };
 

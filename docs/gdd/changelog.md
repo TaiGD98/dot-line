@@ -4,9 +4,16 @@ Every published version stays playable at its own URL. The [landing page](https:
 
 ## latest (main) <Badge type="tip" text="Live" />
 
-- No changes since v0.5.0.
+- No changes since v0.6.0.
 
 [Play latest](https://taigd98.github.io/dot-line/demo/)
+
+## v0.6.0
+
+- **Colours per theme:** each theme has its own list of colours shown as they are (17 on the light board, 19 on the dark board, picked by eye). Any other colour is shown as a kept colour that does not clash with the lines crossing or near it; it no longer has to be of the same hue family.
+- **Fluffy theme** at [/fluffy/](https://taigd98.github.io/dot-line/fluffy/) (**Play Fluffy** on the landing page): every dot is a fluffy ball with a face. Asleep it breathes; tapped it sheds a puff of fur (a tap on empty board throws out tiny faint fluffy balls that fall away); running it looks surprised and leaves a long trail with sparkles; bumped it squeezes its eyes shut (`> <`) and loses tufts of fur; meeting its partner they bump in a puff of fur, happy (`^ ^`), stay together a moment (0.2 s), then pop into little hearts. Fur is always the ball's own colour. The board is a pattern of fluffy faces that scrolls diagonally and zooms with the level. The hearts take the colour of the pair; the fur is matte, with clearly visible strands, and each ball is lit from the top left so it reads round.
+
+[Play v0.6.0](https://taigd98.github.io/dot-line/v0.6.0/demo/) · [Docs v0.6.0](https://taigd98.github.io/dot-line/v0.6.0/docs/) · [Play Fluffy v0.6.0](https://taigd98.github.io/dot-line/v0.6.0/fluffy/)
 
 ## v0.5.0
 
@@ -104,3 +111,4 @@ Every published version stays playable at its own URL. The [landing page](https:
 | 2026-11-17 | Released v0.2.0 |
 | 2026-11-19 | Released v0.5.0 |
 | 2026-11-18 | Released v0.3.0 |
+| 2026-11-20 | Released v0.6.0 |

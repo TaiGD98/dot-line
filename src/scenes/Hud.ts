@@ -2,7 +2,8 @@ import * as Phaser from 'phaser';
 import { BOTTOM_HEIGHT, BoardState, Game, HEARTS, HUD_HEIGHT } from './Game';
 import { levels } from '../game/source';
 import { onSettings, setSetting, settings } from '../game/settings';
-import { MAGIC } from '../game/mode';
+import { FLUFFY, MAGIC } from '../game/mode';
+import { handTip, hasArt, key as fluffyKey } from './fluffy';
 import { theme } from '../game/theme';
 
 const FONT = 'Lilita, system-ui, sans-serif';
@@ -28,7 +29,7 @@ export class Hud extends Phaser.Scene {
     private bandShown = { k: 1 };
     private scissors!: { box: Phaser.GameObjects.Container; ring: Phaser.GameObjects.Graphics };
     private cutHint!: Phaser.GameObjects.Text;
-    private tut: { kind: 'tap' | 'collision' | 'zoom'; ring: Phaser.GameObjects.Graphics; hand: Phaser.GameObjects.Text; text: Phaser.GameObjects.Text; t: number } | null = null;
+    private tut: { kind: 'tap' | 'collision' | 'zoom'; ring: Phaser.GameObjects.Graphics; hand: Phaser.GameObjects.Text | Phaser.GameObjects.Image; text: Phaser.GameObjects.Text; t: number } | null = null;
 
     constructor() {
         super('Hud');
@@ -196,7 +197,10 @@ export class Hud extends Phaser.Scene {
         if (!kind) return;
         const caption = { tap: 'Tap a dot to send it home', collision: 'Blocked dots bounce back', zoom: 'Pinch to zoom' }[kind];
         const ring = this.add.graphics().setDepth(5);
-        const hand = this.add.text(0, 0, '👆', { fontSize: '120px' }).setOrigin(0.3, 0.05).setDepth(6);
+        // Fluffy: a fluffy paw (src/assets/fluffy/hand.png, once it is there), its fingertip on the target.
+        const hand = FLUFFY && hasArt('hand') && this.textures.exists(fluffyKey('hand'))
+            ? (() => { const tip = handTip(this), img = this.add.image(0, 0, fluffyKey('hand')); return img.setOrigin(tip.x, tip.y).setScale(170 / img.height).setDepth(6); })()
+            : this.add.text(0, 0, '👆', { fontSize: '120px' }).setOrigin(0.3, 0.05).setDepth(6);
         const text = this.add.text(this.scale.width / 2, this.scale.height - BOTTOM_HEIGHT - 70, caption, { fontFamily: FONT, fontSize: '64px', color: theme().caption }).setOrigin(0.5).setDepth(6);
         this.tut = { kind, ring, hand, text, t: 0 };
     }

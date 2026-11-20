@@ -3,7 +3,7 @@ import { existsSync, readFileSync, readdirSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import config from './prototype.config.json';
 
-/** Dev server only: the game's dev panel (⚙ speed → Confirm) writes MOVE_SPEED into the code. */
+/** Dev server only: the game's dev panel (⚙ speed / ⚙ tuning → Confirm) writes MOVE_SPEED, HUG_HOLD or the LIGHT_* values into the code. */
 function devTuning(): Plugin {
     return {
         name: 'dot-line-dev-tuning',
@@ -13,14 +13,32 @@ function devTuning(): Plugin {
                 let body = '';
                 req.on('data', (c) => (body += c));
                 req.on('end', () => {
-                    const v = Math.round(Number(JSON.parse(body || '{}').moveSpeed));
-                    if (!(v >= 100 && v <= 5000)) { res.statusCode = 400; return res.end('moveSpeed must be 100-5000'); }
+                    // Every value sent is written to its constant; each has a range and a rounding.
+                    const RULES: Record<string, { name: string; min: number; max: number; dp: number }> = {
+                        moveSpeed: { name: 'MOVE_SPEED', min: 100, max: 5000, dp: 0 },
+                        hugHold: { name: 'HUG_HOLD', min: 0, max: 5, dp: 2 },
+                        lightAngle: { name: 'LIGHT_ANGLE', min: 0, max: 360, dp: 0 },
+                        lightHeight: { name: 'LIGHT_HEIGHT', min: 0, max: 1, dp: 2 },
+                        lightAmbient: { name: 'LIGHT_AMBIENT', min: 0, max: 1.5, dp: 2 },
+                        lightDiffuse: { name: 'LIGHT_DIFFUSE', min: 0, max: 1.5, dp: 2 },
+                        lightSheen: { name: 'LIGHT_SHEEN', min: 0, max: 1, dp: 2 }
+                    };
+                    const got = JSON.parse(body || '{}') as Record<string, unknown>;
                     const file = resolve(__dirname, 'src/game/tuning.ts');
-                    const src = readFileSync(file, 'utf8');
-                    const next = src.replace(/export const MOVE_SPEED = \d+;/, `export const MOVE_SPEED = ${v};`);
-                    if (next === src && !src.includes(`MOVE_SPEED = ${v};`)) { res.statusCode = 500; return res.end('MOVE_SPEED line not found'); }
-                    writeFileSync(file, next);
-                    res.end(JSON.stringify({ moveSpeed: v }));
+                    let src = readFileSync(file, 'utf8');
+                    const done: Record<string, number> = {};
+                    for (const [k, raw] of Object.entries(got)) {
+                        const r = RULES[k];
+                        if (!r) { res.statusCode = 400; return res.end(`unknown value ${k}`); }
+                        const v = Math.round(Number(raw) * 10 ** r.dp) / 10 ** r.dp;
+                        if (!(v >= r.min && v <= r.max)) { res.statusCode = 400; return res.end(`${k} must be ${r.min}-${r.max}`); }
+                        const line = new RegExp(`export const ${r.name} = [\\d.]+;`);
+                        if (!line.test(src)) { res.statusCode = 500; return res.end(`${r.name} line not found`); }
+                        src = src.replace(line, `export const ${r.name} = ${v};`);
+                        done[r.name] = v;
+                    }
+                    writeFileSync(file, src);
+                    res.end(JSON.stringify(done));
                 });
             });
         }

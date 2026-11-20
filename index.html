@@ -17,6 +17,9 @@
       .dev-panel input { width: 100%; }
       .dev-row { display: flex; gap: 6px; }
       .dev-note { color: #777; font-size: 11px; }
+      .dev-group { display: flex; flex-direction: column; gap: 3px; padding-bottom: 6px; border-bottom: 1px solid #ddd; }
+      .dev-group:last-child { border-bottom: 0; padding-bottom: 0; }
+      .dev-panel > div { max-height: 80vh; overflow-y: auto; }
       .dev-level { position: fixed; bottom: 6px; right: 6px; z-index: 5; font: 12px system-ui, sans-serif; opacity: .75; max-width: 46vw; }
     </style>
   </head>

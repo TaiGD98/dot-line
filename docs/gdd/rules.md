@@ -15,7 +15,7 @@
 - Hạt di chuyển chạy **dọc theo sợi dây** về phía hạt đích; dây ngắn dần sau lưng nó.
 - Khi một hạt đang chạy, **không tap được hạt còn lại của cặp đó**.
 - Khi một hạt đang chạy, người chơi **vẫn tap được hạt của các cặp khác**; nhiều hạt có thể chạy cùng lúc.
-- Tốc độ di chuyển: chấm **khởi đầu ở 500 px thế giới / giây** và **tăng đều lên 750 px/giây sau 1 giây**, rồi giữ nguyên gia tốc đó (250 px/s²) cho tới hết quãng đường còn lại (`START_SPEED`, `MOVE_SPEED` trong `src/game/tuning.ts`). Khi bị chặn và quay về: **1020 px/giây** (= 1,36 × `MOVE_SPEED`). Chỉnh `MOVE_SPEED` bằng thanh cheat ⚙ speed trong game; bấm Confirm khi chạy local để ghi vào code. Lấy theo cảm giác của clip tham khảo; chỉnh lại khi chơi thử.
+- Tốc độ di chuyển: chấm **khởi đầu ở 500 px thế giới / giây** và **tăng đều lên 750 px/giây sau 1 giây**, rồi giữ nguyên gia tốc đó (250 px/s²) cho tới hết quãng đường còn lại (`START_SPEED`, `MOVE_SPEED` trong `src/game/tuning.ts`). Khi bị chặn và quay về: **1020 px/giây** (= 1,36 × `MOVE_SPEED`). Chỉnh `MOVE_SPEED` bằng thanh cheat ⚙ speed trong game (bản Fluffy: ⚙ tuning); bấm Confirm khi chạy local để ghi vào code. Lấy theo cảm giác của clip tham khảo; chỉnh lại khi chơi thử.
 - **Zoom:** người chơi chụm 2 ngón tay để thu nhỏ và kéo 2 ngón ra để phóng to board, tối đa 3 lần. Khi đang phóng to, người chơi kéo (pan) được board. Zoom chỉ áp dụng cho board, HUD giữ nguyên kích thước.
 
 ## 3.3 Va chạm <Badge type="tip" text="Live" />
@@ -51,6 +51,25 @@ Bản game phụ tại [`/magic/`](https://taigd98.github.io/dot-line/magic/) (n
 
 - **Vào level:** hai cánh cửa trượt vào từ hai bên (0,43 giây), sập lại (rung nhẹ, hạt sáng dọc khe). Sau đó hai bóng của mỗi cặp cùng nằm ở đầu thứ nhất của dây, bóng thứ hai chạy theo dây sang đầu kia (0,35–0,85 giây tùy độ dài dây), dây hiện ra phía sau nó. Trong lúc này chưa chạm được bóng. Chữ hướng dẫn (tutorial) của level, nếu có, chỉ hiện sau khi bóng chạy xong, và tắt khi người chơi làm đúng điều kiện hoặc ngay khi bóng cuối cùng biến mất. Cửa đứng yên khi pinch zoom; dây và bóng zoom như bình thường.
 - **Phá seal:** gỡ hết bóng thì level trở về zoom gốc và canh giữa; trước hết **map của level (mọi dây và mọi bóng ở chỗ ban đầu) hiện lại, sáng vàng như ánh sáng trong khe** (0,45 giây), sau đó khe cửa mới hiện ra và ánh sáng lọt qua (0,55 giây), rồi hai cánh cửa mở ra (0,8 giây), mỗi cánh mang nửa map của nó, với chùm sáng bung ra; rồi màn **Well Done** hiện trên căn phòng phía sau cửa (không làm tối; căn phòng vừa khít màn hình game). Hai thanh HUD (trên, dưới) **trượt ra khỏi màn hình** khi cửa bắt đầu mở và **trượt vào lại** (thanh trên từ trên xuống, thanh dưới từ dưới lên) khi cửa đã sập cho level sau; lúc vào game lần đầu cũng vậy. **CONTINUE** làm cửa sập lại cho level sau; **REPLAY** giữ cửa đóng, bóng chạy ra lại.
+
+## 3.3b4 Theme Fluffy <Badge type="tip" text="Live" />
+
+Bản game phụ tại [`/fluffy/`](https://taigd98.github.io/dot-line/fluffy/) (nút **Play Fluffy** ở trang chủ): cùng level và luật, mỗi hạt là một **cục bông lông có mặt** (`src/scenes/fluffy.ts`, `FLUFFY` trong `src/scenes/Game.ts`). Ảnh gốc và quy cách: [Fluffy theme: assets](../guide/fluffy-assets).
+
+| Lúc | Mặt | Chuyển động / hiệu ứng |
+|---|---|---|
+| Đứng yên | ngủ (nhắm mắt) | thở: phồng xẹp (dọc ±4,5%, ngang ±2,5%) và nhấp nhô lên xuống 7% bán kính, mỗi cục lệch nhịp |
+| Đứng yên, cặp đã va chạm (bị đánh dấu) | ngủ, có sọc trắng như bản thường. **Khi có ảnh `face-awake.png`:** thức, mở mắt, không sọc | thở như lúc ngủ |
+| Tap vào cục | | 11–15 túm lông bay ra mọi phía ngay chỗ tap |
+| Tap vào khoảng trống | | 5–7 cục lông tí hon (đủ 4 biểu cảm, màu các cặp trong level, rất mờ) văng lên, xoay rồi rơi xuống và mờ dần |
+| Đang chạy | mắt tròn, ngạc nhiên | to hơn 6%, nảy nhanh; **trail dài** (24 khung hình) màu của cục, rắc **sparkle** lấp lánh (sao 4 cánh trắng và màu của cục, xoay và nhỏ dần) |
+| Va chạm (cả hai cục) | `> <` (0,6 giây, và suốt lúc bị bật về) | bẹp rồi nảy; 10–14 túm lông **đúng một màu, màu của cục đó**, bay ra phía ngoài chỗ chạm, trôi nhẹ rồi mờ dần |
+| Tới bóng cùng cặp | `^ ^` vui | dừng lúc chạm nhau: 14–18 túm lông bay ra mọi phía chỗ hai cục chạm, hai cục **va như hai cục va chạm** (bật ra một chút rồi về, bẹp và rung) và đứng cạnh nhau **0,2 giây** (`HUG_HOLD` trong `src/game/tuning.ts`; chỉnh bằng thanh *Pair touch → hearts* trong cheat ⚙ tuning của bản Fluffy, bấm Confirm khi chạy local để ghi vào code); rồi 6–9 trái tim nhỏ **cùng màu với cặp** bay lên, cùng lúc hai cục phồng nhẹ rồi thu nhỏ hết trong 0,2 giây |
+
+- **Nền:** ô pattern các mặt cục lông (4 biểu cảm, xếp chéo), tương phản thấp, thưa và nhỏ (các mặt nhỏ, cách nhau xa, nhạt gần như màu nền), mỗi theme một ô (kem / xanh đậm). Nền nằm trong board nên **zoom cùng board**, mỗi ô phủ 1024 px của board, và **cuộn chậm theo đường chéo** từ trên trái xuống dưới phải (22 px/giây).
+- **Tutorial:** bàn tay 👆 như bản thường. **Khi có ảnh `hand.png`:** thay bằng bàn chân lông xù, đầu ngón đặt đúng vào cục.
+- **Màu:** thân xám của cục lông (lông mờ, không bóng, sợi lông rõ, đánh sáng từ trên trái nên thấy khối tròn; hướng đèn và độ sáng tối chỉnh bằng nhóm *Ball light* trong cheat ⚙ tuning: hướng đèn, độ cao đèn, độ sáng phía tối, độ sáng phía được chiếu, độ sáng mềm chỗ chiếu mạnh nhất; `LIGHT_*` trong `src/game/tuning.ts`) được tô theo 28 màu như bóng orb; cục bị đánh dấu (đã va chạm) có sọc trắng (khi có ảnh mặt thức thì bỏ sọc, thay bằng mặt thức).
+- Màn Well Done đến 1 giây sau khi cặp cuối biến mất (với `HUG_HOLD` 0,2: 1,2 giây sau khi chạm nhau).
 
 ## 3.3c Giao diện sáng / tối <Badge type="tip" text="Live" />
 
@@ -123,12 +142,23 @@ Nguồn: vật liệu `Voxel_*` của game Cube Blast (file `VoxelMaterials.json
 | yellow | `#FDD201` | `#E98E3F` | `#FFED3D` | `#FFF9BF` |
 | yellow_green | `#A3F408` | `#527D00` | `#C8F72D` | `#E8FF70` |
 
-**Nền:** theme sáng `#F2EEE6`, theme tối `#1F2335`. Dây chỉ có màu của nó, **không có viền**. Màu nào quá gần màu nền của theme đang bật (độ tương phản dưới **1,8** ở theme sáng, dưới **3,2** ở theme tối: trên nền tối các màu đậm như brown, olive, teal, purple trông đục) thì **tự đổi sang màu khác cùng nhóm tông, đủ tương phản** khi chơi; đổi theme thì đổi lại theo nền mới. File level vẫn giữ màu gốc (editor không đổi). Cách chọn: trong cùng nhóm tông (xem dưới), màu gần tông nhất đủ tương phản với nền, cố định cho mỗi màu (`readableColours`, `shownColour` trong `src/core/palette.ts`).
+**Nền:** theme sáng `#F2EEE6`, theme tối `#1F2335`. Dây chỉ có màu của nó, **không có viền**.
 
-| Theme | Màu bị đổi (ví dụ đổi thành) |
-|---|---|
-| Sáng | cyan, turquoise → teal; light_orange → orange; light_pink → pink; light_yellow, yellow → olive; yellow_green, light_green, lime → olive_green; spring_green → green |
-| Tối | navy, dark_blue, blue → sky_blue; dark_green → green; maroon → red; purple → lavender; brown → orange; olive → yellow; teal → cyan |
+**Màu dùng cho mỗi theme** (chọn bằng mắt; `THEME_COLOURS` trong `src/core/palette.ts`):
+
+| Theme | Màu giữ nguyên | Màu khó nhìn, sẽ được đổi |
+|---|---|---|
+| Sáng (17 màu) | blue, brown, cyan, green, lavender, light_orange, light_pink, lime, magenta, olive_green, orange, orange_red, pink, purple, red, sky_blue, spring_green | dark_blue, dark_green, light_green, light_yellow, maroon, navy, olive, teal, turquoise, yellow, yellow_green |
+| Tối (19 màu) | cyan, green, lavender, light_green, light_orange, light_pink, light_yellow, lime, magenta, olive_green, orange, orange_red, pink, red, sky_blue, spring_green, turquoise, yellow, yellow_green | blue, brown, dark_blue, dark_green, maroon, navy, olive, purple, teal |
+
+**Cách đổi khi chơi** (`themeColours` trong `src/core/palette.ts`, gọi từ `recolour` trong `src/scenes/Game.ts`):
+
+1. Chỉ đổi màu **không nằm trong danh sách giữ** của theme đang bật. Màu trong danh sách giữ không bao giờ bị đổi.
+2. Màu thay là một màu trong danh sách giữ, **không cần cùng tông** với màu gốc. Điều kiện: không trùng màu, không cùng nhóm tông, và khác rõ (độ khác màu ≥ 25) với **mọi dây đè lên hoặc chạy gần nó** (cách nhau dưới 60 px, như `nearPairs` của generator), tính theo màu đang hiện của các dây đó.
+3. Trong các màu thỏa điều kiện: ưu tiên màu gần giống màu gốc nhất, rồi màu đang ít dùng trong level. Dây có nhiều dây gần được chọn trước; sau đó chọn lại vài lượt để dây chọn sớm cũng tính tới các dây chọn sau.
+4. Nếu không còn màu nào thỏa (level quá dày, mọi màu giữ đều đụng một dây gần), lấy màu đụng ít dây nhất. Với 30 level đang chơi: còn 13 chỗ ở theme sáng (theme sáng không còn màu nào của nhóm vàng, nên các màu vàng thường thành cam và dễ đụng orange_red; vd. Butterfly, Christmas bear, các level Dancer, Glass poppy, Ice cream cone) và 1 chỗ ở theme tối (Dancer parasol).
+
+Vì màu thay tùy theo các dây xung quanh, cùng một màu gốc có thể thành các màu khác nhau ở các level khác nhau. Đổi theme thì chọn lại theo theme mới. File level vẫn giữ màu gốc (editor không đổi). Generator và phần kiểm tra của editor không biết level xung quanh, nên vẫn ước lượng mỗi màu khó nhìn thành màu giữ gần nhất cùng tông (`shownColour`).
 
 **Nhóm tông màu:** 28 màu chia thành 10 nhóm cùng tông (sáng hay đậm đều tính là cùng tông; `FAMILIES` trong `src/core/palette.ts`):
 

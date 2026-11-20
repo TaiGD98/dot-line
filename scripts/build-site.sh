@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Assembles the GitHub Pages site: landing page at /, game at /demo/, its jelly and magic variants at /jelly/ and /magic/,
+# Assembles the GitHub Pages site: landing page at /, game at /demo/, its variants at /jelly/, /magic/ and /fluffy/,
 # docs at /docs/,
 # level editor at /editor/ (publish-site.sh keeps the editor out of versioned snapshots).
 set -euo pipefail
@@ -13,7 +13,7 @@ mkdir -p _site
 cp site/index.html _site/
 cp -R dist _site/demo
 # Variants: the same build and levels, switched by a flag (src/game/mode.ts).
-for mode in jelly:Jelly magic:Magic; do
+for mode in jelly:Jelly magic:Magic fluffy:Fluffy; do
     dir="${mode%%:*}" name="${mode##*:}"
     cp -R dist "_site/$dir"
     sed -i.bak "s#<title>Dot Line</title>#<title>Dot Line $name</title><script>window.__DOTLINE_MODE__ = '$dir';</script>#" "_site/$dir/index.html"

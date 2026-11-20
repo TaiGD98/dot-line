@@ -1,13 +1,15 @@
 import * as Phaser from 'phaser';
 import { Level, Pair, levelBounds } from '../core/level';
-import { COMPLETED_LINE, colour, hexToInt, readableColours } from '../core/palette';
+import { COMPLETED_LINE, colour, hexToInt, themeColours } from '../core/palette';
+import { nearPairs } from '../core/generator';
 import { Pt, arcLengths, dist, distToPolyline, pointAt } from '../core/path';
 import { BlockModel, HIT_SCALE, Side } from '../core/solver';
 import { levels } from '../game/source';
 import { tuning } from '../game/tuning';
 import { onSettings } from '../game/settings';
 import { theme } from '../game/theme';
-import { JELLY, MAGIC } from '../game/mode';
+import { FLUFFY, JELLY, MAGIC } from '../game/mode';
+import { Face, MINI_FACES, ballFill, hasArt, patternWorld, ballTexture, faceFrame, heartTexture, key as fluffyKey, makeFluffy, preloadFluffy, widthOf } from './fluffy';
 import { DOOR_OPEN, Door, DoorState, ORB_FILL, orbTexture } from './Door';
 
 // ---- Tunables (GDD 3.2 / 3.6) ----
@@ -32,11 +34,24 @@ interface Wobble {
     angle: number;
 }
 
-const TRAIL = 9;
+/** Trail length in frames (fluffy: a longer trail, with sparkles). */
+const TRAIL = FLUFFY ? 24 : 9;
 
 // ---- Jelly variant (src/game/mode.ts) ----
 /** Bump wobble: amplitude on the moving / the hit dot, decay per second, frequency (rad/s), length (s). */
 const WOBBLE = JELLY ? { mover: 0.5, hit: 0.4, decay: 3.6, freq: 24, life: 1.3 } : { mover: 0.32, hit: 0.22, decay: 7, freq: 38, life: 0.7 };
+/**
+ * Fluffy: a ball that touches its partner: the two bump (squash and wobble) and stay together, happy,
+ * for tuning.hugHold s (HUG_HOLD in src/game/tuning.ts, live in the dev panel), then pop into little
+ * hearts and shrink away in HUG_POP s.
+ */
+/** Fluffy: a bumped pair shows the awake face instead of stripes, once that picture is there. */
+const AWAKE = FLUFFY && hasArt('face-awake');
+const HUG_POP = 0.2;
+const hugHold = () => tuning.hugHold, hugEnd = () => tuning.hugHold + HUG_POP;
+/** Fluffy: the background pattern scrolls this fast (world px/s) from the top left to the bottom right. */
+const PATTERN_SPEED = 22;
+
 /** Jelly stretch spring (stiffness, damping: well under critical, so it overshoots and wobbles). */
 const SPRING = { k: 320, c: 8 };
 /** Jelly merge: the two dots press together (s), then the merged blob jiggles (s) and pops. */
@@ -120,10 +135,20 @@ export class Game extends Phaser.Scene {
     private marked = new Set<string>();
     private wobbles = new Map<string, Wobble>();
     private trails = new Map<string, Pt[]>();
+    /** Fluffy: the sparkle emitter of each moving ball, and the time since its last sparkle. */
+    private sparks = new Map<string, { fx: Phaser.GameObjects.Particles.ParticleEmitter; t: number }>();
     private stretches = new Map<string, Stretch>();
     /** Each pair's colour as the level has it (the shown colour may be swapped for the theme: recolour). */
     private levelColours = new Map<string, string>();
+    /** Lines that cross or run near each other (index pairs), for picking the colours shown per theme. */
+    private nearLines?: [number, number][];
     private merges: Merge[] = [];
+    // ---- Fluffy theme ----
+    private bg?: Phaser.GameObjects.TileSprite;
+    private bodies: Phaser.GameObjects.Image[] = [];
+    private faces: Phaser.GameObjects.Image[] = [];
+    /** Pairs that met: the two balls hug, happy, before they pop into hearts. */
+    private hugs: { pair: Pair; a: Pt; b: Pt; ra: number; rb: number; t: number }[] = [];
     // ---- Magic variant ----
     /** Door state shared with the Door scene (screen px / 0..1). */
     private door: DoorState = { off: DOOR_OPEN, glow: 0, burst: 0 };
@@ -151,7 +176,15 @@ export class Game extends Phaser.Scene {
         super('Game');
     }
 
+    preload() {
+        if (FLUFFY) preloadFluffy(this);
+    }
+
     create() {
+        if (FLUFFY) {
+            makeFluffy(this);
+            this.bg = this.add.tileSprite(0, 0, 1, 1, fluffyKey('pattern-light')).setDepth(-10);
+        }
         this.applyTheme();
         const off = onSettings(() => this.applyTheme());
         this.events.once('shutdown', off);
@@ -183,26 +216,31 @@ export class Game extends Phaser.Scene {
         // Magic: the door (Door scene, below) is the board.
         this.cameras.main.setBackgroundColor(MAGIC ? 'rgba(0,0,0,0)' : theme().background);
         if (!MAGIC) document.body.style.background = theme().background; // magic: the Door scene sets it
+        if (this.bg) {
+            // Fluffy: the pattern of the theme, one tile covering patternWorld() world px.
+            this.bg.setTexture(fluffyKey(theme().dark ? 'pattern-dark' : 'pattern-light'));
+            const k = patternWorld() / this.bg.frame.width;
+            this.bg.setTileScale(k, k);
+        }
         this.recolour();
     }
 
     /**
-     * Colours too close to the board of the current theme are shown as a readable colour of the same
-     * hue family (palette.readableColours); switching the theme swaps them again. The level file keeps
-     * its own colours.
+     * Colours not kept on the board of the current theme (palette.THEME_COLOURS) are shown as a kept
+     * colour that does not clash with the lines crossing or near them (palette.themeColours);
+     * switching the theme picks again. The level file keeps its own colours.
      */
     private recolour() {
         if (!this.level) return;
-        const swap = readableColours(this.level.pairs.map((p) => this.levelColours.get(p.id) ?? p.color), theme().background, theme().minContrast);
-        for (const p of this.level.pairs) {
-            const own = this.levelColours.get(p.id) ?? p.color;
-            p.color = swap.get(own) ?? own;
-        }
+        this.nearLines ??= nearPairs(this.level.pairs);
+        const shown = themeColours(this.level.pairs.map((p) => this.levelColours.get(p.id) ?? p.color), this.nearLines, theme().board);
+        this.level.pairs.forEach((p, i) => (p.color = shown[i]));
     }
 
     loadLevel(level: Level) {
         this.level = structuredClone(level);
         this.levelColours = new Map(this.level.pairs.map((p) => [p.id, p.color]));
+        this.nearLines = undefined;
         this.recolour();
         this.model = new BlockModel(this.level.pairs);
         this.alive = new Set(this.level.pairs.map((p) => p.id));
@@ -220,8 +258,11 @@ export class Game extends Phaser.Scene {
         this.freeBump = this.level.tutorial === 'collision';
         this.wobbles.clear();
         this.trails.clear();
+        for (const s of this.sparks.values()) s.fx.destroy();
+        this.sparks.clear();
         this.stretches.clear();
         this.merges = [];
+        this.hugs = [];
         this.setCutting(false);
         this.cameras.main.panEffect.reset();
         this.cameras.main.zoomEffect.reset();
@@ -393,6 +434,11 @@ export class Game extends Phaser.Scene {
         const cy = this.bounds.y + this.bounds.h / 2 - (HUD_HEIGHT - bottom) / 2 / this.baseZoom;
         cam.centerOn(cx, cy);
         this.home = { x: cx, y: cy };
+        if (this.bg) {
+            // Fluffy: big enough for any pan at the widest zoom (it zooms with the board).
+            const span = (Math.max(this.scale.width, this.scale.height) / this.baseZoom) * 3;
+            this.bg.setPosition(cx, cy).setSize(span, span);
+        }
         this.drawMap();
     }
 
@@ -544,7 +590,7 @@ export class Game extends Phaser.Scene {
                 if (dd < p[side].r + slack && (!best || dd < best.d)) best = { p, side, d: dd };
             }
         }
-        if (!best) return;
+        if (!best) { if (FLUFFY) this.ghostBalls(w); return; }
         this.events.emit('tapped');
         const ln = this.lines.get(best.p.id)!;
         this.movers.set(best.p.id, {
@@ -557,6 +603,8 @@ export class Game extends Phaser.Scene {
             t: 0
         });
         if (this.nudge?.id === best.p.id) this.nudge = null;
+        // Fluffy: a little puff of fur where the ball was tapped.
+        if (FLUFFY) this.furPuff(w, best.p[best.side].r, -Math.PI / 2, best.p.color, 180, 0, [11, 15]);
     }
 
     // ---------- simulation ----------
@@ -582,7 +630,7 @@ export class Game extends Phaser.Scene {
             const p = this.pair(id);
             const total = m.acc[m.acc.length - 1];
             // Jelly: the dot stops where it touches its partner (then they merge).
-            const end = JELLY ? Math.max(0, total - (p.a.r + p.b.r) * 0.9) : total;
+            const end = JELLY || FLUFFY ? Math.max(0, total - (p.a.r + p.b.r) * (FLUFFY ? 1 : 0.9)) : total;
             if (JELLY) this.stretchTo(`${id}:${m.side}`, m.returning ? tuning.returnSpeed : tuning.startSpeed + tuning.accel * m.t);
             else this.pushTrail(id, pointAt(m.pts, m.acc, m.s));
             if (m.returning) {
@@ -631,15 +679,66 @@ export class Game extends Phaser.Scene {
                 const to = m.side === 'a' ? 'b' : 'a';
                 const at = pointAt(m.pts, m.acc, m.s), before = pointAt(m.pts, m.acc, Math.max(0, m.s - 8));
                 const dir = at.x === before.x && at.y === before.y ? Math.atan2(p[to].y - at.y, p[to].x - at.x) : Math.atan2(at.y - before.y, at.x - before.x);
-                this.splash(at, p[m.side].r, dir + Math.PI, p.color);
-                this.splash(p[to], p[to].r, dir, p.color);
+                if (!FLUFFY) {
+                    this.splash(at, p[m.side].r, dir + Math.PI, p.color);
+                    this.splash(p[to], p[to].r, dir, p.color);
+                }
                 if (JELLY) this.merge(p, m);
+                else if (FLUFFY) this.hug(p, m);
                 else this.clear(p, m.side);
             }
         }
         for (const [k, w] of this.wobbles) { w.t += dt; if (w.t > WOBBLE.life) this.wobbles.delete(k); }
         if (JELLY) this.stepJelly(dt);
+        if (FLUFFY) this.stepFluffy(dt);
         this.draw();
+    }
+
+    /** Fluffy: the ball touched its partner: the pair leaves the board and the two balls hug, then pop into hearts. */
+    private hug(p: Pair, m: Mover) {
+        const to = m.side === 'a' ? 'b' : 'a';
+        const a = pointAt(m.pts, m.acc, m.s), b = { x: p[to].x, y: p[to].y };
+        const hug = { pair: p, a, b, ra: p[m.side].r, rb: p[to].r, t: 0 };
+        this.hugs.push(hug);
+        // Fur flies where the two touch.
+        const r = Math.max(p.a.r, p.b.r), at = { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 };
+        this.furPuff(at, r, -Math.PI / 2, p.color, 180, 0, [14, 18]);
+        this.removePair(p);
+    }
+
+    /** Fluffy: hugs run their course (then hearts), moving balls leave sparkles, and the background scrolls diagonally. */
+    private stepFluffy(dt: number) {
+        this.stepSparks(dt);
+        this.scrollPattern(dt);
+        for (const h of [...this.hugs]) {
+            const was = h.t;
+            h.t += dt;
+            if (was < hugHold() && h.t >= hugHold()) this.heartsAt(h);
+            if (h.t >= hugEnd()) this.hugs.splice(this.hugs.indexOf(h), 1);
+        }
+    }
+
+    /** Fluffy: little hearts in the pair's colour burst up from where the two balls touched. */
+    private heartsAt(h: { pair: Pair; a: Pt; b: Pt; ra: number; rb: number }) {
+        const c = { x: (h.a.x + h.b.x) / 2, y: (h.a.y + h.b.y) / 2 }, r = Math.max(h.ra, h.rb);
+        const hw = widthOf(this, 'heart');
+        const fx = this.add.particles(c.x, c.y, heartTexture(this, h.pair.color), {
+            angle: { min: -150, max: -30 }, speed: { min: r * 3, max: r * 8 }, gravityY: -r * 2,
+            lifespan: { min: 700, max: 1100 }, scale: { start: (r * 1.4) / hw, end: (r * 0.7) / hw },
+            alpha: { start: 1, end: 0 }, rotate: { min: -25, max: 25 }, emitting: false
+        });
+        fx.setDepth(3);
+        fx.explode(Phaser.Math.Between(6, 9));
+        this.time.delayedCall(1200, () => fx.destroy());
+    }
+
+    /** Fluffy: the background scrolls diagonally. */
+    private scrollPattern(dt: number) {
+        if (this.bg) {
+            const k = this.bg.tileScaleX || 1;
+            this.bg.tilePositionX -= (PATTERN_SPEED * dt) / k;
+            this.bg.tilePositionY -= (PATTERN_SPEED * dt) / k;
+        }
     }
 
     /** Jelly: the moving dot stretches more the faster it goes (spring target, eased in stepJelly). */
@@ -711,6 +810,7 @@ export class Game extends Phaser.Scene {
      * fall a little and shrink away. Some are lighter (the colour's highlight) for a wet look.
      */
     private splash(at: Pt, r: number, angle: number, name: string) {
+        if (FLUFFY) return this.furPuff(at, r, angle, name);
         const c = colour(name);
         const base = hexToInt(c?.base ?? COMPLETED_LINE), light = hexToInt(c?.gradient ?? '#ffffff');
         const deg = Phaser.Math.RadToDeg(angle);
@@ -726,6 +826,76 @@ export class Game extends Phaser.Scene {
         fx.setDepth(1);
         fx.explode(Phaser.Math.Between(6, 9));
         this.time.delayedCall(700, () => fx.destroy());
+    }
+
+    /**
+     * Fluffy: a few tufts of fur (the ball's colour) fly off and fade. A bump: off its far side (a fan of
+     * ±70° round `angle`, from its edge); a tap or two balls meeting: all round (spread 180) from `at`.
+     */
+    private furPuff(at: Pt, r: number, angle: number, name: string, spread = 70, from = 0.8, count: [number, number] = [10, 14]) {
+        const c = colour(name);
+        const base = hexToInt(c?.base ?? COMPLETED_LINE); // one colour: the ball's
+        const deg = Phaser.Math.RadToDeg(angle);
+        const fx = this.add.particles(at.x + Math.cos(angle) * r * from, at.y + Math.sin(angle) * r * from, fluffyKey('fur'), {
+            angle: { min: deg - spread, max: deg + spread }, speed: { min: r * 3, max: r * 8 }, gravityY: r * 6,
+            lifespan: { min: 500, max: 900 }, scale: { start: (r * 0.75) / widthOf(this, 'fur'), end: (r * 0.35) / widthOf(this, 'fur') },
+            alpha: { start: 1, end: 0 }, rotate: { min: -180, max: 180 }, tint: base, emitting: false
+        });
+        fx.setDepth(3);
+        fx.explode(Phaser.Math.Between(count[0], count[1]));
+        this.time.delayedCall(1000, () => fx.destroy());
+    }
+
+    /**
+     * Fluffy: a tap on empty board throws out a few tiny, very faint fluffy balls (every face, the level's
+     * colours) that fly up, tumble and fall away.
+     */
+    private ghostBalls(at: Pt) {
+        const r = this.level.pairs.reduce((s, p) => s + p.a.r, 0) / Math.max(1, this.level.pairs.length);
+        const tints = [...new Set(this.level.pairs.map((p) => p.color))].map((n) => hexToInt(colour(n)?.base ?? '#ffffff'));
+        const k = (r * 1.3) / widthOf(this, 'minis', true);
+        const fx = this.add.particles(at.x, at.y, fluffyKey('minis'), {
+            frame: MINI_FACES().map(String), angle: { min: -160, max: -20 }, speed: { min: r * 9, max: r * 16 }, gravityY: r * 40,
+            lifespan: { min: 900, max: 1300 }, scale: { min: k * 0.7, max: k }, alpha: { start: 0.38, end: 0 },
+            rotate: { min: -40, max: 40 }, tint: tints.length ? tints : [0xffffff], emitting: false
+        });
+        fx.setDepth(0.4);
+        fx.explode(Phaser.Math.Between(5, 7));
+        this.time.delayedCall(1400, () => fx.destroy());
+    }
+
+    /**
+     * Fluffy: a moving ball sheds small twinkling sparkles (white and its light colour) along its trail,
+     * one every SPARK_EVERY s; they drift, spin and shrink away. One emitter per moving ball.
+     */
+    private stepSparks(dt: number) {
+        const SPARK_EVERY = 0.03;
+        for (const [id, m] of this.movers) {
+            if (!this.alive.has(id)) continue;
+            const p = this.pair(id), r = p[m.side].r, pos = this.dotPos(p, m.side);
+            let s = this.sparks.get(id);
+            if (!s) {
+                const c = colour(p.color), k = (r * 0.5) / widthOf(this, 'sparkle');
+                const fx = this.add.particles(0, 0, fluffyKey('sparkle'), {
+                    speed: { min: r * 0.3, max: r * 1.4 }, lifespan: { min: 450, max: 800 },
+                    scale: { start: k, end: 0 }, alpha: { start: 1, end: 0.2 }, rotate: { start: 0, end: 180 },
+                    tint: [0xffffff, 0xffffff, hexToInt(c?.inner ?? '#ffffff'), hexToInt(c?.base ?? '#ffffff')],
+                    blendMode: Phaser.BlendModes.ADD, emitting: false
+                });
+                fx.setDepth(0.5);
+                this.sparks.set(id, (s = { fx, t: 0 }));
+            }
+            s.t += dt;
+            for (; s.t >= SPARK_EVERY; s.t -= SPARK_EVERY) {
+                const a = Math.random() * Math.PI * 2, d = r * (0.3 + Math.random() * 0.7);
+                s.fx.emitParticleAt(pos.x + Math.cos(a) * d, pos.y + Math.sin(a) * d, 1);
+            }
+        }
+        for (const [id, s] of this.sparks) {
+            if (this.movers.has(id) && this.alive.has(id)) continue;
+            this.sparks.delete(id);
+            this.time.delayedCall(900, () => s.fx.destroy());
+        }
     }
 
     /** Splash of sparks where a dot pops (bigger dots, bigger splash). */
@@ -756,7 +926,7 @@ export class Game extends Phaser.Scene {
             // The board stays empty (no picture behind the end screen); the end screen comes once the
             // splash has settled.
             if (MAGIC) { this.events.emit('allCleared'); this.openDoor(); }
-            else this.time.delayedCall(JELLY ? 500 + (PRESS + JIGGLE) * 1000 : 500, () => this.events.emit('win'));
+            else this.time.delayedCall(JELLY ? 500 + (PRESS + JIGGLE) * 1000 : FLUFFY ? 500 + hugEnd() * 1000 + 300 : 500, () => this.events.emit('win'));
         }
     }
 
@@ -829,7 +999,7 @@ export class Game extends Phaser.Scene {
             });
         }
         // Dots: soft drop shadows first (so they sit under every dot), then the glossy dots.
-        const dots: { pos: Pt; draw: Pt; r: number; name: string; sx: number; sy: number; angle: number; striped: boolean }[] = [];
+        const dots: { pos: Pt; draw: Pt; r: number; name: string; sx: number; sy: number; angle: number; striped: boolean; face?: Face }[] = [];
         for (const id of this.alive) {
             const p = this.pair(id);
             const m = this.movers.get(id);
@@ -857,10 +1027,44 @@ export class Game extends Phaser.Scene {
                     sx *= 1 - e; sy *= 1 + e;
                 }
                 const pos = this.dotPos(p, side);
+                if (FLUFFY) {
+                    // Fluffy: faces show what the ball is doing; asleep it breathes (each in its own rhythm),
+                    // running it bounces wide-eyed, bumped it squeezes its eyes shut.
+                    const moving = m && m.side === side, now = this.time.now / 1000;
+                    const phase = (id.charCodeAt(id.length - 1) * 1.7 + (side === 'b' ? 2.1 : 0)) % (Math.PI * 2);
+                    const ouch = (w && w.t < 0.6) || (moving && m!.returning);
+                    // A marked pair (it has bumped) is awake: eyes open instead of the stripes (once face-awake.png is there).
+                    const awake = AWAKE && this.marked.has(id);
+                    const face: Face = ouch ? 'ouch' : moving ? 'surprised' : awake ? 'awake' : 'sleep';
+                    let fx = 1, fy = 1, bob = 0;
+                    if (moving) { const b = Math.sin(now * 26); fx = 1.06 * (1 - 0.05 * b); fy = 1.06 * (1 + 0.05 * b); }
+                    else { const b = Math.sin(now * 2.6 + phase); fx = 1 - 0.025 * b; fy = 1 + 0.045 * b; bob = -p[side].r * 0.07 * b; }
+                    if (w) { const e = w.amp * 1.3 * Math.exp(-w.t * WOBBLE.decay) * Math.cos(w.t * WOBBLE.freq); fx *= 1 + e; fy *= 1 - e; }
+                    const at = { x: pos.x, y: pos.y + bob };
+                    dots.push({ pos, draw: at, r: p[side].r, name: p.color, sx: fx, sy: fy, angle: 0, striped: !AWAKE && this.marked.has(id), face });
+                    continue;
+                }
                 dots.push({ pos, draw: pos, r: p[side].r, name: p.color, sx, sy, angle, striped: this.marked.has(id) });
             }
         }
         for (const mg of this.merges) dots.push(...this.mergeDots(mg));
+        for (const h of this.hugs) {
+            if (h.t < hugHold()) {
+                // First they meet like a bump: knocked a little apart and back, squashing and wobbling
+                // (the one that ran more), happy.
+                const away = Math.atan2(h.b.y - h.a.y, h.b.x - h.a.x), u = h.t * 16, kick = u * Math.exp(1 - u);
+                for (const [pt, r, amp, dir] of [[h.a, h.ra, WOBBLE.mover, -1], [h.b, h.rb, WOBBLE.hit, 1]] as const) {
+                    const e = amp * 1.3 * Math.exp(-h.t * WOBBLE.decay) * Math.cos(h.t * WOBBLE.freq), push = r * 0.22 * kick * dir;
+                    const q = { x: pt.x + Math.cos(away) * push, y: pt.y + Math.sin(away) * push };
+                    dots.push({ pos: q, draw: q, r, name: h.pair.color, sx: 1 + e, sy: 1 - e, angle: 0, striped: false, face: 'happy' });
+                }
+                continue;
+            }
+            // Then they vanish as the hearts burst: swell a touch and shrink to nothing.
+            const u = Math.min(1, (h.t - hugHold()) / HUG_POP), k = (1 + 0.15 * Math.sin(Math.PI * Math.min(1, u * 2))) * (1 - u * u);
+            for (const [pt, r] of [[h.a, h.ra], [h.b, h.rb]] as const)
+                if (k > 0.02) dots.push({ pos: pt, draw: pt, r: r * k, name: h.pair.color, sx: 1, sy: 1, angle: 0, striped: false, face: 'happy' });
+        }
         for (const d of dots) this.drawShadow(d.pos, d.r, d.sx, d.sy, d.angle);
         this.overG.clear();
         if (MAGIC && orbTexture(this, 'blue')) {
@@ -874,6 +1078,22 @@ export class Game extends Phaser.Scene {
                 if (d.striped) this.drawDot(d.draw, d.r, d.name, d.sx, d.sy, d.angle, true, this.overG);
             });
             for (let i = dots.length; i < this.orbs.length; i++) this.orbs[i].setVisible(false);
+        } else if (FLUFFY) {
+            // Fluffy balls: the body in the pair's colour, the face over it (same frame), stripes on top.
+            dots.forEach((d, i) => {
+                const tex = ballTexture(this, d.name);
+                const body = (this.bodies[i] ??= this.add.image(0, 0, tex).setDepth(1));
+                if (body.texture.key !== tex) body.setTexture(tex);
+                const k = (2 * d.r) / (body.frame.width * ballFill());
+                body.setVisible(true).setPosition(d.draw.x, d.draw.y).setScale(d.sx * k, d.sy * k);
+                const ftex = fluffyKey(`face-${d.face ?? 'sleep'}`);
+                const face = (this.faces[i] ??= this.add.image(0, 0, ftex).setDepth(1.5));
+                if (face.texture.key !== ftex) face.setTexture(ftex);
+                const ff = faceFrame(d.face ?? 'sleep'), kf = (2 * d.r * ff.span) / face.frame.width;
+                face.setVisible(true).setPosition(d.draw.x, d.draw.y + d.r * ff.drop * d.sy).setScale(d.sx * kf, d.sy * kf);
+                if (d.striped) this.drawDot(d.draw, d.r, d.name, d.sx, d.sy, 0, true, this.overG);
+            });
+            for (let i = dots.length; i < this.bodies.length; i++) { this.bodies[i].setVisible(false); this.faces[i]?.setVisible(false); }
         } else for (const d of dots) this.drawDot(d.draw, d.r, d.name, d.sx, d.sy, d.angle, d.striped);
     }
 
@@ -902,6 +1122,15 @@ export class Game extends Phaser.Scene {
     /** Soft drop shadow below-right of a dot (light from the top-left). */
     private drawShadow(pos: Pt, r: number, sx: number, sy: number, angle: number) {
         const g = this.gfx;
+        if (FLUFFY) {
+            // Fluffy: a soft flat contact shadow on the ground under the ball (the fur would show a disc's edge).
+            const th = theme();
+            g.fillStyle(th.shadow, th.shadowAlpha[0]);
+            g.fillEllipse(pos.x + r * 0.05, pos.y + r * 0.82, r * 1.9 * sx, r * 0.55);
+            g.fillStyle(th.shadow, th.shadowAlpha[1]);
+            g.fillEllipse(pos.x + r * 0.05, pos.y + r * 0.82, r * 1.5 * sx, r * 0.35);
+            return;
+        }
         g.save();
         g.translateCanvas(pos.x + r * 0.14, pos.y + r * 0.3);
         g.rotateCanvas(angle);

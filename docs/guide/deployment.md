@@ -10,7 +10,8 @@ The site is built **on your machine** and pushed to the `gh-pages` branch. GitHu
 | [`/dot-line/docs/`](https://taigd98.github.io/dot-line/docs/) | Latest documentation |
 | [`/dot-line/editor/`](https://taigd98.github.io/dot-line/editor/) | Level editor (latest only, not in version snapshots) |
 | [`/dot-line/magic/`](https://taigd98.github.io/dot-line/magic/) | Magic variant: the same build and levels, the level carved into a door (flag `'magic'`; locally: `?mode=magic`; art from `art/magic/`) |
-| `/dot-line/vX.Y.Z/demo/`, `/vX.Y.Z/jelly/`, `/vX.Y.Z/magic/`, `/vX.Y.Z/docs/` | A frozen release (jelly and magic from v0.5.0 on) |
+| [`/dot-line/fluffy/`](https://taigd98.github.io/dot-line/fluffy/) | Fluffy theme: the same build and levels with fluffy balls (flag `'fluffy'`; locally: `?mode=fluffy`; art from `src/assets/fluffy/`) |
+| `/dot-line/vX.Y.Z/demo/`, `/vX.Y.Z/jelly/`, `/vX.Y.Z/magic/`, `/vX.Y.Z/fluffy/`, `/vX.Y.Z/docs/` | A frozen release (jelly and magic from v0.5.0 on, fluffy from v0.6.0) |
 
 ## Updating latest
 

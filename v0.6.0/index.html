@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Dot Line</title>
+    <style>
+      :root { color-scheme: light; }
+      body {
+        margin: 0; min-height: 100vh; display: grid; place-items: center;
+        background: linear-gradient(#2b2d42, #8d99ae); color: #f5f5f5;
+        font-family: system-ui, -apple-system, sans-serif;
+      }
+      main { text-align: center; padding: 16px; }
+      h1 { font-size: 2.5rem; margin: 0 0 8px; }
+      p { color: #e0e0e0; margin: 0 0 32px; }
+      nav { display: flex; gap: 16px; justify-content: center; flex-wrap: wrap; }
+      a {
+        display: block; padding: 14px 28px; border-radius: 10px;
+        text-decoration: none; font-weight: 600; color: #fff; background: #ff9f1c;
+      }
+      a.jelly { background: #ef476f; }
+      a.magic { background: #7b4fd6; }
+      a.fluffy { background: #2bb5a0; }
+      a.alt { background: #fff; color: #2b2d42; border: 2px solid #ff9f1c; }
+      a:hover { filter: brightness(1.1); }
+      #versions { margin-top: 40px; display: none; }
+      #versions h2 { font-size: 1.1rem; margin: 0 0 12px; }
+      #versions ul { list-style: none; padding: 0; margin: 0; display: grid; gap: 8px; }
+      #versions li { display: flex; gap: 12px; align-items: center; justify-content: center; }
+      #versions li a { display: inline; padding: 6px 14px; font-size: 0.9rem; }
+      #versions code { min-width: 9em; text-align: right; }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>Dot Line</h1>
+      <p>A one-tap puzzle where you send each dot along its line to its partner without bumping into other dots</p>
+      <nav>
+        <a href="./demo/">Play Classic</a>
+        <a class="jelly" href="./jelly/">Play Jelly</a>
+        <a class="magic" href="./magic/">Play Magic</a>
+        <a class="fluffy" href="./fluffy/">Play Fluffy</a>
+        <a class="alt" href="./docs/">Documentation</a>
+        <a class="alt" id="editor-link" href="./editor/">Level editor</a>
+      </nav>
+      <section id="versions">
+        <h2>All versions</h2>
+        <ul></ul>
+      </section>
+    </main>
+    <script>
+      // versions.json lives at the site root; versioned copies of this page sit one level down.
+      // Each variant exists from this version on (older frozen versions do not have it).
+      const VARIANTS = [['jelly', 'Jelly', 'v0.5.0'], ['magic', 'Magic', 'v0.5.0'], ['fluffy', 'Fluffy', 'v0.6.0']];
+      const atLeast = (v, min) => { const a = v.slice(1).split(/[.-]/).map(Number), b = min.slice(1).split('.').map(Number); for (let i = 0; i < 3; i++) if (a[i] !== b[i]) return a[i] > b[i]; return true; };
+      const root = /\/v\d[^/]*\/(index\.html)?$/.test(location.pathname) ? '../' : './';
+      fetch(root + 'versions.json')
+        .then((r) => (r.ok ? r.json() : { versions: [] }))
+        .then(({ versions }) => {
+          const list = document.querySelector('#versions ul');
+          if (root !== './') document.getElementById('editor-link').href = root + 'editor/';
+          for (const v of ['latest', ...versions]) {
+            const dir = v === 'latest' ? root : `${root}${v}/`;
+            const li = document.createElement('li');
+            const extra = VARIANTS.filter(([, , min]) => v === 'latest' || atLeast(v, min)).map(([k, name]) => `<a class="${k}" href="${dir}${k}/">${name}</a>`).join('');
+            li.innerHTML = `<code></code><a href="${dir}demo/">Play</a>${extra}<a class="alt" href="${dir}docs/">Docs</a>`;
+            li.querySelector('code').textContent = v;
+            list.append(li);
+          }
+          if (versions.length) document.getElementById('versions').style.display = 'block';
+        })
+        .catch(() => {});
+    </script>
+  </body>
+</html>

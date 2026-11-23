@@ -4,9 +4,15 @@ Every published version stays playable at its own URL. The [landing page](https:
 
 ## latest (main) <Badge type="tip" text="Live" />
 
-- No changes since v0.7.0.
+- No changes since v0.7.1.
 
 [Play latest](https://taigd98.github.io/dot-line/demo/)
+
+## v0.7.1
+
+- **Loading screen turned off for now:** PLAY, CONTINUE and HOME switch straight to the next screen (the level's intro still runs).
+
+[Play v0.7.1](https://taigd98.github.io/dot-line/v0.7.1/demo/) · [Docs v0.7.1](https://taigd98.github.io/dot-line/v0.7.1/docs/)
 
 ## v0.7.0
 
@@ -130,3 +136,4 @@ Every published version stays playable at its own URL. The [landing page](https:
 | 2026-11-18 | Released v0.3.0 |
 | 2026-11-20 | Released v0.6.0 |
 | 2026-11-23 | Released v0.7.0 |
+| 2026-11-23 | Released v0.7.1 |

@@ -124,6 +124,9 @@ export interface BoardState {
 }
 
 /** Board: lines, dots, taps, collisions, pinch zoom and pan. HUD lives in the Hud scene. */
+/** Show the loading screen (Transition.ts) between Home and levels; off for now. */
+const LOADING_SCREEN = false;
+
 export class Game extends Phaser.Scene {
     private level!: Level;
     private model!: BlockModel;
@@ -448,10 +451,12 @@ export class Game extends Phaser.Scene {
     }
 
     /**
-     * The loading screen (Transition.ts): it slides in, `covered` switches what is under it, its loading
+     * The loading screen (Transition.ts; off while LOADING_SCREEN is false): it slides in, `covered` switches what is under it, its loading
      * runs to 100%, and the new screen slides in; then `done`. `toLevel`: from the right, else from the left.
      */
     transition(covered: () => void, done: () => void = () => undefined, toLevel = true) {
+        // The loading screen is off for now: switch at once. Set LOADING_SCREEN to true to bring it back.
+        if (!LOADING_SCREEN) { covered(); done(); return; }
         // Into a level: the loading screen and then the play screen come from the right; back Home: from the left.
         const reveal = toLevel ? (MAGIC ? ['Door', 'Game', 'Hud'] : ['Game', 'Hud']) : ['Home'];
         this.scene.launch('Transition', { covered, done, dir: toLevel ? 1 : -1, reveal });

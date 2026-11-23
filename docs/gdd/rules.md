@@ -11,11 +11,12 @@
 
 ## 3.2 Tap và di chuyển <Badge type="tip" text="Live" />
 
+- **Vào level (mọi bản):** hai bóng của mỗi cặp cùng nằm ở đầu thứ nhất của dây, bóng thứ hai **chạy theo dây sang đầu kia** (0,35–0,85 giây tùy độ dài dây, chậm dần khi tới nơi), dây hiện ra phía sau nó, nên các bóng chạy thành hình của level. Trong lúc này chưa chạm được bóng; chữ và tay hướng dẫn (tutorial) hiện khi mọi bóng đã tới chỗ. Bản Fluffy: cục đang chạy mở to mắt như lúc chạy bình thường. Bản Magic: chạy sau khi cửa sập (3.3b3).
 - Người chơi tap vào một hạt bất kỳ; hạt đó là **hạt di chuyển**, hạt còn lại của cặp là **hạt đích**.
 - Hạt di chuyển chạy **dọc theo sợi dây** về phía hạt đích; dây ngắn dần sau lưng nó.
 - Khi một hạt đang chạy, **không tap được hạt còn lại của cặp đó**.
 - Khi một hạt đang chạy, người chơi **vẫn tap được hạt của các cặp khác**; nhiều hạt có thể chạy cùng lúc.
-- Tốc độ di chuyển: chấm **khởi đầu ở 500 px thế giới / giây** và **tăng đều lên 750 px/giây sau 1 giây**, rồi giữ nguyên gia tốc đó (250 px/s²) cho tới hết quãng đường còn lại (`START_SPEED`, `MOVE_SPEED` trong `src/game/tuning.ts`). Khi bị chặn và quay về: **1020 px/giây** (= 1,36 × `MOVE_SPEED`). Chỉnh `MOVE_SPEED` bằng thanh cheat ⚙ speed trong game (bản Fluffy: ⚙ tuning); bấm Confirm khi chạy local để ghi vào code. Lấy theo cảm giác của clip tham khảo; chỉnh lại khi chơi thử.
+- Tốc độ di chuyển: chấm **khởi đầu ở 500 px thế giới / giây** và **tăng đều lên 750 px/giây sau 1 giây**, rồi giữ nguyên gia tốc đó (250 px/s²) cho tới hết quãng đường còn lại (`START_SPEED`, `MOVE_SPEED` trong `src/game/tuning.ts`). Khi bị chặn và quay về: **1020 px/giây** (= 1,36 × `MOVE_SPEED`). Chỉnh `MOVE_SPEED` bằng thanh cheat ⚙ dev trong game; bấm Confirm khi chạy local để ghi vào code. Lấy theo cảm giác của clip tham khảo; chỉnh lại khi chơi thử.
 - **Zoom:** người chơi chụm 2 ngón tay để thu nhỏ và kéo 2 ngón ra để phóng to board, tối đa 3 lần. Khi đang phóng to, người chơi kéo (pan) được board. Zoom chỉ áp dụng cho board, HUD giữ nguyên kích thước.
 
 ## 3.3 Va chạm <Badge type="tip" text="Live" />
@@ -59,21 +60,21 @@ Bản game phụ tại [`/fluffy/`](https://taigd98.github.io/dot-line/fluffy/) 
 | Lúc | Mặt | Chuyển động / hiệu ứng |
 |---|---|---|
 | Đứng yên | ngủ (nhắm mắt) | thở: phồng xẹp (dọc ±4,5%, ngang ±2,5%) và nhấp nhô lên xuống 7% bán kính, mỗi cục lệch nhịp |
-| Đứng yên, cặp đã va chạm (bị đánh dấu) | ngủ, có sọc trắng như bản thường. **Khi có ảnh `face-awake.png`:** thức, mở mắt, không sọc | thở như lúc ngủ |
+| Đứng yên, cặp đã va chạm (bị đánh dấu) | **thức, mở mắt** (thay cho sọc trắng) | thở như lúc ngủ |
 | Tap vào cục | | 11–15 túm lông bay ra mọi phía ngay chỗ tap |
 | Tap vào khoảng trống | | 5–7 cục lông tí hon (đủ 4 biểu cảm, màu các cặp trong level, rất mờ) văng lên, xoay rồi rơi xuống và mờ dần |
 | Đang chạy | mắt tròn, ngạc nhiên | to hơn 6%, nảy nhanh; **trail dài** (24 khung hình) màu của cục, rắc **sparkle** lấp lánh (sao 4 cánh trắng và màu của cục, xoay và nhỏ dần) |
 | Va chạm (cả hai cục) | `> <` (0,6 giây, và suốt lúc bị bật về) | bẹp rồi nảy; 10–14 túm lông **đúng một màu, màu của cục đó**, bay ra phía ngoài chỗ chạm, trôi nhẹ rồi mờ dần |
-| Tới bóng cùng cặp | `^ ^` vui | dừng lúc chạm nhau: 14–18 túm lông bay ra mọi phía chỗ hai cục chạm, hai cục **va như hai cục va chạm** (bật ra một chút rồi về, bẹp và rung) và đứng cạnh nhau **0,2 giây** (`HUG_HOLD` trong `src/game/tuning.ts`; chỉnh bằng thanh *Pair touch → hearts* trong cheat ⚙ tuning của bản Fluffy, bấm Confirm khi chạy local để ghi vào code); rồi 6–9 trái tim nhỏ **cùng màu với cặp** bay lên, cùng lúc hai cục phồng nhẹ rồi thu nhỏ hết trong 0,2 giây |
+| Tới bóng cùng cặp | `^ ^` vui | dừng lúc chạm nhau: 14–18 túm lông bay ra mọi phía chỗ hai cục chạm, hai cục **va như hai cục va chạm** (bật ra một chút rồi về, bẹp và rung) và đứng cạnh nhau **0,2 giây** (`HUG_HOLD` trong `src/game/tuning.ts`; chỉnh bằng thanh *Pair touch → hearts* trong cheat ⚙ dev của bản Fluffy, bấm Confirm khi chạy local để ghi vào code); rồi 6–9 trái tim nhỏ **cùng màu với cặp** bay lên, cùng lúc hai cục phồng nhẹ rồi thu nhỏ hết trong 0,2 giây |
 
-- **Nền:** ô pattern các mặt cục lông (4 biểu cảm, xếp chéo), tương phản thấp, thưa và nhỏ (các mặt nhỏ, cách nhau xa, nhạt gần như màu nền), mỗi theme một ô (kem / xanh đậm). Nền nằm trong board nên **zoom cùng board**, mỗi ô phủ 1024 px của board, và **cuộn chậm theo đường chéo** từ trên trái xuống dưới phải (22 px/giây).
-- **Tutorial:** bàn tay 👆 như bản thường. **Khi có ảnh `hand.png`:** thay bằng bàn chân lông xù, đầu ngón đặt đúng vào cục.
-- **Màu:** thân xám của cục lông (lông mờ, không bóng, sợi lông rõ, đánh sáng từ trên trái nên thấy khối tròn; hướng đèn và độ sáng tối chỉnh bằng nhóm *Ball light* trong cheat ⚙ tuning: hướng đèn, độ cao đèn, độ sáng phía tối, độ sáng phía được chiếu, độ sáng mềm chỗ chiếu mạnh nhất; `LIGHT_*` trong `src/game/tuning.ts`) được tô theo 28 màu như bóng orb; cục bị đánh dấu (đã va chạm) có sọc trắng (khi có ảnh mặt thức thì bỏ sọc, thay bằng mặt thức).
+- **Nền:** ô pattern các mặt cục lông (4 biểu cảm, xếp chéo), tương phản thấp, thưa và nhỏ (các mặt nhỏ, cách nhau xa, nhạt gần như màu nền), mỗi theme một ô (kem / xanh đậm). Nền nằm trong board nên **zoom cùng board**, mỗi ô phủ 1024 px của board, và **cuộn chậm theo đường chéo** từ trên trái xuống dưới phải (4 px/giây, `PATTERN_SPEED` trong `src/scenes/Game.ts`).
+- **Tutorial:** bàn tay chung của mọi theme (ảnh găng tay trắng chỉ ngón trỏ), đầu ngón đặt đúng vào cục.
+- **Màu:** thân xám của cục lông (lông mờ, không bóng, sợi lông rõ, đánh sáng từ trên trái nên thấy khối tròn; hướng đèn và độ sáng tối chỉnh bằng nhóm *Ball light* trong cheat ⚙ dev: hướng đèn, độ cao đèn, độ sáng phía tối, độ sáng phía được chiếu, độ sáng mềm chỗ chiếu mạnh nhất; `LIGHT_*` trong `src/game/tuning.ts`) được tô theo 28 màu như bóng orb; cục bị đánh dấu (đã va chạm) không có sọc, thay bằng mặt thức.
 - Màn Well Done đến 1 giây sau khi cặp cuối biến mất (với `HUG_HOLD` 0,2: 1,2 giây sau khi chạm nhau).
 
 ## 3.3c Giao diện sáng / tối <Badge type="tip" text="Live" />
 
-Bật trong **Settings** (nút Pause ở góc trên trái mở Settings, game tạm dừng; nút **THEME: LIGHT/DARK**, ghi nhớ trong trình duyệt, mặc định sáng).
+Bật bằng **nút tròn ở góc trên phải** khi đang chơi (mặt trời / sáng, mặt trăng / tối), ghi nhớ trong trình duyệt, mặc định sáng.
 
 | | Sáng | Tối |
 |---|---|---|
@@ -91,16 +92,17 @@ Bật trong **Settings** (nút Pause ở góc trên trái mở Settings, game t�
 
 ## 3.5 Thắng và thua <Badge type="tip" text="Live" />
 
-- **Thắng:** mọi cặp trên board đã biến mất → confetti và màn "Well Done!" (board để trống, không hiện lại hình vẽ phía sau).
+- **Thắng:** mọi cặp trên board đã biến mất → màn "Well Done!" có confetti (3.9). Nếu còn theme chưa mở, pop-up có **thanh tiến trình tới theme kế tiếp**: tên theme, thanh "Level x / y" (level đã tới / level mở khóa) chạy từ chỗ cũ tới chỗ mới, tới đủ thì hiện "Unlocked!". **CONTINUE**: các pop-up bóng / nền mới (nếu có), rồi vào level kế tiếp (3.9).
 - **Kết thúc level:** bóng cuối chạy với tốc độ bình thường; khi nổ, màn "Well Done!" hiện sau khoảng 0,5 giây (không còn slow motion hay zoom).
 - **Kéo màn:** kéo được ở mọi mức zoom, kể cả nhỏ nhất.
-- **Thua:** mỗi lần va chạm mất 1 tim, mỗi level có 3 tim. Hết tim = thua màn. Màn "Out of Hearts!" có 2 nút: **PLAY ON** (xanh, nhãn AD, xem quảng cáo; chưa nối quảng cáo thật): hồi đủ 3 tim và chơi tiếp đúng từ chỗ đang dở (các cặp đã dọn vẫn mất, cặp đã sọc vẫn sọc); **QUIT** (xám): mở pop-up **"Are you sure?"** cho thấy tiến độ level ("You have cleared X of Y lines.", thanh tiến độ và %) kèm cảnh báo "If you replay now, you will lose your progress on this level.", với 2 nút **PLAY ON** (xanh, AD, như trên) và **REPLAY** (đỏ: chơi lại level từ đầu). Màn thắng "Well Done!" (confetti, nút CONTINUE) và màn thua "Out of Hearts!" (nút RETRY) vẽ trong Phaser theo phong cách của skill `prototype-ui` (font Lilita One, tiêu đề gradient).
+- **Thua:** mỗi lần va chạm mất 1 tim, mỗi level có 3 tim. Hết tim = thua màn. Màn "Out of Hearts!" có **3 trái tim hiện lại lần lượt** ở giữa, như hàng tim trên thanh HUD: tim nhạt, rồi từng tim đỏ bật lên (to quá cỡ rồi về đúng cỡ), cách nhau 0,11 giây; **cứ 2 giây chạy lại một lần**. Chỉ dùng ảnh tim (icon) và tween màu / cỡ, không dùng ảnh động (Unity làm lại bằng DOTween hoặc Animator) và 2 nút: **PLAY ON** (cam đào, nhãn AD, xem quảng cáo; chưa nối quảng cáo thật): hồi đủ 3 tim và chơi tiếp đúng từ chỗ đang dở (các cặp đã dọn vẫn mất, cặp đã sọc vẫn sọc); **GIVE UP** (đỏ): nếu đã dọn được ít nhất một dây, mở pop-up **"Are you sure?"** cho thấy tiến độ level ("You have cleared X of Y lines.", thanh tiến độ và %) kèm dòng đỏ to "You will lose your progress", với 2 nút **PLAY ON** (cam, AD, như trên) và **REPLAY** (đỏ: chơi lại level từ đầu); chưa dọn dây nào thì chơi lại luôn, không hỏi. Màn thắng "Well Done!" (confetti, nút CONTINUE) và màn thua "Out of Hearts!" (nút RETRY) vẽ trong Phaser theo phong cách của skill `prototype-ui` (font Lilita One, tiêu đề gradient).
 
 ## 3.6 HUD và nút (theo clip) <Badge type="tip" text="Live" />
 
 | Vị trí | Thành phần |
 |---|---|
-| Trên cùng, bên trái | Nút Pause: mở Settings (tạm dừng game, chọn giao diện sáng/tối, RESUME) |
+| Trên cùng, bên trái | Nút Pause: mở **pop-up Settings** (tạm dừng game; `src/scenes/settingsui.ts`): tiêu đề trong thẻ, nút **X** ở góc trên phải (đóng và chơi tiếp; bấm ra ngoài thẻ cũng vậy); từ trên xuống: một ô lõm chứa **3 nút tròn bật/tắt** Sound FX (loa), Music (nốt nhạc), Vibration (điện thoại rung) (tắt thì nút xám có gạch chéo, ghi nhớ trong trình duyệt, mặc định bật; game chưa có âm thanh; rung: bóng va chạm thì máy rung ngắn 35 ms nếu máy hỗ trợ), rồi nút dài **RESTART** (chơi lại level từ đầu, các bóng chạy thành hình lại), rồi nút dài **HOME** (về màn Home); bấm RESTART hay HOME thì, **nếu đã dọn được ít nhất một dây**, hiện **"Are you sure?"** trước (số dây đã dọn, thanh % tiến độ, dòng đỏ "You will lose your progress"); chưa dọn dây nào thì làm luôn, không hỏi; với nút xác nhận (RESTART / HOME) và **CANCEL** (đóng pop-up, chơi tiếp luôn); dưới cùng là số phiên bản. Không có nút Resume (đóng bằng X) |
+| Trên cùng, bên phải | Nút tròn **sáng / tối**: icon mặt trời (theme sáng, nút vàng) / mặt trăng (theme tối, nút xanh đậm); bấm là đổi ngay |
 | Trên cùng, ở giữa | 3 trái tim (mạng) |
 | Dưới HUD | Thanh tiến độ: % cặp đã dọn trong level |
 | Panel dưới cùng | Dải booster, cùng màu nền với board và nằm đè lên vùng chơi (board trượt xuống dưới nó khi zoom/kéo), góc trên bo tròn, bóng đổ nhẹ. Dải trên cùng (HUD) cũng có nền như vậy. Chạm vào 2 dải này không tính là chạm vào board. |
@@ -190,3 +192,37 @@ Vì màu thay tùy theo các dây xung quanh, cùng một màu gốc có thể t
 - **Nhãn "Hard"** hiện trên tim ở các level vị trí khó của hệ thống level (`category: "hard"`); level không thuộc hệ thống thì hiện khi độ khó từ 4 trở lên.
 - Số cặp mỗi level, số màu, cách tăng độ khó qua các level: _TBD_.
 - Điều kiện để level giải được: luôn tồn tại một thứ tự gỡ dọn sạch được board. Cách kiểm tra (bằng tay hay bằng công cụ): _TBD_.
+
+## 3.9 Màn Home và chọn theme <Badge type="tip" text="Live" />
+
+Vào game là màn **Home** (theo wireframe Home; `src/scenes/Home.ts`), game tạm dừng phía sau. **Theme chỉ đổi bóng và nền board, không đổi UI**. Mọi pop-up dùng chung một khung có **dải đầu cam đào chứa tiêu đề**, phần thân giấy kem chứa nội dung. UI dùng một **palette lấy từ màn chơi** (`PALETTE` trong `src/game/skinui.ts`): nền kem, giấy kem nhạt, viền nâu nhạt, nút chính cam đào, nút tròn và booster hồng nhạt (cả Hint và Cut), tím cho level khó, chữ nâu, viền chữ navy; ảnh UI màu khác được tô lại theo palette. pop-up, nút và màn Home dùng **một bộ UI chung** (ảnh `art/ui/` qua `npm run art:ui`, xem [Ảnh còn thiếu](../guide/ui-assets); phần chưa có ảnh vẽ bằng code theo `src/game/skinui.ts`).
+
+| Loại | Lựa chọn (mở khi người chơi **thắng** level) | Ghi chú |
+|---|---|---|
+| **Bóng** (`SKINS`) | **Jelly** (mặc định, có sẵn), **Water** (thắng level 5), **Fluffy** (thắng level 10) | Jelly: bóng thạch bóng loáng, không idle (cả ở màn Theme). Water: bong bóng nước trong đầy nước màu; nước **sóng sánh** bên trong (vân nước uốn theo sóng chạy qua lại, vòng 12 khung hình, 7 khung/giây khi đứng yên, 16 khi chạy hay rung; quả bóng không xoay), ánh sáng trên trái nằm ở lớp vỏ. Fluffy: 3.3b4 |
+| **Nền** (`BACKGROUNDS`) | **Classic** (mặc định, có sẵn: màu board trơn, kem / xanh đậm theo sáng / tối), **Fluffy** (thắng level 10: hoa văn mặt cục lông cuộn chéo) | Chọn riêng với bóng: bóng nào cũng đặt trên nền nào cũng được |
+
+Bản Magic không nằm trong danh sách, vẫn ở link `/magic/` riêng. Tiến độ (level chơi tiếp, level cao nhất đã tới), bóng và nền đang dùng ghi nhớ trong trình duyệt (`src/game/progress.ts`, `src/game/mode.ts`).
+
+- **Tab Home:** đường level dọc ở giữa; nút level có **dạng nút tròn của booster**: nút dưới cùng (to, màu cam đào, nhịp nhẹ) là level chơi tiếp, 4 level kế tiếp ở trên (hồng nhạt), nối bằng đường trắng viền tối; level khó (nhãn Hard) màu **tím**. Nút **PLAY** chơi level đó.
+- **Nút Settings** ở góc trên phải màn Home (icon bánh răng): cùng pop-up Settings nhưng **chỉ có 3 nút bật/tắt** (không có Restart, Home).
+- **Màn chuyển cảnh** (`src/scenes/Transition.ts`): giữa Home và level (bấm PLAY), từ Well Done sang level mới (CONTINUE) và từ level về Home (HOME). Nền giống màn Home (kem, mây), phía dưới là **thanh tải dạng hai quả bóng cùng màu** của loại bóng đang dùng: **bóng trái đứng yên** ở mép trái, **bóng phải chạy dần sang phải** theo tiến độ, giữa là **sợi dây nhấp nhô** (sóng chạy dọc dây) thay cho thanh progress; phía trên là **số phần trăm** (0% → 100%). Thứ tự: màn chuyển cảnh **trượt vào** (0,32 giây) đè lên màn đang rời → tải chạy tới **100%** (0,9 giây) → **chờ 0,5 giây** → màn mới **trượt vào** cùng hướng trong khi màn chuyển cảnh trượt ra phía bên kia. Vào level (từ Home hoặc Well Done): trượt **từ phải sang**; về Home: **ngược lại, từ trái sang**. Màn chơi đổi ngay sau khi màn chuyển cảnh phủ kín; level mới chỉ hiện bóng và chạy intro khi màn chuyển cảnh đã tắt (sau pop-up mở khóa nếu có).
+- **Chuyển tab trượt ngang:** màn mới trượt vào từ phía của tab đó (Home → Theme: Theme trượt vào từ bên phải, màn Home trượt ra bên trái; quay lại thì ngược lại), 0,32 giây. Nút góc trên phải thuộc về từng màn và trượt theo màn đó: màn Home có nút Settings, màn Theme có nút X (đỏ, về Home). Đổi tab Ball / Background trong Theme thì vẽ lại tại chỗ.
+- **Thanh tab dưới cùng** (nền giấy, viền trên mảnh, không viền màu, không vạch đen): **Shop** (nhãn SOON, bấm hiện "Shop is coming soon"), **Home**, **Theme**; tab đang chọn có nền tô sáng.
+- **Tab Theme:** banner **"Theme"** to ở trên (ảnh ruy băng; ruy băng chỉ dùng ở đây, pop-up không có); bên dưới là một bảng có **2 tab: Ball / Background** (hai tab đặt khít trên mép bảng; bảng viền mỏng cùng màu tab đang chọn). Mỗi tab là lưới ô (3 ô một hàng): khung ô **ôm sát thumbnail**, **tên nằm bên ngoài, dưới khung**. Ô bóng là **bóng màu đỏ** của loại đó với idle animation (Jelly rung nhẹ, Water sóng sánh, Fluffy thở); ô nền: Classic là ô kem trơn, Fluffy là **một mặt cục lông to của hoa văn, đứng yên** (để khác hẳn Classic). Đang dùng: viền và dấu tick; chưa mở: ô mờ, ổ khóa và "**Win level N**" (bấm hiện "Win level N to unlock"); đã mở: bấm là dùng ngay (**không tải lại trang**: game dựng lại màn chơi, HUD và Home với bóng / nền mới trong vài chục ms, rồi mở lại đúng tab Theme, đúng tab Ball / Background).
+- **Sau khi thắng:** màn **Well Done** (không có khung pop-up): hai dải HUD trên / dưới ẩn đi, nền giống màn Home (kem, vài đám mây; không phủ tối); **confetti bắn ra ngay khi màn hiện lên** (bay trên mọi thứ); chỉ có chữ **"Well Done!"** to (chữ vàng cam, viền navy, bật lên), phần tiến trình (nếu còn bóng / nền chưa mở) và nút **CONTINUE**. Phần tiến trình: **bóng đen của thứ sắp mở** (bóng hoặc ô nền tô đen, có dấu **"?"**; mở 2 thứ cùng lúc thì 2 bóng đen cạnh nhau) và bên dưới là **thanh tiến trình** chỉ ghi số level đã thắng / level phải thắng (vd. "3 / 5"), chạy từ trước lên sau lần thắng này. Thanh đầy thì dấu "?" biến mất, bóng đen **hiện ra thành thứ vừa mở** kèm **vầng sáng** (glow) phập phồng phía sau. Bấm **CONTINUE**: màn chuyển cảnh (xem trên) hiện lên, dưới nó màn chơi của level kế tiếp hiện **còn trống (chưa có bóng, chưa có dây)**; nếu vừa mở được bóng mới, pop-up **"New Ball!"** hiện trên đó (bóng đỏ của nó, có idle) với nút **APPLY** và **LATER**, rồi tới pop-up **"New Background!"** cho nền mới (ô hoa văn của nền, trong khung bo tròn); bóng luôn trước nền nếu mở cùng lúc. **Chạm ra ngoài pop-up = LATER.** Đóng pop-up cuối thì bóng mới hiện và animation intro của level bắt đầu; nếu có chọn APPLY thì game đổi sang bóng / nền mới (không tải lại trang) rồi chạy intro của level đó (không qua Home).
+
+## 3.10 Cheat (bảng ⚙ dev) <Badge type="tip" text="Live" />
+
+Nút **⚙ dev** ở góc dưới trái (mọi bản, cả bản web) mở bảng chỉnh: tốc độ bóng; với bóng Fluffy thêm thời gian ôm nhau và ánh sáng (Confirm ghi số vào code khi chạy local). Nhóm **Cheats**:
+
+- **Win level:** mọi cặp còn trên board biến mất ngay, level thắng như bình thường (Well Done, tiến độ, thanh mở khóa, pop-up bóng / nền mới khi CONTINUE).
+- **Reset progress:** hỏi lại rồi xóa tiến độ, level đang chơi dở, bóng / nền đang chọn và setting (về level 1, bóng Jelly, nền Classic, theme sáng, âm thanh bật), tải lại trang.
+
+## 3.11 Chơi tiếp level đang dở <Badge type="tip" text="Live" />
+
+Thoát game **giữa level** (đóng app / tab, tắt máy) thì lần mở game sau **vào thẳng level đó, đúng chỗ đang dừng**, không qua màn Home: các cặp đã dọn vẫn mất (không có hiệu ứng), cặp đã va chạm vẫn bị đánh dấu, số tim giữ nguyên; level chạy intro cho các cặp còn lại rồi chơi tiếp.
+
+- Chỉ áp dụng khi thoát lúc **đang chơi**. **Về Home** (nút HOME trong Settings) thì bỏ phần đã chơi: bấm PLAY là chơi lại level từ đầu như thường. Thắng hay thua (Out of Hearts) cũng bỏ phần đã lưu.
+- Web: lưu trong trình duyệt (`localStorage`, khóa `dotline.session`, `src/game/session.ts`), cập nhật mỗi lần trạng thái level đổi (dọn một cặp, va chạm, mất tim). Bản Magic và chế độ mở từ editor không lưu.
+- **Unity (phone):** lưu cùng các trường (số level, id level, các cặp còn lại, các cặp đã đánh dấu, số tim) bằng `PlayerPrefs` hoặc file JSON, ghi mỗi khi trạng thái đổi và thêm một lần trong `OnApplicationPause(true)` / `OnApplicationQuit` (app trên điện thoại hay bị hệ điều hành tắt khi đang ở nền); lúc mở app, nếu có phần đã lưu khớp với level đang tới thì vào thẳng level thay vì Home.

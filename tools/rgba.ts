@@ -89,3 +89,39 @@ export function writeJpeg(file: string, img: Img, tmp: string, quality = 85) {
     execFileSync('sips', ['-s', 'format', 'jpeg', '-s', 'formatOptions', String(quality), png, '--out', file], { stdio: 'ignore' });
     rmSync(png, { force: true });
 }
+
+/**
+ * Animated PNG (APNG: plays in browsers, Finder and Preview; a plain viewer shows the first frame) of
+ * same-sized frames, `delayMs` each, looping forever.
+ */
+export function writeApng(file: string, frames: Img[], delayMs: number) {
+    const w = frames[0].w, h = frames[0].h;
+    const chunk = (type: string, data: Buffer) => {
+        const t = Buffer.from(type, 'ascii'), len = Buffer.alloc(4), crc = Buffer.alloc(4);
+        len.writeUInt32BE(data.length);
+        crc.writeUInt32BE(crc32(Buffer.concat([t, data])) >>> 0);
+        return Buffer.concat([len, t, data, crc]);
+    };
+    const raw = (img: Img) => {
+        const r = Buffer.alloc((w * 4 + 1) * h);
+        for (let y = 0; y < h; y++) Buffer.from(img.px.buffer, img.px.byteOffset + y * w * 4, w * 4).copy(r, y * (w * 4 + 1) + 1);
+        return deflateSync(r, { level: 9 });
+    };
+    const ihdr = Buffer.alloc(13);
+    ihdr.writeUInt32BE(w, 0); ihdr.writeUInt32BE(h, 4); ihdr[8] = 8; ihdr[9] = 6;
+    const actl = Buffer.alloc(8);
+    actl.writeUInt32BE(frames.length, 0); actl.writeUInt32BE(0, 4);
+    const parts = [Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]), chunk('IHDR', ihdr), chunk('acTL', actl)];
+    let seq = 0;
+    frames.forEach((f, i) => {
+        const fc = Buffer.alloc(26);
+        fc.writeUInt32BE(seq++, 0); fc.writeUInt32BE(w, 4); fc.writeUInt32BE(h, 8); fc.writeUInt32BE(0, 12); fc.writeUInt32BE(0, 16);
+        fc.writeUInt16BE(delayMs, 20); fc.writeUInt16BE(1000, 22); fc[24] = 0; fc[25] = 0;
+        parts.push(chunk('fcTL', fc));
+        const data = raw(f);
+        if (i === 0) parts.push(chunk('IDAT', data));
+        else { const s = Buffer.alloc(4); s.writeUInt32BE(seq++, 0); parts.push(chunk('fdAT', Buffer.concat([s, data]))); }
+    });
+    parts.push(chunk('IEND', Buffer.alloc(0)));
+    writeFileSync(file, Buffer.concat(parts));
+}

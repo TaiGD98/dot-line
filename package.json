@@ -1,7 +1,7 @@
 {
   "name": "dot-line",
   "private": true,
-  "version": "0.6.0",
+  "version": "0.7.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -27,7 +27,8 @@
     "publish:levels": "esbuild tools/publish-levels.ts --bundle --platform=node --format=esm --outfile=node_modules/.cache/publish-levels.mjs --log-level=warning && node node_modules/.cache/publish-levels.mjs",
     "art:magic": "bash tools/magic-art.sh",
     "levels:chapter6": "esbuild tools/build-chapter6.ts --bundle --platform=node --format=esm --outfile=node_modules/.cache/build-chapter6.mjs --log-level=warning && node node_modules/.cache/build-chapter6.mjs",
-    "art:fluffy": "esbuild tools/fluffy-art.ts --bundle --platform=node --format=esm --outfile=node_modules/.cache/fluffy-art.mjs --log-level=warning && node node_modules/.cache/fluffy-art.mjs"
+    "art:fluffy": "esbuild tools/fluffy-art.ts --bundle --platform=node --format=esm --outfile=node_modules/.cache/fluffy-art.mjs --log-level=warning && node node_modules/.cache/fluffy-art.mjs",
+    "art:ui": "esbuild tools/ui-art.ts --bundle --platform=node --format=esm --outfile=node_modules/.cache/ui-art.mjs --log-level=warning && node node_modules/.cache/ui-art.mjs"
   },
   "dependencies": {
     "phaser": "^4.2.1"

@@ -4,11 +4,14 @@ import { COMPLETED_LINE, colour, hexToInt, themeColours } from '../core/palette'
 import { nearPairs } from '../core/generator';
 import { Pt, arcLengths, dist, distToPolyline, pointAt } from '../core/path';
 import { BlockModel, HIT_SCALE, Side } from '../core/solver';
-import { levels } from '../game/source';
+import { fromEditor, levels } from '../game/source';
+import { Session, clearSession, readSession, writeSession } from '../game/session';
 import { tuning } from '../game/tuning';
-import { onSettings } from '../game/settings';
+import { onSettings, settings } from '../game/settings';
 import { theme } from '../game/theme';
-import { FLUFFY, JELLY, MAGIC } from '../game/mode';
+import { FLUFFY, FLUFFY_BG, JELLY, MAGIC, WATER, onLookChange, takeAutoplay } from '../game/mode';
+import { paintGloss, paintGlossy, paintWater } from './ballart';
+import { WATER_FRAMES, hasUi, preloadUi, recolour, uiKey, waterFrames } from './uiart';
 import { Face, MINI_FACES, ballFill, hasArt, patternWorld, ballTexture, faceFrame, heartTexture, key as fluffyKey, makeFluffy, preloadFluffy, widthOf } from './fluffy';
 import { DOOR_OPEN, Door, DoorState, ORB_FILL, orbTexture } from './Door';
 
@@ -35,22 +38,24 @@ interface Wobble {
 }
 
 /** Trail length in frames (fluffy: a longer trail, with sparkles). */
-const TRAIL = FLUFFY ? 24 : 9;
+/** Trail length in frames (the look can change while the game runs, so these are read each time). */
+const trailLen = () => (FLUFFY ? 24 : 9);
 
 // ---- Jelly variant (src/game/mode.ts) ----
 /** Bump wobble: amplitude on the moving / the hit dot, decay per second, frequency (rad/s), length (s). */
-const WOBBLE = JELLY ? { mover: 0.5, hit: 0.4, decay: 3.6, freq: 24, life: 1.3 } : { mover: 0.32, hit: 0.22, decay: 7, freq: 38, life: 0.7 };
+const WOBBLE_JELLY = { mover: 0.5, hit: 0.4, decay: 3.6, freq: 24, life: 1.3 }, WOBBLE_FIRM = { mover: 0.32, hit: 0.22, decay: 7, freq: 38, life: 0.7 };
+let WOBBLE = JELLY ? WOBBLE_JELLY : WOBBLE_FIRM;
 /**
  * Fluffy: a ball that touches its partner: the two bump (squash and wobble) and stay together, happy,
  * for tuning.hugHold s (HUG_HOLD in src/game/tuning.ts, live in the dev panel), then pop into little
  * hearts and shrink away in HUG_POP s.
  */
 /** Fluffy: a bumped pair shows the awake face instead of stripes, once that picture is there. */
-const AWAKE = FLUFFY && hasArt('face-awake');
+let AWAKE = FLUFFY && hasArt('face-awake');
 const HUG_POP = 0.2;
 const hugHold = () => tuning.hugHold, hugEnd = () => tuning.hugHold + HUG_POP;
 /** Fluffy: the background pattern scrolls this fast (world px/s) from the top left to the bottom right. */
-const PATTERN_SPEED = 22;
+const PATTERN_SPEED = 4;
 
 /** Jelly stretch spring (stiffness, damping: well under critical, so it overshoots and wobbles). */
 const SPRING = { k: 320, c: 8 };
@@ -154,10 +159,15 @@ export class Game extends Phaser.Scene {
     private door: DoorState = { off: DOOR_OPEN, glow: 0, burst: 0 };
     /** Orb dots (when the orb picture exists): one image per dot drawn, stripes on top. */
     private orbs: Phaser.GameObjects.Image[] = [];
+    /** Jelly / Water ball pictures (the water inside, and the clear shell over it). */
+    private balls: Phaser.GameObjects.Image[] = [];
+    private shells: Phaser.GameObjects.Image[] = [];
     private overG!: Phaser.GameObjects.Graphics;
     private phase: Phase = 'play';
     /** Intro run per pair: seconds since it started, and how long it takes. */
     private intro = new Map<string, { t: number; dur: number }>();
+    /** The intro run waits (new-look pop-ups first). */
+    private introHeld = false;
     /** The glowing map on the left and right leaf (shown when the seal breaks, slides with the leaves). */
     private mapL!: Phaser.GameObjects.Graphics;
     private mapR!: Phaser.GameObjects.Graphics;
@@ -177,14 +187,25 @@ export class Game extends Phaser.Scene {
     }
 
     preload() {
-        if (FLUFFY) preloadFluffy(this);
+        performance.mark('dotline:preload');
+        // Always: the Theme screen and the new-look pop-ups show the fluffy ball and background.
+        preloadFluffy(this);
+        preloadUi(this);
     }
 
     create() {
-        if (FLUFFY) {
-            makeFluffy(this);
-            this.bg = this.add.tileSprite(0, 0, 1, 1, fluffyKey('pattern-light')).setDepth(-10);
-        }
+        performance.mark('dotline:create');
+        // (Also after a look change: the scene restarts with the new look; drop what the old one made.)
+        WOBBLE = JELLY ? WOBBLE_JELLY : WOBBLE_FIRM;
+        AWAKE = FLUFFY && hasArt('face-awake');
+        this.bg = undefined;
+        this.bodies = []; this.faces = []; this.orbs = []; this.balls = []; this.shells = [];
+        for (const s of this.sparks.values()) s.fx.destroy();
+        this.sparks.clear();
+        onLookChange(() => this.rebuildLook());
+        makeFluffy(this);
+        // Background: the fluffy faces pattern (chosen apart from the balls), else the plain board colour.
+        if (FLUFFY_BG) this.bg = this.add.tileSprite(0, 0, 1, 1, fluffyKey('pattern-light')).setDepth(-10);
         this.applyTheme();
         const off = onSettings(() => this.applyTheme());
         this.events.once('shutdown', off);
@@ -208,7 +229,15 @@ export class Game extends Phaser.Scene {
         this.input.on('wheel', (p: Phaser.Input.Pointer, _o: unknown, _dx: number, dy: number) => this.zoomAt(this.cameras.main.zoom * Math.exp(-dy * 0.0015), p));
         this.scale.on('resize', () => this.fit());
         this.scene.launch('Hud');
+        // The game opens on the Home screen (not when played from the editor).
+        // (After a new look was applied from the pop-up after a win, the game goes straight into the level.)
+        // A level left in the middle (the game was closed while playing): it goes on where it stopped,
+        // with no Home screen. Otherwise the game opens on Home (unless a new look was just applied).
+        // (Read before the level loads: loading it saves a fresh session.)
+        const saved = fromEditor ? null : readSession();
         levels.onLevel((l) => this.loadLevel(l));
+        if (saved && this.level && saved.level === levels.levelNumber() && saved.id === this.level.id) this.resumeSession(saved);
+        else if (!fromEditor && !takeAutoplay()) this.time.delayedCall(0, () => this.showHome());
     }
 
     /** Background colour of the board for the current theme (light / dark). */
@@ -237,7 +266,11 @@ export class Game extends Phaser.Scene {
         this.level.pairs.forEach((p, i) => (p.color = shown[i]));
     }
 
-    loadLevel(level: Level) {
+    /**
+     * Start a level. `holdIntro`: the level is on screen but its dots wait at the start of their lines
+     * until releaseIntro() (the new-look pop-ups after a win come first, then the intro run).
+     */
+    loadLevel(level: Level, holdIntro = false) {
         this.level = structuredClone(level);
         this.levelColours = new Map(this.level.pairs.map((p) => [p.id, p.color]));
         this.nearLines = undefined;
@@ -267,16 +300,19 @@ export class Game extends Phaser.Scene {
         this.cameras.main.panEffect.reset();
         this.cameras.main.zoomEffect.reset();
         this.fit();
+        // Every level starts with its dots running out along their lines (Magic: once the door has shut).
         if (MAGIC) this.closeDoor();
+        else { this.intro.clear(); this.startIntro(); }
+        this.introHeld = holdIntro && !MAGIC;
         this.emitState();
         this.events.emit('loaded');
     }
 
     // ---------- magic variant: the door ----------
 
-    /** Busy with the door or the intro run: taps wait. */
+    /** Busy with the door (Magic) or the intro run: taps wait. */
     private get doorBusy() {
-        return MAGIC && this.phase !== 'play';
+        return MAGIC ? this.phase !== 'play' : this.phase === 'intro';
     }
 
     /** New level: the leaves slam shut (if open), then the dots run out along their lines. */
@@ -371,16 +407,80 @@ export class Game extends Phaser.Scene {
         }
     }
 
-    /** Per frame: intro runs; the glowing map rides the leaves. */
-    private stepDoor(dt: number) {
-        if (this.phase === 'intro') {
-            let done = true;
-            for (const r of this.intro.values()) { r.t += dt; if (r.t < r.dur) done = false; }
-            if (done) { this.intro.clear(); this.phase = 'play'; this.events.emit('introDone'); }
-        }
+    /** Per frame: the intro runs (every mode); when all are done, play starts. */
+    private stepIntro(dt: number) {
+        if (this.phase !== 'intro' || this.introHeld) return;
+        let done = true;
+        for (const r of this.intro.values()) { r.t += dt; if (r.t < r.dur) done = false; }
+        if (done) { this.intro.clear(); this.phase = 'play'; this.events.emit('introDone'); }
+    }
+
+    /** Per frame (Magic): the glowing map rides the leaves. */
+    private stepDoor() {
         const dx = this.door.off / this.cameras.main.zoom;
         const glow = this.phase === 'opening' ? this.mapLit.v : 0;
         for (const [g, x] of [[this.mapL, -dx], [this.mapR, dx]] as const) g.setPosition(x, 0).setAlpha(glow).setVisible(glow > 0);
+    }
+
+    /**
+     * A ball / background was picked (mode.chooseLook): rebuild the game, the HUD and the Home screen in the
+     * new look, without reloading the page. Home reopens where the player was (or the level starts,
+     * after a pop-up's APPLY).
+     */
+    private rebuildLook() {
+        this.scene.stop('Home');
+        this.scene.stop('Hud');
+        // The HUD's listeners on this scene's events go with it (it adds them again when it starts).
+        for (const e of ['allCleared', 'cutting', 'doorClosed', 'doorOpening', 'freebump', 'introDone', 'loaded', 'lose', 'playOn', 'state', 'tapped', 'win', 'zoomed']) this.events.removeAllListeners(e);
+        this.scene.restart();
+    }
+
+    /** Home screen over the paused game (and the HUD put to sleep). */
+    showHome() {
+        clearSession();
+        this.scene.pause();
+        this.scene.sleep('Hud');
+        if (MAGIC) this.scene.sleep('Door');
+        if (this.scene.isSleeping('Home') || this.scene.isPaused('Home')) this.scene.wake('Home');
+        else this.scene.launch('Home');
+        this.scene.bringToTop('Home');
+        this.scene.bringToTop('Transition');
+    }
+
+    /**
+     * The loading screen (Transition.ts): it slides in, `covered` switches what is under it, its loading
+     * runs to 100%, and the new screen slides in; then `done`. `toLevel`: from the right, else from the left.
+     */
+    transition(covered: () => void, done: () => void = () => undefined, toLevel = true) {
+        // Into a level: the loading screen and then the play screen come from the right; back Home: from the left.
+        const reveal = toLevel ? (MAGIC ? ['Door', 'Game', 'Hud'] : ['Game', 'Hud']) : ['Home'];
+        this.scene.launch('Transition', { covered, done, dir: toLevel ? 1 : -1, reveal });
+        this.scene.bringToTop('Transition');
+    }
+
+    /** Home's PLAY: through the loading screen into the level; its intro runs once the screen has gone. */
+    goPlay() {
+        this.transition(() => this.playFromHome(true), () => this.releaseIntro());
+    }
+
+    /** From a level back Home (Settings' HOME), through the loading screen. */
+    goHome() {
+        this.transition(() => this.showHome(), undefined, false);
+    }
+
+    playFromHome(hold = false) {
+        // hold: the level waits (empty) until releaseIntro (the transition screen still covers it).
+        this.scene.stop('Home');
+        this.scene.wake('Hud');
+        if (MAGIC) this.scene.wake('Door');
+        this.scene.resume();
+        const l = levels.level();
+        if (l) this.loadLevel(l, hold);
+    }
+
+    /** Let a held intro run (loadLevel with holdIntro). */
+    releaseIntro() {
+        this.introHeld = false;
     }
 
     restart() {
@@ -416,6 +516,26 @@ export class Game extends Phaser.Scene {
 
     private emitState() {
         this.events.emit('state', this.state());
+        this.saveSession();
+    }
+
+    /**
+     * Remember the level being played (which pairs are left, which are marked, the hearts), so a game
+     * closed in the middle of a level goes on from there next time (readSession, resumeSession). Kept
+     * only while playing: a win, a loss or going Home forgets it (Home then PLAY starts the level over).
+     */
+    private saveSession() {
+        if (fromEditor || MAGIC || !this.level || this.over) return;
+        writeSession({ level: levels.levelNumber(), id: this.level.id, alive: [...this.alive], marked: [...this.marked], hearts: this.hearts });
+    }
+
+    /** Go on with a level left in the middle: the cleared pairs are gone (no effects), marks and hearts as they were. */
+    private resumeSession(s: Session) {
+        const keep = new Set(s.alive);
+        for (const id of [...this.alive]) if (!keep.has(id)) this.alive.delete(id);
+        this.marked = new Set(s.marked.filter((id) => keep.has(id)));
+        this.hearts = Math.max(1, Math.min(HEARTS, s.hearts));
+        this.emitState();
     }
 
     // ---------- camera ----------
@@ -625,7 +745,8 @@ export class Game extends Phaser.Scene {
     update(_t: number, dtMs: number) {
         if (!this.level) return;
         const dt = Math.min(dtMs, 50) / 1000;
-        if (MAGIC) this.stepDoor(dt);
+        this.stepIntro(dt);
+        if (MAGIC) this.stepDoor();
         for (const [id, m] of [...this.movers]) {
             const p = this.pair(id);
             const total = m.acc[m.acc.length - 1];
@@ -654,7 +775,8 @@ export class Game extends Phaser.Scene {
                 m.returning = true;
                 const at = pointAt(m.pts, m.acc, m.s);
                 const angle = Math.atan2(hit.pos.y - at.y, hit.pos.x - at.x);
-                // Elastic bump on both dots.
+                // Elastic bump on both dots (and a short buzz, if vibration is on and the device has it).
+                if (settings.vibrate) navigator.vibrate?.(35);
                 this.wobbles.set(`${id}:${m.side}`, { t: 0, amp: WOBBLE.mover, angle });
                 this.wobbles.set(hit.key, { t: 0, amp: WOBBLE.hit, angle });
                 // Droplets in each dot's colour, splashing away from where they touched.
@@ -691,6 +813,7 @@ export class Game extends Phaser.Scene {
         for (const [k, w] of this.wobbles) { w.t += dt; if (w.t > WOBBLE.life) this.wobbles.delete(k); }
         if (JELLY) this.stepJelly(dt);
         if (FLUFFY) this.stepFluffy(dt);
+        else if (FLUFFY_BG) this.scrollPattern(dt);
         this.draw();
     }
 
@@ -784,7 +907,7 @@ export class Game extends Phaser.Scene {
     private pushTrail(id: string, p: Pt) {
         const t = this.trails.get(id) ?? [];
         t.push({ x: p.x, y: p.y });
-        if (t.length > TRAIL) t.shift();
+        if (t.length > trailLen()) t.shift();
         this.trails.set(id, t);
     }
 
@@ -923,6 +1046,7 @@ export class Game extends Phaser.Scene {
         this.emitState();
         if (!this.alive.size) {
             this.over = true;
+            clearSession();
             // The board stays empty (no picture behind the end screen); the end screen comes once the
             // splash has settled.
             if (MAGIC) { this.events.emit('allCleared'); this.openDoor(); }
@@ -930,9 +1054,17 @@ export class Game extends Phaser.Scene {
         }
     }
 
+    /** Dev cheat (dev panel, "Win level"): every pair still on the board leaves at once, so the level is won the usual way. */
+    cheatWin() {
+        if (this.over || !this.level || this.scene.isPaused()) return;
+        this.movers.clear();
+        for (const id of [...this.alive]) this.removePair(this.pair(id));
+    }
+
     private lose() {
         if (this.over) return;
         this.over = true;
+        clearSession();
         this.time.delayedCall(350, () => this.events.emit('lose'));
     }
 
@@ -954,10 +1086,11 @@ export class Game extends Phaser.Scene {
     private draw() {
         const g = this.gfx;
         g.clear();
-        // Magic: while the leaves slide in, the board is empty.
-        if (MAGIC && this.phase === 'closing') {
+        // Magic: while the leaves slide in, the board is empty. Any look: while the intro waits for the
+        // new-look pop-ups, the board is empty too (the balls show once the pop-ups are closed).
+        if ((MAGIC && this.phase === 'closing') || this.introHeld) {
             this.overG.clear();
-            for (const o of this.orbs) o.setVisible(false);
+            for (const o of [...this.orbs, ...this.balls, ...this.shells, ...this.bodies, ...this.faces]) o.setVisible(false);
             return;
         }
         // Lines are drawn in their colour only, with no edge (even a light line on the light board).
@@ -981,7 +1114,7 @@ export class Game extends Phaser.Scene {
                 const rest = [pointAt(m.pts, m.acc, m.s), ...m.pts.filter((_, i) => m.acc[i] > m.s)];
                 stroke(rest, col, lineWidth(p), 1);
             } else if (this.introAt(id) !== null) {
-                // Magic intro: the line is drawn out behind the running dot.
+                // Intro: the line is drawn out behind the running dot.
                 const ln = this.lines.get(id)!, s = this.introAt(id)!;
                 stroke([...ln.a.filter((_, i) => ln.accA[i] < s), pointAt(ln.a, ln.accA, s)], col, lineWidth(p), 1);
             } else stroke(this.model.line(id), col, lineWidth(p), 1);
@@ -1030,9 +1163,10 @@ export class Game extends Phaser.Scene {
                 if (FLUFFY) {
                     // Fluffy: faces show what the ball is doing; asleep it breathes (each in its own rhythm),
                     // running it bounces wide-eyed, bumped it squeezes its eyes shut.
-                    const moving = m && m.side === side, now = this.time.now / 1000;
+                    // The intro run counts as running (wide eyes, bouncing).
+                    const moving = (m && m.side === side) || (side === 'b' && this.introAt(id) !== null), now = this.time.now / 1000;
                     const phase = (id.charCodeAt(id.length - 1) * 1.7 + (side === 'b' ? 2.1 : 0)) % (Math.PI * 2);
-                    const ouch = (w && w.t < 0.6) || (moving && m!.returning);
+                    const ouch = (w && w.t < 0.6) || (!!m && m.side === side && m.returning);
                     // A marked pair (it has bumped) is awake: eyes open instead of the stripes (once face-awake.png is there).
                     const awake = AWAKE && this.marked.has(id);
                     const face: Face = ouch ? 'ouch' : moving ? 'surprised' : awake ? 'awake' : 'sleep';
@@ -1078,6 +1212,34 @@ export class Game extends Phaser.Scene {
                 if (d.striped) this.drawDot(d.draw, d.r, d.name, d.sx, d.sy, d.angle, true, this.overG);
             });
             for (let i = dots.length; i < this.orbs.length; i++) this.orbs[i].setVisible(false);
+        } else if (!FLUFFY && !MAGIC && hasUi(WATER ? 'ball-water-fill' : 'ball-jelly')) {
+            // Ball pictures (art/ball/balls.png) in the pair's colour. Jelly: the glossy ball. Water: the
+            // water, rocking to and fro inside (its light ripples move: it sloshes), under the clear shell.
+            const now = this.time.now / 1000;
+            dots.forEach((d, i) => {
+                const hex = colour(d.name)?.base ?? COMPLETED_LINE;
+                const tex = WATER ? waterFrames(this, hex) : recolour(this, 'ball-jelly', hex, 1);
+                const b = (this.balls[i] ??= this.add.image(0, 0, tex).setDepth(1));
+                if (WATER) {
+                    // The water sloshes: its loop of waves plays (faster while the ball runs or wobbles),
+                    // each ball at its own point of the loop; the ball itself does not turn.
+                    const phase = (d.pos.x * 0.37 + d.pos.y * 0.23) % 7, moving = d.sx !== 1 || d.sy !== 1;
+                    const f = Math.floor(now * (moving ? 16 : 7) + phase * 3) % WATER_FRAMES;
+                    if (b.texture.key !== tex || b.frame.name !== String(f)) b.setTexture(tex, String(f));
+                    const k = (2 * d.r) / b.frame.width;
+                    b.setVisible(true).setPosition(d.draw.x, d.draw.y).setRotation(d.angle).setScale(d.sx * k * 0.96, d.sy * k * 0.96);
+                    const s = (this.shells[i] ??= this.add.image(0, 0, uiKey('ball-water-shell')).setDepth(1.2));
+                    const ks = (2 * d.r) / s.frame.width; // the shell picture has its own size
+                    s.setVisible(true).setPosition(d.draw.x, d.draw.y).setRotation(d.angle).setScale(d.sx * ks, d.sy * ks);
+                } else {
+                    if (b.texture.key !== tex) b.setTexture(tex);
+                    const k = (2 * d.r) / b.frame.width;
+                    b.setVisible(true).setPosition(d.draw.x, d.draw.y).setRotation(d.angle).setScale(d.sx * k, d.sy * k);
+                }
+                if (d.striped) this.drawDot(d.draw, d.r, d.name, d.sx, d.sy, d.angle, true, this.overG);
+            });
+            for (let i = dots.length; i < this.balls.length; i++) this.balls[i].setVisible(false);
+            for (let i = WATER ? dots.length : 0; i < this.shells.length; i++) this.shells[i].setVisible(false);
         } else if (FLUFFY) {
             // Fluffy balls: the body in the pair's colour, the face over it (same frame), stripes on top.
             dots.forEach((d, i) => {
@@ -1094,7 +1256,7 @@ export class Game extends Phaser.Scene {
                 if (d.striped) this.drawDot(d.draw, d.r, d.name, d.sx, d.sy, 0, true, this.overG);
             });
             for (let i = dots.length; i < this.bodies.length; i++) { this.bodies[i].setVisible(false); this.faces[i]?.setVisible(false); }
-        } else for (const d of dots) this.drawDot(d.draw, d.r, d.name, d.sx, d.sy, d.angle, d.striped);
+        } else for (const d of dots) this.drawDot(d.draw, d.r, d.name, d.sx, d.sy, d.angle, d.striped, undefined, { phase: (d.pos.x * 0.37 + d.pos.y * 0.23) % 7, amount: d.sx !== 1 || d.sy !== 1 ? 1.8 : 1 });
     }
 
     /**
@@ -1144,7 +1306,7 @@ export class Game extends Phaser.Scene {
     }
 
     /** A glossy dot, optionally squashed (sx, sy along `angle`) and striped (marked pair). */
-    private drawDot(pos: Pt, r: number, name: string, sx: number, sy: number, angle: number, striped: boolean, stripesOn?: Phaser.GameObjects.Graphics) {
+    private drawDot(pos: Pt, r: number, name: string, sx: number, sy: number, angle: number, striped: boolean, stripesOn?: Phaser.GameObjects.Graphics, slosh?: { phase: number; amount: number }) {
         // `stripesOn`: only the stripes, on that graphics (over an orb picture).
         const g = stripesOn ?? this.gfx;
         const c = colour(name);
@@ -1161,29 +1323,17 @@ export class Game extends Phaser.Scene {
             g.restore();
             return;
         }
-        // Body: dark rim, lit body shifted towards the light, soft glow.
-        // Rim: the darkest key of the colour's shading ramp (VoxelMaterials _RampKey0).
-        g.fillStyle(c ? hexToInt(c.dark) : shade(base, 0.62), 1);
-        g.fillCircle(0, 0, r);
-        let o = at(-0.08, -0.1);
-        g.fillStyle(base, 1);
-        g.fillCircle(o.x, o.y, r * 0.87);
-        o = at(-0.17, -0.2);
-        g.fillStyle(hexToInt(c?.gradient ?? '#ffffff'), 0.4);
-        g.fillCircle(o.x, o.y, r * 0.6);
-        if (striped) drawStripes(g, local, r);
-        // Gloss: broad soft highlight, sharp specular spot, and a faint bounce light at the bottom.
-        o = at(-0.3, -0.34);
-        g.fillStyle(hexToInt(c?.inner ?? '#ffffff'), 0.45);
-        g.fillCircle(o.x, o.y, r * 0.38);
-        g.fillStyle(0xffffff, 0.55);
-        g.fillCircle(o.x, o.y, r * 0.24);
-        o = at(-0.36, -0.4);
-        g.fillStyle(0xffffff, 0.95);
-        g.fillCircle(o.x, o.y, r * 0.12);
-        o = at(0.36, 0.42);
-        g.fillStyle(0xffffff, 0.22);
-        g.fillCircle(o.x, o.y, r * 0.16);
+        const pc = c ?? { name, base: COMPLETED_LINE, dark: '#' + shade(base, 0.62).toString(16).padStart(6, '0'), gradient: '#ffffff', inner: '#ffffff' };
+        if (WATER) {
+            // Water balloon: the water sloshes inside (more while it runs), each ball in its own rhythm.
+            paintWater(g, at, r, pc, this.time.now / 1000 + (slosh?.phase ?? 0), slosh?.amount ?? 1);
+            if (striped) drawStripes(g, local, r);
+        } else {
+            // Jelly: glossy candy ball (no idle movement).
+            paintGlossy(g, at, r, pc);
+            if (striped) drawStripes(g, local, r);
+            paintGloss(g, at, r, pc);
+        }
         g.restore();
     }
 }

@@ -63,7 +63,7 @@ export function mountDevPanel() {
     const wrap = document.createElement('div');
     wrap.className = 'dev-panel';
     const toggle = document.createElement('button');
-    toggle.textContent = FLUFFY ? '⚙ tuning' : '⚙ speed';
+    toggle.textContent = '⚙ dev';
     toggle.title = 'Dev: tuning';
     const body = document.createElement('div');
     body.hidden = true;
@@ -83,6 +83,37 @@ export function mountDevPanel() {
             { k: 'lightSheen', label: 'Sheen', min: 0, max: 0.6, step: 0.01, show: (v) => v.toFixed(2) }
         ]));
     }
+    // Cheats: win the level being played (the usual Well Done, progress and unlock pop-ups follow), and
+    // forget all progress and choices (level 1, Jelly ball, Classic background, default settings).
+    const cheats = document.createElement('div');
+    cheats.className = 'dev-group';
+    const head = document.createElement('b');
+    head.textContent = 'Cheats';
+    const win = document.createElement('button');
+    win.textContent = 'Win level';
+    win.addEventListener('click', () => {
+        const g = (window as unknown as { __dotlineGame?: { scene: { getScene(k: string): unknown } } }).__dotlineGame;
+        (g?.scene.getScene('Game') as { cheatWin?: () => void } | undefined)?.cheatWin?.();
+    });
+    const reset = document.createElement('button');
+    reset.textContent = 'Reset progress';
+    reset.addEventListener('click', () => {
+        if (!confirm('Forget all progress, the chosen ball / background and the settings?')) return;
+        try {
+            for (const k of ['dotline.progress', 'dotline.skin', 'dotline.bg', 'dotline.settings', 'dotline.session']) localStorage.removeItem(k);
+        } catch {
+            /* storage blocked */
+        }
+        const url = new URL(location.href);
+        url.searchParams.delete('mode');
+        url.searchParams.delete('bg');
+        location.href = url.toString();
+    });
+    const row = document.createElement('div');
+    row.className = 'dev-row';
+    row.append(win, reset);
+    cheats.append(head, row);
+    body.append(cheats);
     toggle.addEventListener('click', () => { body.hidden = !body.hidden; });
     wrap.append(toggle, body);
     document.body.append(wrap);

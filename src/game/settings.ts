@@ -5,14 +5,20 @@ export type ThemeName = 'light' | 'dark';
 
 interface Settings {
     theme: ThemeName;
+    /** Sound effects, background music, vibration (Settings toggles; on by default). The game has no
+     * sounds yet; vibration buzzes on a bump where the device supports it. */
+    sfx: boolean;
+    bgm: boolean;
+    vibrate: boolean;
 }
 
 function load(): Settings {
+    const on = (v: unknown) => v !== false;
     try {
         const s = JSON.parse(localStorage.getItem(KEY) ?? '{}');
-        return { theme: s.theme === 'dark' ? 'dark' : 'light' };
+        return { theme: s.theme === 'dark' ? 'dark' : 'light', sfx: on(s.sfx), bgm: on(s.bgm), vibrate: on(s.vibrate) };
     } catch {
-        return { theme: 'light' };
+        return { theme: 'light', sfx: true, bgm: true, vibrate: true };
     }
 }
 

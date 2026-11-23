@@ -84,6 +84,8 @@ if (has('face')) {
     }
 }
 for (const name of ['sleep', 'surprised', 'ouch', 'happy', 'awake']) if (has(`face-${name}`)) { const img = load(`face-${name}`); faces.push({ name, img, box: bbox(img)! }); }
+// awake.png: the awake face on its own (same as face-awake.png).
+if (has('awake') && !has('face-awake')) { const img = load('awake'); faces.push({ name: 'awake', img, box: bbox(img)! }); }
 // awake-hand.png: two pictures made at once, the awake face on the left half, the tutorial hand on the
 // right half (face-awake.png / hand.png on their own are used instead when they are there).
 let handImg: Img | null = has('hand') ? load('hand') : null;

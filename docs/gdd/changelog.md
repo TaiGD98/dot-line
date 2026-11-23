@@ -4,9 +4,26 @@ Every published version stays playable at its own URL. The [landing page](https:
 
 ## latest (main) <Badge type="tip" text="Live" />
 
-- No changes since v0.6.0.
+- No changes since v0.7.0.
 
 [Play latest](https://taigd98.github.io/dot-line/demo/)
+
+## v0.7.0
+
+- **Level start:** in every version (Classic, Jelly, Fluffy, as in Magic) one dot of each pair runs along its line to the other end, drawing the line behind it, so the level forms before play starts; the tutorial shows once all dots are in place.
+- **Fluffy:** the background pattern scrolls much slower (4 px/s, was 22).
+- **Home screen and themes:** the game opens on a Home screen: a level map (next level at the bottom with a golden ring, hard levels purple), PLAY, and a tab bar (Shop soon, Home, Theme). A theme is a **ball** (Jelly by default, glossy; Water, water balloons whose water sloshes inside; Fluffy) and a **background** (Classic plain board; Fluffy pattern), chosen apart: Water opens on winning level 5, the Fluffy ball and background on winning level 10 (the Theme screen says "Win level N"). The Theme tab has a big banner and Ball / Background tabs with live thumbnails. The UI stays the same in every theme. Progress is remembered.
+- **Settings pop-up** (as in the wireframe): Sound FX, Music and Vibration toggles (vibration buzzes on a bump), then long RESTART and HOME buttons (no Resume: close it with X); the Home screen has a Settings button too (toggles only). The light / dark switch is now a sun / moon button at the top right while playing.
+- **One palette for all UI**, taken from the play screen (cream, light pink boosters, peach main buttons, purple for hard levels); both boosters are light pink; Home level buttons use the booster button form. Picking a ball / background switches at once (no page reload) and keeps you on the Theme tab. The Water ball's water now sloshes (waves run through it) instead of turning.
+- **Pick up where you left off:** closing the game in the middle of a level brings you back to that level, as it was, next time (going Home still starts the level over).
+- **Out of Hearts:** three hearts pop back one after another in the pop-up (as in the top bar), every 2 s; QUIT is now a red GIVE UP button.
+- **New art:** Jelly and Water balls, UI icons, pop-up panel and ribbon, buttons, the Home map pieces and a tutorial hand shared by every theme; a Fluffy pair that has bumped stays awake (eyes open) instead of the stripes.
+- **Transition screen** between Home and a level (both ways) and from Well Done to the next level: the Home background with a loading line: the left ball stays put, the right one runs to the right as the loading goes, a waving rope between them and the percent above. It slides in, runs to 100%, waits half a second, then the new screen slides in from the same side (from the right into a level, from the left back Home).
+- **Slides:** Home tabs slide sideways (Theme comes in from the right); each screen's corner button (Settings on Home, X on Theme) slides with it.
+- **Well Done** is no longer a pop-up: the HUD bands go, the background is the Home screen's, and only "Well Done!", CONTINUE and the unlock progress show: the next ball / background as a black silhouette with a "?" over a bar of levels won (e.g. 3 / 5); when it fills, the silhouette lights up into the new look with a glow. After CONTINUE the next level comes on screen and, before its intro run, a pop-up offers each new ball (then each new background) with APPLY or LATER (a tap beside it is LATER).
+- **Game Design Document:** Home / Theme screens, unlocks, Settings, resume, cheats and the loading screen (rules 3.9–3.11); notes for porting the ball shaders to Unity (roadmap).
+
+[Play v0.7.0](https://taigd98.github.io/dot-line/v0.7.0/demo/) · [Docs v0.7.0](https://taigd98.github.io/dot-line/v0.7.0/docs/)
 
 ## v0.6.0
 
@@ -112,3 +129,4 @@ Every published version stays playable at its own URL. The [landing page](https:
 | 2026-11-19 | Released v0.5.0 |
 | 2026-11-18 | Released v0.3.0 |
 | 2026-11-20 | Released v0.6.0 |
+| 2026-11-23 | Released v0.7.0 |

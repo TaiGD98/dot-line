@@ -64,6 +64,7 @@ export default defineConfig({
                         { text: 'Level system (100 levels)', link: '/guide/level-system' },
                         { text: 'Magic variant: assets', link: '/guide/magic-assets' },
                         { text: 'Fluffy theme: assets', link: '/guide/fluffy-assets' },
+                        { text: 'Ảnh còn thiếu: bóng, UI, Home', link: '/guide/ui-assets' },
                         { text: 'Game Design Document →', link: '/gdd/' }
                     ]
                 }

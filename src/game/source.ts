@@ -2,6 +2,7 @@
 // editor (postMessage) when opened from the editor's Play button (?editor=1).
 import { Level, parseLevel } from '../core/level';
 import gameLevels from 'virtual:game-levels';
+import { progress, setLevel } from './progress';
 
 // The game plays exactly the levels of its play order (levels/game.json, set in the editor's
 // Organiser → "Game · play order"; else src/game/playlist.ts), in that order: the build contains
@@ -33,9 +34,11 @@ class LevelSource {
         const n = bundled.indexOf(b);
         return { id: keyOf(b), name: `${n + 1}. ${b.chapter ? `${b.chapter} · ` : ''}${b.level.name}` };
     });
-    private current: Level | null = fromEditor ? null : bundled[0]?.level ?? null;
+    /** The saved level to play next (progress.level; past the end of the play order it wraps round). */
+    private start = bundled.length ? bundled[(progress.level - 1) % bundled.length] : undefined;
+    private current: Level | null = fromEditor ? null : this.start?.level ?? null;
     /** Key of the current level in `list` (chapter/id when bundled, the id from the editor). */
-    private currentKey: string | null = fromEditor ? null : bundled[0] ? keyOf(bundled[0]) : null;
+    private currentKey: string | null = fromEditor ? null : this.start ? keyOf(this.start) : null;
     private menu = document.createElement('select');
 
     constructor() {
@@ -81,7 +84,7 @@ class LevelSource {
             return;
         }
         const b = menuLevels.find((x) => keyOf(x) === id);
-        if (b) { this.current = b.level; this.currentKey = id; this.renderMenu(); this.listener?.(b.level); }
+        if (b) { this.current = b.level; this.currentKey = id; setLevel(bundled.indexOf(b) + 1); this.renderMenu(); this.listener?.(b.level); }
     }
 
     /** Called with the current level now (if any) and whenever another one is chosen. */
@@ -99,18 +102,28 @@ class LevelSource {
         if (fromEditor || !this.current) return this.current;
         // Inside the playlist: the next one (after the last, back to the first). A level picked from
         // outside the playlist goes on with the playlist's first level.
+        const n = this.levelNumber();
         const i = bundled.findIndex((b) => keyOf(b) === this.currentKey);
         const b = bundled[(i + 1) % bundled.length];
         this.current = b.level;
         this.currentKey = keyOf(b);
+        // Progress counts on past the end of the play order (level 31 plays level 1 again).
+        setLevel(n + 1);
         this.renderMenu();
         return this.current;
+    }
+
+    /** The level shown as number `n` on the Home map (the play order, wrapping round). */
+    at(n: number): Level | null {
+        return bundled.length ? bundled[(n - 1) % bundled.length].level : null;
     }
 
     /** Level number: position in the playlist (from the editor: position in the editor's list). */
     levelNumber(): number {
         if (fromEditor) { const i = this.list.findIndex((l) => l.id === this.currentKey); return i < 0 ? 1 : i + 1; }
-        return Math.max(1, bundled.findIndex((b) => keyOf(b) === this.currentKey) + 1);
+        // The saved progress when it points at this level (it may be past the play order's end).
+        const i = bundled.findIndex((b) => keyOf(b) === this.currentKey);
+        return bundled.length && (progress.level - 1) % bundled.length === i ? progress.level : Math.max(1, i + 1);
     }
 }
 

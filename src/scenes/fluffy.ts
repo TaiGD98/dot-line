@@ -42,7 +42,7 @@ const NAMES = ['ball', ...FACES.map((f) => `face-${f}`), 'fur', 'heart', 'hand',
 export const key = (name: string) => `fluffy-${name}`;
 
 export function preloadFluffy(scene: Phaser.Scene) {
-    for (const n of NAMES) { const url = art(n); if (url) scene.load.image(key(n), url); }
+    for (const n of NAMES) { const url = art(n); if (url && !scene.textures.exists(key(n))) scene.load.image(key(n), url); }
 }
 
 /** Stand-ins for the pictures that are not there yet. */
@@ -285,8 +285,8 @@ function drawFace(c: CanvasRenderingContext2D, W: number, f: Face) {
 }
 
 /** Where the fingertip is on the hand picture (its topmost solid pixel), as an origin (0..1). */
-export function handTip(scene: Phaser.Scene): { x: number; y: number } {
-    const src = scene.textures.get(key('hand')).getSourceImage() as CanvasImageSource & { width: number; height: number };
+export function handTip(scene: Phaser.Scene, tex = key('hand')): { x: number; y: number } {
+    const src = scene.textures.get(tex).getSourceImage() as CanvasImageSource & { width: number; height: number };
     const cv = document.createElement('canvas');
     cv.width = src.width; cv.height = src.height;
     const c = cv.getContext('2d')!;

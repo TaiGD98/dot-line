@@ -467,7 +467,7 @@ export class Game extends Phaser.Scene {
         this.scene.stop('Home');
         this.scene.stop('Hud');
         // The HUD's listeners on this scene's events go with it (it adds them again when it starts).
-        for (const e of ['allCleared', 'cutting', 'doorClosed', 'doorOpening', 'freebump', 'introDone', 'loaded', 'lose', 'playOn', 'state', 'tapped', 'win', 'zoomed']) this.events.removeAllListeners(e);
+        for (const e of ['allCleared', 'cutUsed', 'cutting', 'doorClosed', 'doorOpening', 'freebump', 'introDone', 'loaded', 'lose', 'playOn', 'state', 'tapped', 'win', 'zoomed']) this.events.removeAllListeners(e);
         this.scene.restart();
     }
 
@@ -634,10 +634,11 @@ export class Game extends Phaser.Scene {
     }
 
     /** Hint: random open pair, zoom to 1.5x on its dot, then nudge it along its line. */
-    hint() {
-        if (this.over || this.doorBusy) return;
+    /** Hint booster: zoom onto an open dot and nudge it. False when there was nothing to show (no booster spent). */
+    hint(): boolean {
+        if (this.over || this.doorBusy) return false;
         const open = [...this.alive].filter((id) => !this.movers.has(id)).map((id) => this.pair(id)).map((p) => ({ p, side: this.model.openSide(p, this.alive, this.opened) })).filter((x) => x.side);
-        if (!open.length) return;
+        if (!open.length) return false;
         const { p, side } = open[Math.floor(Math.random() * open.length)];
         const dot = p[side!];
         const cam = this.cameras.main;
@@ -646,6 +647,7 @@ export class Game extends Phaser.Scene {
         const nudge = { id: p.id, side: side!, s: 0 };
         this.nudge = nudge;
         this.tweens.add({ targets: nudge, s: 34, duration: 260, yoyo: true, repeat: 2, delay: 450, ease: 'Sine.easeInOut', onComplete: () => { if (this.nudge === nudge) this.nudge = null; } });
+        return true;
     }
 
     // ---------- input ----------
@@ -745,6 +747,8 @@ export class Game extends Phaser.Scene {
         this.time.delayedCall(600, () => snip.destroy());
         this.pop(p.a, p.a.r, tint);
         this.pop(p.b, p.b.r, tint);
+        // The scissors booster is spent only when a line is really cut.
+        this.events.emit('cutUsed');
         this.removePair(p);
     }
 

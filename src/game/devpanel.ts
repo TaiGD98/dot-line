@@ -3,6 +3,7 @@
 // (src/game/tuning.ts) through the dev server (vite.config.ts, /__dev/tuning). On the published site
 // Confirm can't touch the code, so the values just stay in this browser.
 import { FLUFFY, JELLY } from './mode';
+import { addCoins, coinCount } from './boosters';
 
 /** Jelly: the press before the balls merge (Game.ts PRESS), shown next to the merged time. */
 const PRESS_S = 0.16;
@@ -106,9 +107,9 @@ export function mountDevPanel() {
     const reset = document.createElement('button');
     reset.textContent = 'Reset progress';
     reset.addEventListener('click', () => {
-        if (!confirm('Forget all progress, the chosen ball / background and the settings?')) return;
+        if (!confirm('Forget all progress, boosters, coins, the chosen ball / background and the settings?')) return;
         try {
-            for (const k of ['dotline.progress', 'dotline.skin', 'dotline.bg', 'dotline.settings', 'dotline.session']) localStorage.removeItem(k);
+            for (const k of ['dotline.progress', 'dotline.skin', 'dotline.bg', 'dotline.settings', 'dotline.session', 'dotline.boosters', 'dotline.coins']) localStorage.removeItem(k);
         } catch {
             /* storage blocked */
         }
@@ -117,9 +118,12 @@ export function mountDevPanel() {
         url.searchParams.delete('bg');
         location.href = url.toString();
     });
+    const coins = document.createElement('button');
+    coins.textContent = '+1000 coins';
+    coins.addEventListener('click', () => { addCoins(1000); coins.textContent = `+1000 coins (${coinCount()})`; });
     const row = document.createElement('div');
     row.className = 'dev-row';
-    row.append(win, reset);
+    row.append(win, coins, reset);
     cheats.append(head, row);
     body.append(cheats);
     toggle.addEventListener('click', () => { body.hidden = !body.hidden; });

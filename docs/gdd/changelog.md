@@ -4,7 +4,8 @@ Every published version stays playable at its own URL. The [landing page](https:
 
 ## latest (main) <Badge type="tip" text="Live" />
 
-- No changes since v0.8.0.
+- **Boosters and coins:** Hint opens on level 4 and Cut on level 8 (locked before, with a lock badge). A "Booster Unlock" pop-up (name, picture "x3", a short line, CLAIM; a tap beside it claims too) gives 3, which fly down to the button; the button shows how many are left (no more AD badge), "+" when none: a pop-up buys 3 for 300 coins or 1 by watching an ad (two buttons side by side), with the same fly-in. Coin and ad icons are pictures. New players start with 1000 coins; a win gives 20 (x2 with an ad on the Well Done screen).
+- **Play On:** Out of Hearts and its "Are you sure?" now have two buttons side by side, 900 coins or Free (ad), and no Give Up; a tap beside them does nothing, X closes (Out of Hearts asks, "Are you sure?" replays). The Restart / Home "Are you sure?" has one button and an X.
 
 [Play latest](https://taigd98.github.io/dot-line/demo/)
 

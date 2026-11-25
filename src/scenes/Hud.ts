@@ -12,7 +12,8 @@ import { settingsPopup } from './settingsui';
 import { hasUi, hexOf, recolour, uiKey } from './uiart';
 import { fromEditor } from '../game/source';
 import { BACKGROUNDS, BackgroundId, SKINS, SkinId, chooseLook } from '../game/mode';
-import { FONT, OUTLINE, popupCard, roundButton, wideButton } from './uikit';
+import { FONT, OUTLINE, iconImage, popupCard, roundButton, wideButton } from './uikit';
+import { BOOSTERS, BOOSTER_PACK, BOOSTER_PRICE, BoosterId, PLAY_ON_PRICE, WIN_COINS, addBoosters, addCoins, boosterCount, boosterToUnlock, coinCount, isUnlocked, spendCoins, unlockBooster, useBooster } from '../game/boosters';
 
 
 /** "Hard" label: hard slots of the level system (category), else difficulty 4+. */
@@ -40,6 +41,10 @@ export class Hud extends Phaser.Scene {
     private chromeShown = new Map<Phaser.GameObjects.Components.Visible, boolean>();
     private bandShown = { k: 1 };
     private scissors!: { box: Phaser.GameObjects.Container; ring: Phaser.GameObjects.Graphics };
+    /** The booster buttons and the badge at their top right (count, "+", or a lock). */
+    private boosterBtns: Partial<Record<BoosterId, { box: Phaser.GameObjects.Container; badge: Phaser.GameObjects.Container }>> = {};
+    /** Boosters flying down to their button: the badge waits for them. */
+    private flying = new Set<BoosterId>();
     private cutHint!: Phaser.GameObjects.Text;
     private tut: { kind: 'tap' | 'collision' | 'zoom' | 'rope' | 'lock'; ring: Phaser.GameObjects.Graphics; hand: Phaser.GameObjects.Text | Phaser.GameObjects.Image; text: Phaser.GameObjects.Text; t: number } | null = null;
 
@@ -72,15 +77,18 @@ export class Hud extends Phaser.Scene {
         this.events.once('shutdown', onSettings(paintTheme));
         // Boosters (bottom band): hint and scissors.
         const by = h - BOTTOM_HEIGHT / 2 - 18;
-        this.booster(w / 2 - 110, by, PALETTE.pink, 'HINT', (g) => {
-            // light bulb
-            g.fillStyle(0xffffff, 1).fillCircle(0, -8, 18).fillRect(-8, 4, 16, 12);
-            g.fillStyle(0xdfe6ff, 1).fillRoundedRect(-10, 18, 20, 7, 2);
-        }, () => { this.game$.setCutting(false); this.game$.hint(); });
-        const cut = this.booster(w / 2 + 110, by, PALETTE.pink, 'CUT', (g) => this.drawScissors(g), () => this.game$.setCutting(!this.game$.isCutting));
+        this.flying.clear();
+        this.boosterBtns = {
+            hint: this.booster(w / 2 - 110, by, PALETTE.pink, 'HINT', (g) => this.drawBulb(g), () => this.tapBooster('hint')),
+            cut: this.booster(w / 2 + 110, by, PALETTE.pink, 'CUT', (g) => this.drawScissors(g), () => this.tapBooster('cut'))
+        };
+        const cut = this.boosterBtns.cut!.box;
         const ring = this.add.graphics();
         cut.addAt(ring, 0);
         this.scissors = { box: cut, ring };
+        this.refreshBoosters();
+        // A line really cut spends a pair of scissors.
+        this.game$.events.on('cutUsed', () => { if (!fromEditor) useBooster('cut'); this.refreshBoosters(); });
         this.cutHint = this.add.text(w / 2, h - BOTTOM_HEIGHT - 40, 'Tap a line to cut it', { fontFamily: FONT, fontSize: '44px', color: '#ffffff', stroke: OUTLINE, strokeThickness: 8 }).setOrigin(0.5).setVisible(false);
         this.game$.events.on('cutting', (on: boolean) => this.showCutting(on));
         // Play on: the refilled hearts pop one after another.
@@ -112,9 +120,10 @@ export class Hud extends Phaser.Scene {
         this.hard = this.add.text(w / 2, 34, 'Hard', { fontFamily: FONT, fontSize: '34px', color: '#a24bf0', stroke: '#ffffff', strokeThickness: 6 }).setOrigin(0.5).setVisible(false);
         // The HUD as made here (top and bottom bands, buttons, hearts...): hidden on the Well Done screen.
         this.chrome = this.children.list.filter((o) => o !== this.cutHint) as unknown as Phaser.GameObjects.Components.Visible[];
-        this.game$.events.on('loaded', () => { this.showChrome(true); this.closeOverlay(); this.endTutorial(); this.hard.setVisible(isHard(this.game$.current)); });
+        this.game$.events.on('loaded', () => { this.showChrome(true); this.closeOverlay(); this.endTutorial(); this.hard.setVisible(isHard(this.game$.current)); this.refreshBoosters(); });
         // The tutorial comes once the dots have run out (intro done); Magic: it goes when the last dot is gone.
-        this.game$.events.on('introDone', () => this.startTutorial());
+        // A booster that opens on this level: its pop-up then.
+        this.game$.events.on('introDone', () => { this.startTutorial(); this.offerBooster(); });
         this.game$.events.on('allCleared', () => this.endTutorial());
         this.game$.events.on('tapped', () => { if (this.tut && this.tut.kind !== 'zoom') this.endTutorial(); });
         this.game$.events.on('zoomed', () => { if (this.tut?.kind === 'zoom') this.endTutorial(); });
@@ -161,28 +170,252 @@ export class Hud extends Phaser.Scene {
         g.fillStyle(bg, 1).fillRoundedRect(0, top, w, BOTTOM_HEIGHT + 40, 36);
     }
 
-    /** Booster button: round icon, name below, AD badge. */
+    /** Booster button: round icon, name below, a badge at the top right (count, "+" or a lock: refreshBoosters). */
     private booster(x: number, y: number, fill: number, name: string, icon: (g: Phaser.GameObjects.Graphics) => void, onClick: () => void) {
         const c = this.add.container(x, y);
-        const g = this.add.graphics();
-        const art = name === 'HINT' ? 'hint' : 'cut';
-        if (hasUi('round') && hasUi(`icon-${art}`)) {
+        c.add(this.boosterArt(name === 'HINT' ? 'hint' : 'cut', 118, fill, icon));
+        const label = this.add.text(0, 76, name, { fontFamily: FONT, fontSize: '28px', color: '#ffffff', stroke: OUTLINE, strokeThickness: 6 }).setOrigin(0.5);
+        const badge = this.add.container(42, -44);
+        c.add([label, badge]);
+        c.setSize(120, 150).setInteractive({ useHandCursor: true }).on('pointerup', onClick);
+        return { box: c, badge };
+    }
+
+    /** The booster's picture (round button with its icon), `size` px across, centred on (0, 0). */
+    private boosterArt(id: BoosterId, size: number, fill: number = PALETTE.pink, icon?: (g: Phaser.GameObjects.Graphics) => void) {
+        const c = this.add.container(0, 0);
+        if (hasUi('round') && hasUi(`icon-${id}`)) {
             // The round button picture in the booster's colour, the icon picture on it.
             const bg = this.add.image(0, 0, fill === PALETTE.pink ? uiKey('round') : recolour(this, 'round', `#${fill.toString(16).padStart(6, '0')}`, 0.6));
-            bg.setScale(118 / bg.width);
-            const ic = this.add.image(0, -2, uiKey(`icon-${art}`));
-            ic.setScale(64 / ic.width);
+            bg.setScale(size / bg.width);
+            const ic = this.add.image(0, -size / 60, uiKey(`icon-${id}`));
+            ic.setScale((size * 0.54) / ic.width);
             c.add([bg, ic]);
         } else {
-            g.fillStyle(fill, 1).fillCircle(0, 0, 52);
-            g.lineStyle(6, 0xffffff, 1).strokeCircle(0, 0, 52);
-            icon(g);
+            const g = this.add.graphics(), k = size / 118;
+            g.fillStyle(fill, 1).fillCircle(0, 0, 52 * k);
+            g.lineStyle(6 * k, 0xffffff, 1).strokeCircle(0, 0, 52 * k);
+            g.setScale(1);
+            (icon ?? ((gg: Phaser.GameObjects.Graphics) => (id === 'hint' ? this.drawBulb(gg) : this.drawScissors(gg))))(g);
+            c.add(g);
         }
-        const label = this.add.text(0, 76, name, { fontFamily: FONT, fontSize: '28px', color: '#ffffff', stroke: OUTLINE, strokeThickness: 6 }).setOrigin(0.5);
-        const ad = this.add.text(40, -44, 'AD', { fontFamily: FONT, fontSize: '22px', color: '#ffffff', backgroundColor: '#f07c1c', padding: { x: 6, y: 1 } }).setOrigin(0.5);
-        c.add([g, label, ad]);
-        c.setSize(120, 150).setInteractive({ useHandCursor: true }).on('pointerup', onClick);
         return c;
+    }
+
+    private drawBulb(g: Phaser.GameObjects.Graphics) {
+        g.fillStyle(0xffffff, 1).fillCircle(0, -8, 18).fillRect(-8, 4, 16, 12);
+        g.fillStyle(0xdfe6ff, 1).fillRoundedRect(-10, 18, 20, 7, 2);
+    }
+
+    // ---------- boosters: counts, unlock, buy (GDD 3.14) ----------
+
+    /** Badge of each booster: a lock until it opens; then how many are left, or "+" when none. */
+    private refreshBoosters() {
+        for (const id of Object.keys(this.boosterBtns) as BoosterId[]) {
+            const b = this.boosterBtns[id]!;
+            b.badge.removeAll(true);
+            const locked = !fromEditor && !isUnlocked(id);
+            b.box.setAlpha(locked ? 0.55 : 1);
+            if (fromEditor || this.flying.has(id)) continue;
+            const g = this.add.graphics();
+            b.badge.add(g);
+            if (locked) {
+                g.fillStyle(0x8a8fa3, 1).fillCircle(0, 0, 22).lineStyle(3, 0xffffff, 1).strokeCircle(0, 0, 22);
+                b.badge.add(iconImage(this, 'lock', 0, -1, 24));
+                continue;
+            }
+            const n = boosterCount(id);
+            g.fillStyle(n > 0 ? 0xf07c1c : 0x4cbb5e, 1).fillCircle(0, 0, 22).lineStyle(3, 0xffffff, 1).strokeCircle(0, 0, 22);
+            b.badge.add(this.add.text(0, -2, n > 0 ? String(n) : '+', { fontFamily: FONT, fontSize: n > 0 ? '28px' : '36px', color: '#ffffff', stroke: OUTLINE, strokeThickness: 4 }).setOrigin(0.5));
+        }
+    }
+
+    private tapBooster(id: BoosterId) {
+        if (this.overlay) return;
+        if (!fromEditor && !isUnlocked(id)) return this.toast(`Unlocks at level ${BOOSTERS[id].unlock}`);
+        if (!fromEditor && boosterCount(id) <= 0) return this.buyPopup(id);
+        if (id === 'hint') {
+            this.game$.setCutting(false);
+            if (this.game$.hint() && !fromEditor) { useBooster('hint'); this.refreshBoosters(); }
+        } else this.game$.setCutting(!this.game$.isCutting);
+    }
+
+    /** On a level where a booster opens (and it has not been claimed): its pop-up. */
+    private offerBooster() {
+        if (fromEditor || this.overlay) return;
+        const id = boosterToUnlock(levels.levelNumber());
+        if (id) this.unlockPopup(id);
+    }
+
+    /**
+     * "Booster Unlock": the booster's name, its picture with "x3", a short line on what it does, and CLAIM.
+     * No close button: CLAIM or a tap beside the card closes it; then the three boosters fly to the button.
+     */
+    private unlockPopup(id: BoosterId) {
+        this.scene.pause('Game');
+        const { width: w, height: h } = this.scale;
+        const px = w / 2, py = h * 0.45, pw = 640, ph = 720;
+        const c = this.add.container(0, 0).setDepth(10);
+        let pic: Phaser.GameObjects.Container;
+        let done = false;
+        const claim = () => {
+            if (done) return;
+            done = true;
+            const from = { x: pic.x, y: pic.y };
+            this.closeOverlay();
+            this.scene.resume('Game');
+            unlockBooster(id);
+            this.flyBoosters(id, BOOSTER_PACK, from);
+        };
+        c.add([this.dim(0.75, claim), popupCard(this, px, py, pw, ph, 'Booster Unlock').box]);
+        c.add(this.add.text(px, py - 200, BOOSTERS[id].name, { fontFamily: FONT, fontSize: '64px', color: ui().ink }).setOrigin(0.5));
+        pic = this.boosterArt(id, 190).setPosition(px, py - 40);
+        c.add([pic, this.packLabel(px + 95, py + 30, BOOSTER_PACK)]);
+        c.add(this.add.text(px, py + 120, BOOSTERS[id].text, { fontFamily: FONT, fontSize: '34px', color: ui().ink, align: 'center', wordWrap: { width: pw - 120 } }).setOrigin(0.5));
+        c.add(wideButton(this, px, py + ph / 2 - 100, 380, 112, 'CLAIM', claim).box);
+        this.tweens.add({ targets: pic, scale: { from: 0.4, to: 1 }, duration: 420, ease: 'Back.easeOut' });
+        c.setAlpha(0);
+        this.tweens.add({ targets: c, alpha: 1, duration: 180 });
+        this.overlay = c;
+    }
+
+    /** "x3" in big outlined letters. */
+    private packLabel(x: number, y: number, n: number) {
+        return this.add.text(x, y, `x${n}`, { fontFamily: FONT, fontSize: '64px', color: '#ffffff', stroke: OUTLINE, strokeThickness: 10 }).setOrigin(0.5);
+    }
+
+    /**
+     * Out of a booster ("+"): its name, its picture with "x3", the coins you have, and two buttons: a pack
+     * of 3 for BOOSTER_PRICE coins, or one by watching an ad. X or a tap beside the card closes it.
+     */
+    private buyPopup(id: BoosterId) {
+        this.scene.pause('Game');
+        this.game$.setCutting(false);
+        const { width: w, height: h } = this.scale;
+        const px = w / 2, py = h * 0.45, pw = 640, ph = 660;
+        const close = () => { this.closeOverlay(); this.scene.resume('Game'); };
+        const c = this.add.container(0, 0).setDepth(10);
+        c.add([this.dim(0.75, close), popupCard(this, px, py, pw, ph, BOOSTERS[id].name, close).box]);
+        const pic = this.boosterArt(id, 190).setPosition(px, py - 105);
+        c.add([pic, this.packLabel(px + 95, py - 35, BOOSTER_PACK), ...this.coinLine(px, py + 65)]);
+        const from = () => ({ x: pic.x, y: pic.y });
+        // The two buttons side by side: coins on the left, the ad on the right.
+        const buy = wideButton(this, px - 140, py + 185, 260, 104, String(BOOSTER_PRICE), () => {
+            if (!spendCoins(BOOSTER_PRICE)) return this.toast('Not enough coins');
+            const at = from();
+            close();
+            addBoosters(id, BOOSTER_PACK);
+            this.flyBoosters(id, BOOSTER_PACK, at);
+        });
+        this.withIcon(buy, this.coinIcon(26));
+        const ad = wideButton(this, px + 140, py + 185, 260, 104, 'Get +1', () => {
+            const at = from();
+            close();
+            this.watchAd(() => { addBoosters(id, 1); this.flyBoosters(id, 1, at); });
+        }, PALETTE.purple, PALETTE.purpleEdge);
+        this.withIcon(ad, this.adIcon(24));
+        c.add([buy.box, ad.box]);
+        c.setAlpha(0);
+        this.tweens.add({ targets: c, alpha: 1, duration: 180 });
+        this.overlay = c;
+    }
+
+    /**
+     * Boosters arrive: `n` copies of the booster's picture spread out from `from`, then fly one after
+     * another in an arc down to its button, which bounces as each lands; the badge shows the new count.
+     */
+    private flyBoosters(id: BoosterId, n: number, from: { x: number; y: number }) {
+        const btn = this.boosterBtns[id];
+        if (!btn) return this.refreshBoosters();
+        this.flying.add(id);
+        this.refreshBoosters();
+        const to = { x: btn.box.x, y: btn.box.y }, size = 150;
+        let landed = 0;
+        for (let i = 0; i < n; i++) {
+            const pic = this.boosterArt(id, size).setPosition(from.x, from.y).setDepth(12).setScale(0.6);
+            const spread = { x: from.x + (i - (n - 1) / 2) * 150, y: from.y };
+            // Out to its place in the row, then the arc down.
+            this.tweens.add({
+                targets: pic, x: spread.x, y: spread.y, scale: 1, duration: 260, ease: 'Back.easeOut', onComplete: () => {
+                    const f = { t: 0 }, c1 = { x: spread.x + (to.x - spread.x) * 0.15, y: spread.y - 160 };
+                    this.tweens.add({
+                        targets: f, t: 1, duration: 620, delay: 150 + i * 140, ease: 'Sine.easeIn',
+                        onUpdate: () => {
+                            const t = f.t, u = 1 - t;
+                            pic.setPosition(u * u * spread.x + 2 * u * t * c1.x + t * t * to.x, u * u * spread.y + 2 * u * t * c1.y + t * t * to.y);
+                            pic.setScale(1 + (118 / size - 1) * t).setAngle(t * 360 * (i % 2 ? -1 : 1));
+                        },
+                        onComplete: () => {
+                            pic.destroy();
+                            this.tweens.add({ targets: btn.box, scale: { from: 1.18, to: 1 }, duration: 220, ease: 'Back.easeOut' });
+                            const fx = this.add.particles(to.x, to.y, 'spark', { speed: { min: 80, max: 240 }, lifespan: 380, scale: { start: 0.7, end: 0 }, tint: [0xffffff, 0xffd25a], emitting: false }).setDepth(12);
+                            fx.explode(10);
+                            this.time.delayedCall(500, () => fx.destroy());
+                            if (++landed === n) {
+                                this.flying.delete(id);
+                                this.refreshBoosters();
+                                this.tweens.add({ targets: btn.badge, scale: { from: 1.6, to: 1 }, duration: 300, ease: 'Back.easeOut' });
+                            }
+                        }
+                    });
+                }
+            });
+        }
+    }
+
+    /** Your coins: a coin and the number, centred at (x, y). */
+    private coinLine(x: number, y: number) {
+        const t = this.add.text(0, y, `${coinCount()}`, { fontFamily: FONT, fontSize: '40px', color: ui().ink }).setOrigin(0.5);
+        const icon = this.coinIcon(22);
+        const total = 44 + 12 + t.width;
+        icon.setPosition(x - total / 2 + 22, y);
+        t.setX(x - total / 2 + 56 + t.width / 2);
+        return [icon, t];
+    }
+
+    /** A gold coin, radius r: the coin picture (src/assets/ui/coin.png), else drawn. */
+    private coinIcon(r: number): Phaser.GameObjects.Image | Phaser.GameObjects.Graphics {
+        if (hasUi('coin') && this.textures.exists(uiKey('coin'))) { const img = this.add.image(0, 0, uiKey('coin')); return img.setScale((r * 2.2) / img.width); }
+        const g = this.add.graphics();
+        g.fillStyle(0xc98a1f, 1).fillCircle(0, r * 0.1, r);
+        g.fillStyle(0xf6c23e, 1).fillCircle(0, 0, r);
+        g.lineStyle(r * 0.14, 0xd99a1c, 1).strokeCircle(0, 0, r * 0.68);
+        g.fillStyle(0xfff1b8, 0.8).fillEllipse(-r * 0.35, -r * 0.4, r * 0.5, r * 0.3);
+        return g;
+    }
+
+    /** An "ad" icon about 2r wide: the picture (src/assets/ui/ad.png: a little screen with a play triangle), else drawn. */
+    private adIcon(r: number): Phaser.GameObjects.Image | Phaser.GameObjects.Graphics {
+        if (hasUi('ad') && this.textures.exists(uiKey('ad'))) { const img = this.add.image(0, 0, uiKey('ad')); return img.setScale((r * 2.3) / img.width); }
+        const g = this.add.graphics();
+        g.fillStyle(0xffffff, 1).fillRoundedRect(-r, -r * 0.72, r * 2, r * 1.44, r * 0.3);
+        g.fillStyle(0xf07c1c, 1).fillTriangle(-r * 0.3, -r * 0.42, -r * 0.3, r * 0.42, r * 0.45, 0);
+        return g;
+    }
+
+    /** An icon in front of a wide button's label, the two centred together. */
+    private withIcon(btn: { box: Phaser.GameObjects.Container; text: Phaser.GameObjects.Text }, icon: Phaser.GameObjects.Image | Phaser.GameObjects.Graphics, iw = 52) {
+        const t = btn.text, total = iw + 12 + t.width;
+        icon.setPosition(-total / 2 + iw / 2, t.y);
+        t.setX(-total / 2 + iw + 12 + t.width / 2);
+        btn.box.add(icon);
+    }
+
+    /**
+     * Watch an ad (not wired to an ad network yet): a dark screen says an ad is playing and counts down,
+     * then the reward.
+     */
+    private watchAd(reward: () => void) {
+        const { width: w, height: h } = this.scale;
+        const c = this.add.container(0, 0).setDepth(20);
+        c.add(this.add.rectangle(w / 2, h / 2, w, h, 0x0b0b12, 0.94).setInteractive());
+        c.add(this.add.text(w / 2, h * 0.42, 'AD', { fontFamily: FONT, fontSize: '120px', color: '#ffffff', stroke: OUTLINE, strokeThickness: 12 }).setOrigin(0.5));
+        const left = this.add.text(w / 2, h * 0.52, '', { fontFamily: FONT, fontSize: '40px', color: '#ffffff' }).setOrigin(0.5);
+        c.add(left);
+        let n = 3;
+        const tick = () => left.setText(`Reward in ${n}…`);
+        tick();
+        this.time.addEvent({ delay: 800, repeat: 2, callback: () => { n--; if (n > 0) tick(); else { c.destroy(); reward(); } } });
     }
 
     /** White scissors: two blades open in a V (tips to the upper right), ring handles below. */
@@ -202,9 +435,9 @@ export class Hud extends Phaser.Scene {
         g.restore();
     }
 
-    /** Short message above the bottom band that fades out by itself. */
+    /** Short message above the bottom band (over any pop-up) that fades out by itself. */
     private toast(message: string) {
-        const t = this.add.text(this.scale.width / 2, this.scale.height - BOTTOM_HEIGHT - 120, message, { fontFamily: FONT, fontSize: '50px', color: '#ffffff', stroke: OUTLINE, strokeThickness: 9, align: 'center' }).setOrigin(0.5).setDepth(8).setScale(0.6);
+        const t = this.add.text(this.scale.width / 2, this.scale.height - BOTTOM_HEIGHT - 120, message, { fontFamily: FONT, fontSize: '50px', color: '#ffffff', stroke: OUTLINE, strokeThickness: 9, align: 'center' }).setOrigin(0.5).setDepth(14).setScale(0.6);
         this.tweens.add({ targets: t, scale: 1, duration: 220, ease: 'Back.easeOut' });
         this.tweens.add({ targets: t, alpha: 0, y: t.y - 40, delay: 2200, duration: 500, onComplete: () => t.destroy() });
     }
@@ -323,6 +556,8 @@ export class Hud extends Phaser.Scene {
             // (APPLY / LATER / a tap beside it), then the level's intro run.
             const before = progress.reached;
             const next = levels.next();
+            // The win's coins (the Well Done screen can double them with an ad).
+            if (!fromEditor) addCoins(WIN_COINS);
             const opened = fromEditor ? [] : unlocksBetween(before, progress.reached);
             this.wellDone(before, () => {
                 if (!next) return;
@@ -334,10 +569,8 @@ export class Hud extends Phaser.Scene {
                 });
             });
         } else {
-            // Play on (AD): refill the hearts and keep going from here. Quit asks first (the progress is lost).
-            this.showOverlay('Out of Hearts!', 'PLAY ON', () => this.playOn(), 0.75, 'Refill your hearts and keep going?',
-                { label: 'GIVE UP', colour: PALETTE.red, onClick: () => this.confirmQuit() }, true);
-            this.heartFill();
+            // Play on, for coins or an ad: refill the hearts and keep going from here. X asks first (the progress is lost).
+            this.playOnPopup('out');
         }
     }
 
@@ -422,7 +655,27 @@ export class Hud extends Phaser.Scene {
             c.add([bar, count]);
             this.tweens.add({ targets: fill, f: f1, duration: 700, delay: 400, ease: 'Sine.easeOut', onUpdate: paint, onComplete: () => { if (f1 >= 1) reveal.forEach((r) => r()); } });
         }
-        c.add(wideButton(this, w / 2, h * 0.63, 380, 112, 'CONTINUE', onContinue).box);
+        // The win's coins, then x2 (watch an ad: as many again, then on) and CONTINUE.
+        let gone = false;
+        const reward = this.add.text(0, h * 0.62, `+${WIN_COINS}`, { fontFamily: FONT, fontSize: '64px', color: '#ffd25a', stroke: OUTLINE, strokeThickness: 10 }).setOrigin(0.5);
+        const coin = this.coinIcon(30);
+        const place = () => { const total = 60 + 14 + reward.width; coin.setPosition(w / 2 - total / 2 + 30, h * 0.62); reward.setX(w / 2 - total / 2 + 74 + reward.width / 2); };
+        place();
+        c.add([coin, reward]);
+        const go = () => { if (gone) return; gone = true; onContinue(); };
+        const x2 = wideButton(this, w / 2, h * 0.71, 380, 112, 'x2', () => {
+            if (gone || fromEditor) return go();
+            gone = true;
+            this.watchAd(() => {
+                addCoins(WIN_COINS);
+                reward.setText(`+${WIN_COINS * 2}`);
+                place();
+                this.tweens.add({ targets: [reward, coin], scale: { from: 1.5, to: 1 }, duration: 380, ease: 'Back.easeOut' });
+                this.time.delayedCall(900, onContinue);
+            });
+        }, PALETTE.purple, PALETTE.purpleEdge);
+        this.withIcon(x2, this.adIcon(24));
+        c.add([x2.box, wideButton(this, w / 2, h * 0.8, 320, 96, 'CONTINUE', go).box]);
         c.setAlpha(0);
         this.tweens.add({ targets: c, alpha: 1, duration: 200 });
         this.overlay = c;
@@ -500,13 +753,41 @@ export class Hud extends Phaser.Scene {
         this.game$.playOn();
     }
 
-    /** "Are you sure?" before giving up a level: shows how far the player got. */
+    /** "Are you sure?" before giving up a level (X on Out of Hearts): how far the player got, and Play On again. */
     private confirmQuit() {
         // Nothing cleared yet: nothing to lose, so no question: the level starts over.
         if (!this.game$.state().cleared) { this.closeOverlay(); this.game$.restart(); return; }
-        this.showOverlay('Are you sure?', 'PLAY ON', () => this.playOn(), 0.8, this.clearedLine(),
-            { label: 'REPLAY', colour: 0xe8333d, onClick: () => this.game$.restart() }, true, PROGRESS_SPACE);
-        this.levelProgress();
+        this.playOnPopup('sure');
+    }
+
+    /**
+     * Play On pop-ups (GDD 3.14): "Out of Hearts!" (the hearts filling) or "Are you sure?" (the level's
+     * progress), the coins you have, and two buttons: PLAY_ON_PRICE coins, or Free by watching an ad. A tap
+     * beside the card does nothing; X gives up: Out of Hearts asks "Are you sure?", that one replays the level.
+     */
+    private playOnPopup(kind: 'out' | 'sure') {
+        this.closeOverlay();
+        const { width: w, height: h } = this.scale;
+        const px = w / 2, py = h * 0.45, pw = 640, ph = 640;
+        const c = this.add.container(0, 0).setDepth(10);
+        const close = kind === 'out' ? () => this.confirmQuit() : () => { this.closeOverlay(); this.game$.restart(); };
+        c.add([this.dim(0.75), popupCard(this, px, py, pw, ph, kind === 'out' ? 'Out of Hearts!' : 'Are you sure?', close).box]);
+        c.add(this.add.text(px, py - ph / 2 + 130, kind === 'out' ? 'Refill your hearts and keep going?' : this.clearedLine(), { fontFamily: FONT, fontSize: '34px', color: ui().ink, align: 'center', wordWrap: { width: pw - 100 } }).setOrigin(0.5, 0));
+        c.add(this.coinLine(px, py + 60));
+        // The two buttons side by side: coins on the left, the ad on the right.
+        const pay = wideButton(this, px - 140, py + 175, 260, 104, String(PLAY_ON_PRICE), () => {
+            if (!spendCoins(PLAY_ON_PRICE)) return this.toast('Not enough coins');
+            this.playOn();
+        });
+        this.withIcon(pay, this.coinIcon(26));
+        const free = wideButton(this, px + 140, py + 175, 260, 104, 'Free', () => { this.closeOverlay(); this.watchAd(() => this.game$.playOn()); }, PALETTE.purple, PALETTE.purpleEdge);
+        this.withIcon(free, this.adIcon(24));
+        c.add([pay.box, free.box]);
+        c.setAlpha(0);
+        this.tweens.add({ targets: c, alpha: 1, duration: 180 });
+        this.overlay = c;
+        if (kind === 'out') this.heartFill();
+        else this.levelProgress();
     }
 
     /** "You have cleared X of Y lines." */
@@ -545,8 +826,9 @@ export class Hud extends Phaser.Scene {
         };
         // Nothing cleared yet: nothing to lose, so no question.
         if (!this.game$.state().cleared) return go();
+        // One button (RESTART or HOME); X goes back to the game.
         this.showOverlay('Are you sure?', kind === 'restart' ? 'RESTART' : 'HOME', go, 0.8, this.clearedLine(),
-            { label: 'CANCEL', colour: 0x8a8fa3, onClick: () => { this.closeOverlay(); this.scene.resume('Game'); } }, false, PROGRESS_SPACE);
+            undefined, false, PROGRESS_SPACE, () => { this.closeOverlay(); this.scene.resume('Game'); });
         this.levelProgress();
     }
 
@@ -555,14 +837,14 @@ export class Hud extends Phaser.Scene {
      * and an optional second one (with `ad`: the main button carries a heart and an AD badge).
      */
     private showOverlay(title: string, button: string, onClick: () => void, dim = 0.75, sub?: string,
-        second?: { label: string; colour: number; onClick: () => void }, ad = false, space = 0) {
+        second?: { label: string; colour: number; onClick: () => void }, ad = false, space = 0, onClose?: () => void) {
         this.closeOverlay();
         const k = ui();
         const { width: w, height: h } = this.scale;
         const c = this.add.container(0, 0).setDepth(10);
         // `space`: extra height in the middle of the card for more content (the level progress block).
         const px = w / 2, py = h * 0.45, pw = 640, ph = (second ? 640 : 560) + space;
-        const card = popupCard(this, px, py, pw, ph, title);
+        const card = popupCard(this, px, py, pw, ph, title, onClose);
         c.add([this.dim(dim), card.box]);
         if (sub) c.add(this.add.text(px, py - ph / 2 + 130, sub, { fontFamily: FONT, fontSize: '34px', color: k.ink, align: 'center', wordWrap: { width: pw - 100 } }).setOrigin(0.5, 0));
         const by = second ? py + ph / 2 - 230 : py + ph / 2 - 110;

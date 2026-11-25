@@ -206,6 +206,21 @@ Wide 2:1 image, 2048 x 1024 pixels.
 Negative: text, numbers, letters, chain, open padlock, multiple keys, key ring, colour, metal rust, realistic photo, watermark.
 ```
 
+## 4e. `coin-ad.png`: icon coin và icon quảng cáo (GDD 3.14)
+
+Một ảnh 2 ô: **đồng coin vàng** (trái) và **icon xem quảng cáo** (phải: màn hình nhỏ với nút play cam). Giữ **màu thật** (không tô lại). `npm run art:ui` cắt thành `coin.png` và `ad.png` (256 px). Dùng ở dòng số coin, nút mua booster (300), nút Play On (900 / Free), nút Get +1 và nút x2 ở màn Well Done.
+
+```text
+A sprite sheet of two small game icons for a casual mobile puzzle game, side by side in a grid of 2 columns and 1 row, each icon centred in its own square cell with wide empty margins, nothing touches the other icon or the cell edges.
+Left: a chunky, cute gold coin seen from the front, slightly tilted: a thick rim, a raised inner circle with a simple embossed star in the middle, warm gold and amber tones, a bright glossy highlight on the upper left, a darker amber edge at the bottom to show its thickness.
+Right: a chunky, cute "watch an ad" icon: a small rounded video screen, white with a soft light grey bevel, a bold orange #F07C1C play triangle in the middle, a tiny red recording dot in its top corner.
+Soft glossy 3D look like toy plastic, rounded edges, soft lighting from the top left, a thin darker rim on each icon for a readable silhouette at small size, matching a cream, peach and purple game UI.
+Simple bold shapes that stay readable at 40 pixels; no tiny details, no texture.
+Isolated on a real transparent background (no checkerboard painted in), no drop shadow, no glow.
+Wide 2:1 image, 2048 x 1024 pixels.
+Negative: text, letters, numbers, dollar sign, stack of coins, multiple screens, film strip, watermark, realistic photo, blue.
+```
+
 ## 5. Còn lại
 
 - **Fluffy:** chỉ còn mặt "thức" `face-awake.png` (một ảnh, xem [Fluffy theme: assets](./fluffy-assets), mục 9: dùng nửa trái của prompt đó). Bàn tay giờ là bàn tay chung ở mục 3.
@@ -229,4 +244,5 @@ Bỏ ảnh vào thư mục dưới rồi chạy `npm run art:ui` (`tools/ui-art.
 | `rope-tile.png` | `art/ui/` | **đã dùng**: dây thừng (obstacle), tô màu theo cặp, lặp dọc dây |
 | `rope-end.png` | `art/ui/` | không dùng (đầu dây nằm dưới bóng) |
 | `lock-key.png` | `art/ui/` | **đã dùng**: ổ khóa và chìa (obstacle), tô màu nhãn, không khung |
+| `coin-ad.png` | `art/ui/` | **đã dùng**: icon coin và icon quảng cáo trên các nút và dòng số coin |
 | `awake.png` | `art/fluffy/` | **đã dùng** (`npm run art:fluffy`): cặp Fluffy đã va chạm thì thức, mở mắt, không sọc |

@@ -15,6 +15,7 @@
 // - art/ui/rope-tile.png: a straight grey braided rope (the rope obstacle). Cut to a whole number of
 //   twists so it repeats with no seam, scaled to 256 × 64 (powers of two: the game repeats it along the line).
 // - art/ui/lock-key.png, 2 × 1: lock, key (grey, recoloured in the game to each lock's tag colour), 256 px.
+// - art/ui/coin-ad.png, 2 × 1: coin, "watch an ad" icon (in their own colours), 256 px.
 import { existsSync, mkdirSync, readdirSync, rmSync } from 'fs';
 import { Img, bbox, crop, readImage, resize, writePng } from './rgba';
 
@@ -312,4 +313,10 @@ if (has('ui/lock-key.png')) {
     const [lock, key] = pieces(load('ui/lock-key.png'), 2, 1);
     save('lock', square(lock, 256));
     save('key', square(key, 256));
+}
+// coin-ad.png (2 × 1): the coin and the "watch an ad" icon (kept in their own colours).
+if (has('ui/coin-ad.png')) {
+    const [coin, ad] = pieces(load('ui/coin-ad.png'), 2, 1);
+    save('coin', fit(coin, 256));
+    save('ad', fit(ad, 256));
 }

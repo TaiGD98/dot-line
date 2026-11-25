@@ -178,6 +178,34 @@ Negative: text, letters, icons, buttons, ribbon, watermark, blue, green, pattern
 
 Bỏ vào `art/ui/popup.png` (tên `pop up.png` cũng được), chạy `npm run art:ui`: game dùng khung này cho mọi pop-up (thay `panel` của `ui-kit-3.png`). Lệnh in ra chỗ dải đầu kết thúc (hiện 98 / 640 px); nếu ảnh mới có dải đầu cao khác nhiều, chỉnh số cắt 9-slice trong `popupCard` (`src/scenes/uikit.ts`).
 
+## 4c. `rope-tile.png`: dây thừng (obstacle, GDD 3.12)
+
+Một đoạn dây thừng bện **thẳng ngang, xám trung tính**, lặp liền mạch trái phải. Game tô lại theo màu của cặp (xám giữa thành màu cặp, xám đậm thành bóng, xám sáng thành điểm sáng) và **lặp texture dọc theo dây** (web: `Rope` của Phaser; Unity: `LineRenderer`, Texture Mode = Tile, material tô màu cặp).
+
+```text
+A seamless, horizontally tileable segment of thick braided rope for a casual mobile puzzle game, side view, running straight left to right and filling the full width edge to edge. Two strands twisted together with clear diagonal twists (about 4 twists across the image), soft rounded cartoon shading, lit from the top left with a soft highlight along the top edge and a gentle shadow along the bottom. The rope is exactly 70% of the image height, centred vertically. Fully neutral grey tones only (light grey highlights, mid grey body, dark grey grooves between strands), no colour tint. The left and right ends must line up perfectly so the image tiles with no visible seam. Transparent background, no outline, no frayed ends, no texture noise, clean vector-like style matching glossy jelly balls.
+```
+
+`npm run art:ui` tự tìm chu kỳ xoắn trong ảnh (độ dịch mà dây trông giống hệt), cắt một số nguyên chu kỳ ở giữa ảnh (nên hai mép khớp nhau dù hai đầu ảnh gốc không khớp) và thu về **256 × 64** (lũy thừa của 2, để lặp được trên GPU). Với ảnh hiện tại: chu kỳ 407 px, cắt 3 chu kỳ. Trong game dây rộng 13 px, mỗi lần lặp dài 52 px.
+
+`rope-end.png` (nút thắt đầu dây) **không dùng**: hai đầu dây luôn nằm dưới bóng của cặp nên không thấy; ảnh đó lại có quầng tối mờ thay vì nền trong.
+
+## 4d. `lock-key.png`: ổ khóa và chìa (obstacle, GDD 3.13)
+
+Một ảnh 2 ô: **ổ khóa đóng** (trái) và **chìa** nằm chéo (phải), **xám trung tính**. Game tô lại theo màu nhãn của từng cặp ổ / chìa (vàng, xanh dương, tím, xanh lá) và đặt thẳng lên line, không có khung. `npm run art:ui` cắt thành `lock.png` và `key.png` (256 px).
+
+```text
+A sprite sheet of two game icons for a casual mobile puzzle game, side by side in a grid of 2 columns and 1 row, each icon centred in its own square cell with wide empty margins, nothing touches the other icon or the cell edges.
+Left: a chunky, cute padlock seen from the front: a rounded, slightly wide body with a small keyhole in the middle and a thick rounded shackle on top, closed.
+Right: a chunky, cute old-style key lying diagonally (bow at the lower left, teeth at the upper right): a round bow with a hole, a thick short shaft and two simple square teeth.
+Both in fully neutral grey tones only (light grey highlights, mid grey body, dark grey for the keyhole, the hole in the bow and the shading), no colour tint, so they can be recoloured in the game.
+Soft glossy 3D look like toy plastic, rounded edges, soft lighting from the top left with a clear highlight on the upper left, gentle shading on the lower right, a thin darker grey rim for a readable silhouette at small size.
+Simple bold shapes that stay readable at 40 pixels; no tiny details, no texture, no scratches.
+Isolated on a real transparent background (no checkerboard painted in), no drop shadow, no glow.
+Wide 2:1 image, 2048 x 1024 pixels.
+Negative: text, numbers, letters, chain, open padlock, multiple keys, key ring, colour, metal rust, realistic photo, watermark.
+```
+
 ## 5. Còn lại
 
 - **Fluffy:** chỉ còn mặt "thức" `face-awake.png` (một ảnh, xem [Fluffy theme: assets](./fluffy-assets), mục 9: dùng nửa trái của prompt đó). Bàn tay giờ là bàn tay chung ở mục 3.
@@ -198,4 +226,7 @@ Bỏ ảnh vào thư mục dưới rồi chạy `npm run art:ui` (`tools/ui-art.
 | `popup.png` (hoặc `pop up.png`) | `art/ui/` | **đã dùng**: khung mọi pop-up; tiêu đề nằm giữa dải đầu cam, phần thân kéo giãn theo nội dung |
 | `ui-kit-3.png` | `art/ui/` | **đã dùng**: khung pop-up, ruy băng (banner Theme), nút tròn (hồng: nút, booster, level), nút dài (cam đào), ô lưới, tab và khung bảng Theme |
 | `home-2.png` | `art/ui/` | **đã dùng**: thanh tab dưới, nền tab đang chọn, thẻ tên "Dot Line", đường nối, mây, nhãn SOON |
+| `rope-tile.png` | `art/ui/` | **đã dùng**: dây thừng (obstacle), tô màu theo cặp, lặp dọc dây |
+| `rope-end.png` | `art/ui/` | không dùng (đầu dây nằm dưới bóng) |
+| `lock-key.png` | `art/ui/` | **đã dùng**: ổ khóa và chìa (obstacle), tô màu nhãn, không khung |
 | `awake.png` | `art/fluffy/` | **đã dùng** (`npm run art:fluffy`): cặp Fluffy đã va chạm thì thức, mở mắt, không sọc |

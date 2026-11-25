@@ -2059,6 +2059,7 @@
     },
     {
       "id": "p20",
+      "rope": true,
       "color": "olive_green",
       "a": {
         "x": -182.9,
@@ -2516,6 +2517,7 @@
     }
   ],
   "obstacles": [],
+  "tutorial": "rope",
   "source": {
     "image": "c5-005-christmas-tree.png",
     "rect": {

@@ -4,9 +4,20 @@ Every published version stays playable at its own URL. The [landing page](https:
 
 ## latest (main) <Badge type="tip" text="Live" />
 
-- No changes since v0.7.1.
+- No changes since v0.8.0.
 
 [Play latest](https://taigd98.github.io/dot-line/demo/)
+
+## v0.8.0
+
+- **Dev panel:** with the Jelly ball, a "Pair touch → pop" slider sets how long the two merged balls stay before they pop (now 0.2 s).
+- **Jelly particles:** in the Jelly look, little glossy blobs of jelly in the ball's colour fly off: a few on a tap on empty board (the level's colours) or on a ball, more on a bump, most when a pair meets; a running ball flings a trail of small blobs behind it that fall in arcs (none on the way back after a bump). Blobs stretch a little along the way they fly; the blobs from a tap on empty board keep the same size on screen at any zoom.
+- **New obstacle, locks and keys:** a lock is a point on the board that stops the balls of every line through it (a crossing, a rope too) until its key is taken; any ball that runs over the key takes it, the key flies to its lock and the lock springs open. A lock goes when all its pairs have left. In levels 7 (Pumpkin, with a "Keys open locks" tutorial), 14 (USB stick, two locks on one line), 15 (Vase twist, a lock where the rope crosses a line) and 24 (Dancer fan), all checked winnable. The editor can add, drag and check locks and keys.
+- **New obstacle, the rope:** a pair's line can be a braided rope in its own colour (a rope picture repeated along the line); any other ball that crosses it bumps back (and costs a heart) as if it hit a ball, the rope shivers; the pair's own balls run along it as usual and it goes when the pair is cleared. In levels 9 (Christmas tree, with a "Ropes block other dots" tutorial), 10 (Butterfly) and 15 (Vase twist), all checked winnable. The editor has a Rope tick box for the selected pair.
+- **Line order:** where lines cross, the line of a pair cleared earlier in the level's solution lies on top of the lines of pairs cleared later (pairs open from the start are on top).
+- **Game Design Document:** obstacles (rules 3.12 rope, 3.13 locks and keys), line order (3.4), Jelly particles and delay (3.3b2), the loading screen kept off for now; UI assets 4c / 4d (rope, lock and key pictures and prompts).
+
+[Play v0.8.0](https://taigd98.github.io/dot-line/v0.8.0/demo/) · [Docs v0.8.0](https://taigd98.github.io/dot-line/v0.8.0/docs/)
 
 ## v0.7.1
 
@@ -137,3 +148,4 @@ Every published version stays playable at its own URL. The [landing page](https:
 | 2026-11-20 | Released v0.6.0 |
 | 2026-11-23 | Released v0.7.0 |
 | 2026-11-23 | Released v0.7.1 |
+| 2026-11-25 | Released v0.8.0 |

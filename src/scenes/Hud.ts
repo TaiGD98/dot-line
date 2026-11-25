@@ -41,7 +41,7 @@ export class Hud extends Phaser.Scene {
     private bandShown = { k: 1 };
     private scissors!: { box: Phaser.GameObjects.Container; ring: Phaser.GameObjects.Graphics };
     private cutHint!: Phaser.GameObjects.Text;
-    private tut: { kind: 'tap' | 'collision' | 'zoom'; ring: Phaser.GameObjects.Graphics; hand: Phaser.GameObjects.Text | Phaser.GameObjects.Image; text: Phaser.GameObjects.Text; t: number } | null = null;
+    private tut: { kind: 'tap' | 'collision' | 'zoom' | 'rope' | 'lock'; ring: Phaser.GameObjects.Graphics; hand: Phaser.GameObjects.Text | Phaser.GameObjects.Image; text: Phaser.GameObjects.Text; t: number } | null = null;
 
     constructor() {
         super('Hud');
@@ -237,7 +237,7 @@ export class Hud extends Phaser.Scene {
         this.endTutorial();
         const kind = this.game$.current?.tutorial;
         if (!kind) return;
-        const caption = { tap: 'Tap a dot to send it home', collision: 'Blocked dots bounce back', zoom: 'Pinch to zoom' }[kind];
+        const caption = { tap: 'Tap a dot to send it home', collision: 'Blocked dots bounce back', zoom: 'Pinch to zoom', rope: 'Ropes block other dots', lock: 'Keys open locks' }[kind];
         const ring = this.add.graphics().setDepth(5);
         // The tutorial hand picture (hand.png, once it is there; one for every look), its fingertip on the target.
         const handKey = hasUi('hand') && this.textures.exists(uiKey('hand')) ? uiKey('hand') : hasArt('hand') && this.textures.exists(fluffyKey('hand')) ? fluffyKey('hand') : null;

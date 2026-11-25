@@ -39,9 +39,15 @@
 
 Bản game phụ tại [`/jelly/`](https://taigd98.github.io/dot-line/jelly/) (nút **Play Jelly** ở trang chủ): cùng level, cùng luật, chỉ khác cảm giác của bóng (`src/game/mode.ts`, `JELLY` trong `src/scenes/Game.ts`):
 
-- **Khi chạy:** không có trail; bóng **biến dạng như thạch**: kéo dài theo hướng chạy, càng nhanh càng dài (tới khoảng 1,5 lần), dẹt lại tương ứng (giữ diện tích), rung nhẹ trong lúc chạy. Độ dài đi theo một lò xo mềm nên khi bắt đầu chạy, quay đầu hay dừng lại bóng nảy qua nảy lại rồi mới tròn lại.
+- **Hạt jelly:** những cục thạch nhỏ bóng loáng (ảnh bóng Jelly thu nhỏ, cùng màu bóng) bắn ra, **rơi theo đường parabol**, nhỏ dần rồi mờ đi; khi bay mỗi cục **hơi méo theo hướng bay** (dài ra tới 1,25 lần, dẹt lại tới 0,9 lần, bay càng nhanh càng méo) và quay theo hướng đó:
+  - **Chạm khoảng trống:** 5–7 cục thạch màu của level bắn lên rồi rơi (như chạm khoảng trống ở Fluffy); cỡ trên màn hình **không đổi theo zoom** (18 px).
+  - **Chạm bóng:** 6–8 cục bắn ra quanh bóng.
+  - **Va chạm:** nhiều hơn, 10–14 cục từ mỗi bóng, văng ra phía sau chỗ chạm (thay cho các giọt màu).
+  - **Về đúng cặp:** nhiều nhất, 14–18 cục từ bóng tới và 10–14 cục từ bóng kia, bắn ra mọi phía.
+  - **Khi chạy:** bóng **văng giọt thạch thành trail**: cứ 0,05 giây một giọt bị hất ra phía sau (lệch tối đa 60° hai bên), bay lên một chút rồi rơi theo parabol. **Khi bóng bị nảy về** (va chạm) thì không có trail.
+- **Khi chạy:** bóng **biến dạng như thạch**: kéo dài theo hướng chạy, càng nhanh càng dài (tới khoảng 1,5 lần), dẹt lại tương ứng (giữ diện tích), rung nhẹ trong lúc chạy. Độ dài đi theo một lò xo mềm nên khi bắt đầu chạy, quay đầu hay dừng lại bóng nảy qua nảy lại rồi mới tròn lại.
 - **Khi va chạm:** rung mạnh và lâu hơn bản thường (biên độ 0,5 / 0,4 thay vì 0,32 / 0,22, tắt dần trong khoảng 1,3 giây thay vì 0,7 giây).
-- **Khi tới bóng cùng cặp:** bóng dừng lúc chạm bóng kia, hai bóng **ép vào nhau** (dẹt ở chỗ chạm, 0,16 giây), **nhập thành một khối** (diện tích bằng tổng hai bóng, lúc đầu dài theo hướng gặp nhau rồi rung về tròn, 0,4 giây, phồng lên một chút) rồi mới **nổ**. Màn Well Done đến 0,5 giây sau tiếng nổ cuối.
+- **Khi tới bóng cùng cặp:** bóng dừng lúc chạm bóng kia, hai bóng **ép vào nhau** (dẹt ở chỗ chạm, 0,16 giây), **nhập thành một khối** (diện tích bằng tổng hai bóng, lúc đầu dài theo hướng gặp nhau rồi rung về tròn, phồng lên một chút) rồi mới **nổ**. Thời gian khối nhập đứng trước khi nổ là `JELLY_HOLD` (`src/game/tuning.ts`, hiện 0,2 giây), chỉnh được trong bảng **⚙ dev → Pair touch → pop** (Confirm ghi vào code khi chạy `npm run dev`). Màn Well Done đến 0,5 giây sau tiếng nổ cuối.
 
 ## 3.3b3 Bản Magic <Badge type="tip" text="Live" />
 
@@ -89,6 +95,7 @@ Bật bằng **nút tròn ở góc trên phải** khi đang chơi (mặt trời 
 - Khi hạt di chuyển chạm vào hạt đích → cả 2 hạt vỡ ra, có effect văng màu tại chỗ chạm, rồi biến mất.
 - **Sợi dây cũng biến mất hoàn toàn** khỏi board. Chỉ khi dọn xong mọi cặp, tất cả các dây mới hiện lại (mờ dần trong khoảng 0,7 giây) bằng màu Completed `#6977C2`, ghép thành hình vẽ của level, rồi màn thắng mới hiện.
 - **Hạt càng to, effect vỡ càng to.**
+- **Thứ tự chồng dây:** chỗ các dây cắt nhau, dây của cặp **giải trước** (theo thứ tự giải của level, tính lúc vào level) **nằm trên** dây của cặp giải sau; các cặp mở ngay từ đầu nằm trên cùng, cặp không giải được (nếu có) nằm dưới cùng.
 
 ## 3.5 Thắng và thua <Badge type="tip" text="Live" />
 
@@ -214,7 +221,7 @@ Bản Magic không nằm trong danh sách, vẫn ở link `/magic/` riêng. Ti�
 
 ## 3.10 Cheat (bảng ⚙ dev) <Badge type="tip" text="Live" />
 
-Nút **⚙ dev** ở góc dưới trái (mọi bản, cả bản web) mở bảng chỉnh: tốc độ bóng; với bóng Fluffy thêm thời gian ôm nhau và ánh sáng (Confirm ghi số vào code khi chạy local). Nhóm **Cheats**:
+Nút **⚙ dev** ở góc dưới trái (mọi bản, cả bản web) mở bảng chỉnh: tốc độ bóng; với bóng Jelly thêm thời gian khối nhập đứng trước khi nổ (**Pair touch → pop**); với bóng Fluffy thêm thời gian ôm nhau và ánh sáng (Confirm ghi số vào code khi chạy local). Nhóm **Cheats**:
 
 - **Win level:** mọi cặp còn trên board biến mất ngay, level thắng như bình thường (Well Done, tiến độ, thanh mở khóa, pop-up bóng / nền mới khi CONTINUE).
 - **Reset progress:** hỏi lại rồi xóa tiến độ, level đang chơi dở, bóng / nền đang chọn và setting (về level 1, bóng Jelly, nền Classic, theme sáng, âm thanh bật), tải lại trang.
@@ -226,3 +233,29 @@ Thoát game **giữa level** (đóng app / tab, tắt máy) thì lần mở game
 - Chỉ áp dụng khi thoát lúc **đang chơi**. **Về Home** (nút HOME trong Settings) thì bỏ phần đã chơi: bấm PLAY là chơi lại level từ đầu như thường. Thắng hay thua (Out of Hearts) cũng bỏ phần đã lưu.
 - Web: lưu trong trình duyệt (`localStorage`, khóa `dotline.session`, `src/game/session.ts`), cập nhật mỗi lần trạng thái level đổi (dọn một cặp, va chạm, mất tim). Bản Magic và chế độ mở từ editor không lưu.
 - **Unity (phone):** lưu cùng các trường (số level, id level, các cặp còn lại, các cặp đã đánh dấu, số tim) bằng `PlayerPrefs` hoặc file JSON, ghi mỗi khi trạng thái đổi và thêm một lần trong `OnApplicationPause(true)` / `OnApplicationQuit` (app trên điện thoại hay bị hệ điều hành tắt khi đang ở nền); lúc mở app, nếu có phần đã lưu khớp với level đang tới thì vào thẳng level thay vì Home.
+
+## 3.12 Obstacle: dây thừng <Badge type="tip" text="Live" />
+
+Một cặp có thể có **dây là sợi thừng**: chính dây nối 2 bóng của cặp đó, **cùng màu với cặp**, nhưng dày hơn dây thường (13 px) và **bện xoắn**: vẽ bằng ảnh `rope-tile.png` (dây bện xám, tô lại theo màu cặp, **lặp dọc theo dây**, mỗi lần lặp 52 px; [UI assets 4c](../guide/ui-assets)); thiếu ảnh thì vẽ bằng code (viền đậm, vạch xoắn chéo). Dây nằm cùng lớp với các dây khác, theo thứ tự chồng dây (3.4).
+
+- **Chặn bóng khác:** bóng của cặp khác chạy tới mà **cắt ngang dây thừng** (hoặc đi sát hơn hitbox của bóng + nửa bề dày dây, `ROPE_HALF` = 6 px) thì **bị chặn y như va vào bóng**: nảy về, mất 1 tim (cặp đã bị đánh dấu thì không mất thêm), có vệt văng màu, và **dây rung lên** quanh chỗ va.
+- **Bóng của chính cặp đó** chạy dọc dây của mình như thường; dây ngắn lại sau bóng đang chạy (phần đã đi qua không còn chặn).
+- **Dọn cặp thì dây mất** như dây thường, từ đó không chặn ai nữa.
+- Luật chặn nằm trong bộ giải dùng chung (`src/core/solver.ts`), nên editor (kiểm tra, mô phỏng) và game (cặp có mở không, Hint) cùng tính dây thừng.
+- **Tutorial `rope`:** dòng "Ropes block other dots", bàn tay chỉ vào một bóng đang bị dây thừng chặn.
+- **Level có dây thừng** (mỗi level 1 dây, đã kiểm tra thắng được bằng bộ giải và chơi thử hết level trong game): **9 · Christmas tree** (dây xanh olive, có tutorial `rope`), **10 · Butterfly** (dây xanh dương, dài), **15 · Vase twist** (dây hồng).
+- Editor: chọn cặp, tick **Rope (blocks other balls)** trong inspector; trên canvas dây thừng hiện thành dải dày cùng màu. Trong file level: `"rope": true` trên cặp đó. Gen lại level bằng `npm run levels:chapter6` sẽ **mất** dây thừng (phải tick lại).
+
+## 3.13 Obstacle: ổ khóa và chìa khóa <Badge type="tip" text="Live" />
+
+Ổ khóa và chìa là **các điểm trên board**. Mỗi ổ khóa có đúng một chìa, cùng **màu nhãn** (ổ thứ nhất vàng, rồi xanh dương, tím, xanh lá), nên một level có nhiều ổ vẫn biết chìa nào mở ổ nào.
+
+- **Ổ khóa** (ảnh ổ khóa `lock.png` tô màu nhãn, không có khung; [UI assets 4d](../guide/ui-assets)): nằm trên **mọi line đi qua nó** (cách tâm dưới `LOCK_ON` = 10 px), kể cả **chỗ các line cắt nhau** và **trên dây thừng** (3.12). Khi còn khóa, nó **chặn bóng của các pair đó**: bóng chạy tới ổ khóa thì bị chặn y như va vào bóng (nảy về, mất 1 tim nếu pair chưa bị đánh dấu), ổ khóa rung. **Bóng của pair khác không bị chặn.** Một line có thể có nhiều ổ khóa.
+- **Chìa khóa** (ảnh chìa `key.png` tô màu nhãn, không có khung, nhấp nhô nhẹ): **bất kỳ bóng nào chạy ngang qua** (tâm bóng cách chìa dưới bán kính bóng) đều lấy được chìa, kể cả khi sau đó bóng bị nảy về. Chìa **bay theo đường vòng, xoay tròn** vào ổ khóa của nó, ổ khóa bung ra và biến mất; từ lúc lấy chìa ổ đã mở.
+- **Ổ khóa biến mất** khi được mở, hoặc khi **mọi pair nó nằm trên đã rời board** (giải xong hoặc bị Cut); chìa của nó (nếu chưa lấy) mất theo.
+- Một pair **rời board** (giải xong hoặc bị Cut) thì **lấy luôn các chìa nằm trên line của nó** (bóng đã chạy hết line; khi bị Cut thì để level không bị kẹt).
+- Bộ giải (`src/core/solver.ts`): pair bị ổ khóa còn đóng chặn chờ một pair có line chạy qua chìa rời board. Game, Hint, editor (kiểm tra, mô phỏng) cùng dùng luật này. Chơi tiếp level đang dở (3.11) nhớ cả các ổ đã mở.
+- **Tutorial `lock`:** dòng "Keys open locks", bàn tay chỉ vào bóng đang đi được và có chìa trên đường (không có thì chỉ vào chìa).
+- **Level có ổ khóa** (đã kiểm tra thắng được bằng bộ giải và chơi thử hết level trong game): **7 · Pumpkin** (1 ổ, có tutorial `lock`), **14 · USB stick** (2 ổ trên cùng một line, chìa ở 2 line khác), **15 · Vase twist** (ổ nằm ngay chỗ dây thừng cắt một line: chặn cả hai), **24 · Dancer fan** (1 ổ).
+- Trong file level: `obstacles: [{ "type": "lock", "id": "L1", "x", "y" }, { "type": "key", "lock": "L1", "x", "y" }]`. Editor: **Add lock and key** trong inspector (mục Locks and keys), kéo ổ (ô vuông "L1") và chìa (ô tròn "K1") trên canvas: thả gần line thì bám vào line, gần chỗ cắt nhau thì bám vào chỗ cắt. Kiểm tra level báo ổ không nằm trên line nào, thiếu chìa, hoặc không line nào chạy qua chìa.
+

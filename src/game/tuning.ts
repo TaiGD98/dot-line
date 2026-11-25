@@ -7,6 +7,8 @@ export const START_SPEED = 500;
 export const MOVE_SPEED = 750;
 /** Fluffy: seconds a pair stays together after touching, before the hearts. Confirm in the dev panel rewrites this line. */
 export const HUG_HOLD = 0.2;
+/** Jelly: seconds the two balls of a pair stay merged into one blob, after touching, before it pops. Confirm in the dev panel rewrites this line. */
+export const JELLY_HOLD = 0.2;
 /**
  * Fluffy: the light on the balls (src/scenes/fluffy.ts, ballTexture). LIGHT_ANGLE: where the light comes
  * from, in degrees round the ball on screen (0 right, 90 below, 180 left, 270 above; 225 = top left).
@@ -24,12 +26,12 @@ const KEY = 'dotline.tuning';
 
 /** The values the dev panel can change: name in this browser, its constant in this file. */
 export const TUNABLE = {
-    moveSpeed: 'MOVE_SPEED', hugHold: 'HUG_HOLD',
+    moveSpeed: 'MOVE_SPEED', hugHold: 'HUG_HOLD', jellyHold: 'JELLY_HOLD',
     lightAngle: 'LIGHT_ANGLE', lightHeight: 'LIGHT_HEIGHT', lightAmbient: 'LIGHT_AMBIENT', lightDiffuse: 'LIGHT_DIFFUSE', lightSheen: 'LIGHT_SHEEN'
 } as const;
 export type Tunable = keyof typeof TUNABLE;
 const CODE: Record<Tunable, number> = {
-    moveSpeed: MOVE_SPEED, hugHold: HUG_HOLD,
+    moveSpeed: MOVE_SPEED, hugHold: HUG_HOLD, jellyHold: JELLY_HOLD,
     lightAngle: LIGHT_ANGLE, lightHeight: LIGHT_HEIGHT, lightAmbient: LIGHT_AMBIENT, lightDiffuse: LIGHT_DIFFUSE, lightSheen: LIGHT_SHEEN
 };
 /** The value in the code (what Reset goes back to). */
@@ -49,6 +51,7 @@ export const tuning = {
     moveSpeed: load().moveSpeed ?? MOVE_SPEED,
     startSpeed: START_SPEED,
     hugHold: load().hugHold ?? HUG_HOLD,
+    jellyHold: load().jellyHold ?? JELLY_HOLD,
     lightAngle: load().lightAngle ?? LIGHT_ANGLE,
     lightHeight: load().lightHeight ?? LIGHT_HEIGHT,
     lightAmbient: load().lightAmbient ?? LIGHT_AMBIENT,

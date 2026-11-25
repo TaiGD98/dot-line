@@ -5810,7 +5810,20 @@
       ]
     }
   ],
-  "obstacles": [],
+  "obstacles": [
+    {
+      "type": "lock",
+      "id": "L1",
+      "x": -329.7,
+      "y": -506.7
+    },
+    {
+      "type": "key",
+      "lock": "L1",
+      "x": 658,
+      "y": -183.4
+    }
+  ],
   "source": {
     "image": "c5-027-dancer-fan.png",
     "rect": {

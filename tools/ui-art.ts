@@ -12,6 +12,9 @@
 // - art/ui/home-2.png, 3 × 2: tab bar, selected tab, name pill, path, cloud, SOON tag.
 // - art/ui/home.png, 3 × 2 cells: level button, hard level button, locked level button, golden ring,
 //   path segment, cloud.
+// - art/ui/rope-tile.png: a straight grey braided rope (the rope obstacle). Cut to a whole number of
+//   twists so it repeats with no seam, scaled to 256 × 64 (powers of two: the game repeats it along the line).
+// - art/ui/lock-key.png, 2 × 1: lock, key (grey, recoloured in the game to each lock's tag colour), 256 px.
 import { existsSync, mkdirSync, readdirSync, rmSync } from 'fs';
 import { Img, bbox, crop, readImage, resize, writePng } from './rgba';
 
@@ -282,4 +285,31 @@ if (has('ui/home.png') && !has('ui/home-2.png')) {
     save('ring', fit(ring, 320));
     save('path', fit(path, 160));
     save('cloud', fit(cloud, 256));
+}
+// rope-tile.png: the rope obstacle's texture. The picture's own ends need not match, so the repeat is
+// found in it (the shift at which the rope looks the same again), and a whole number of repeats is cut
+// from its middle: then the left and right edges match exactly. Height 64 (the rope band), width 256.
+if (has('ui/rope-tile.png')) {
+    const img = load('ui/rope-tile.png'), b = bbox(img);
+    const band = crop(img, 0, b.y, img.w, b.h);
+    const lum = (x: number, y: number) => { const i = (y * band.w + x) * 4; return ((band.px[i] + band.px[i + 1] + band.px[i + 2]) / 3) * (band.px[i + 3] / 255); };
+    let best = { p: 0, d: Infinity };
+    for (let p = Math.round(band.h * 0.6); p < band.w * 0.6; p++) {
+        let d = 0, n = 0;
+        for (let y = 0; y < band.h; y += 3) for (let x = 0; x + p < band.w; x += 5) { d += Math.abs(lum(x, y) - lum(x + p, y)); n++; }
+        if (d / n < best.d) best = { p, d: d / n };
+    }
+    // How many repeats: the count whose width at height 64 is closest to 256 (least stretch).
+    const H = 64, W = 256;
+    let reps = 1;
+    for (let k = 1; k * best.p <= band.w; k++) if (Math.abs((k * best.p * H) / band.h - W) < Math.abs((reps * best.p * H) / band.h - W)) reps = k;
+    const x0 = Math.round((band.w - reps * best.p) / 2);
+    save('rope', resize(crop(band, x0, 0, reps * best.p, band.h), W, H));
+    console.log(`  rope repeats every ${best.p} px (difference ${best.d.toFixed(1)}), ${reps} repeat(s) cut, stretched ${((W * band.h) / (H * reps * best.p)).toFixed(2)}x`);
+}
+// lock-key.png (2 × 1): the lock and key obstacle (grey; the game recolours them to each lock's tag colour).
+if (has('ui/lock-key.png')) {
+    const [lock, key] = pieces(load('ui/lock-key.png'), 2, 1);
+    save('lock', square(lock, 256));
+    save('key', square(key, 256));
 }

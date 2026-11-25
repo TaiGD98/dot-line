@@ -3,7 +3,7 @@ import { existsSync, readFileSync, readdirSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import config from './prototype.config.json';
 
-/** Dev server only: the game's dev panel (⚙ speed / ⚙ tuning → Confirm) writes MOVE_SPEED, HUG_HOLD or the LIGHT_* values into the code. */
+/** Dev server only: the game's dev panel (⚙ speed / ⚙ tuning → Confirm) writes MOVE_SPEED, HUG_HOLD, JELLY_HOLD or the LIGHT_* values into the code. */
 function devTuning(): Plugin {
     return {
         name: 'dot-line-dev-tuning',
@@ -17,6 +17,7 @@ function devTuning(): Plugin {
                     const RULES: Record<string, { name: string; min: number; max: number; dp: number }> = {
                         moveSpeed: { name: 'MOVE_SPEED', min: 100, max: 5000, dp: 0 },
                         hugHold: { name: 'HUG_HOLD', min: 0, max: 5, dp: 2 },
+                        jellyHold: { name: 'JELLY_HOLD', min: 0.05, max: 5, dp: 2 },
                         lightAngle: { name: 'LIGHT_ANGLE', min: 0, max: 360, dp: 0 },
                         lightHeight: { name: 'LIGHT_HEIGHT', min: 0, max: 1, dp: 2 },
                         lightAmbient: { name: 'LIGHT_AMBIENT', min: 0, max: 1.5, dp: 2 },

@@ -1,6 +1,6 @@
 // SVG work area: draws the level, selection, anchors/handles, Figma-style snapping, and
 // handles every pointer interaction (select, move, copy, draw a new pair, edit curves, pan, zoom).
-import { DEFAULT_RADIUS, Level, Pair, levelBounds, nextPairId, syncEnds } from '../core/level';
+import { DEFAULT_RADIUS, LOCK_TAGS, Level, LockObstacle, Pair, levelBounds, nextPairId, syncEnds } from '../core/level';
 import { COMPLETED_LINE, colour } from '../core/palette';
 import { Anchor, Pt, dist, distToPolyline, fitFreehand, samplePath, translatePath } from '../core/path';
 import { clear, s } from './dom';
@@ -31,7 +31,8 @@ type Drag =
     | { kind: 'anchor'; pair: string; idx: number; moved: boolean }
     | { kind: 'handle'; pair: string; idx: number; side: 'in' | 'out'; alt: boolean; moved: boolean }
     | { kind: 'marquee'; start: Pt; cur: Pt; additive: boolean }
-    | { kind: 'stroke'; pts: Pt[]; start: Pt };
+    | { kind: 'stroke'; pts: Pt[]; start: Pt }
+    | { kind: 'obstacle'; idx: number; moved: boolean };
 
 const pathD = (path: Anchor[]) => {
     if (!path.length) return '';
@@ -133,6 +134,8 @@ export class Canvas {
             const sel = this.host.selection.has(p.id);
             const stroke = c?.base ?? COMPLETED_LINE;
             const d = pathD(p.path);
+            // A rope (obstacle): a thick twisted band in its colour under the line.
+            if (p.rope) this.gLines.append(s('path', { d, fill: 'none', style: `stroke:${stroke};stroke-width:12;stroke-dasharray:3 4;stroke-linecap:butt;opacity:0.85;pointer-events:none` }));
             this.gLines.append(
                 s('path', { d, class: 'hit', 'data-kind': 'line', 'data-pair': p.id }),
                 s('path', { d, stroke, class: `line${sel ? ' sel' : ''}${ov.stuck?.has(p.id) ? ' stuck' : ''}`, 'data-kind': 'line', 'data-pair': p.id })
@@ -152,7 +155,48 @@ export class Canvas {
                     s('circle', { cx: mid.x, cy: mid.y, r: 12 }), s('text', { x: mid.x, y: mid.y + 4.5 }, n)));
             }
         }
+        // Locks and keys (GDD 3.13): a badge in the lock's tag colour, "L1" / "K1"; drag to move (snaps to lines and crossings).
+        const locks = level.obstacles.filter((o): o is LockObstacle => o.type === 'lock').map((o) => o.id);
+        level.obstacles.forEach((o, i) => {
+            const id = o.type === 'lock' ? o.id : o.lock, col = LOCK_TAGS[Math.max(0, locks.indexOf(id)) % LOCK_TAGS.length];
+            const label = o.type === 'lock' ? id : `K${id.slice(1)}`;
+            this.gDots.append(s('g', { 'data-kind': 'obstacle', 'data-idx': i, class: 'obstacle', style: 'cursor:move' },
+                o.type === 'lock'
+                    ? s('rect', { x: o.x - 15, y: o.y - 15, width: 30, height: 30, rx: 6, fill: '#fff', stroke: col, 'stroke-width': 4 })
+                    : s('circle', { cx: o.x, cy: o.y, r: 15, fill: '#fff', stroke: col, 'stroke-width': 4, 'stroke-dasharray': '5 3' }),
+                s('text', { x: o.x, y: o.y + 4.5, 'text-anchor': 'middle', 'font-size': 12, 'font-weight': 700, fill: col, style: 'pointer-events:none' }, label)));
+        });
         this.renderEdit();
+    }
+
+    /**
+     * Where a lock or key lands when dragged to `p`: on a crossing of two lines near it, else on the
+     * nearest line near it, else where it is.
+     */
+    private snapObstacle(p: Pt): Pt {
+        const R = 22 / this.scale;
+        const lines = this.host.level().pairs.map((q) => samplePath(q.path, 3));
+        let cross: Pt | null = null, cd = R;
+        for (let i = 0; i < lines.length; i++) for (let j = i + 1; j < lines.length; j++) {
+            const A = lines[i], B = lines[j];
+            for (let a = 1; a < A.length; a++) {
+                if (dist(A[a], p) > R + 6) continue;
+                for (let b = 1; b < B.length; b++) {
+                    if (dist(B[b], p) > R + 6) continue;
+                    const x = segCross(A[a - 1], A[a], B[b - 1], B[b]);
+                    if (x && dist(x, p) < cd) { cd = dist(x, p); cross = x; }
+                }
+            }
+        }
+        if (cross) return cross;
+        let near: Pt | null = null, nd = R;
+        for (const ln of lines) for (let i = 1; i < ln.length; i++) {
+            const a = ln[i - 1], b = ln[i], dx = b.x - a.x, dy = b.y - a.y, l2 = dx * dx + dy * dy;
+            const t = l2 ? Math.max(0, Math.min(1, ((p.x - a.x) * dx + (p.y - a.y) * dy) / l2)) : 0;
+            const q = { x: a.x + dx * t, y: a.y + dy * t }, d = dist(q, p);
+            if (d < nd) { nd = d; near = q; }
+        }
+        return near ?? p;
     }
 
     /** Anchors and handles of a single selected pair (sized in screen px). */
@@ -217,6 +261,11 @@ export class Canvas {
             return;
         }
         const sel = this.host.selection;
+        if (kind === 'obstacle') {
+            this.host.begin();
+            this.drag = { kind: 'obstacle', idx: +t!.dataset.idx!, moved: false };
+            return;
+        }
         if (kind === 'handle' || kind === 'anchor') {
             this.host.begin();
             this.drag = kind === 'handle'
@@ -287,6 +336,13 @@ export class Canvas {
                     q.path = translatePath(o.path, dx, dy);
                 }
                 d.moved ||= dx !== 0 || dy !== 0;
+                break;
+            }
+            case 'obstacle': {
+                const o = this.host.level().obstacles[d.idx];
+                const sp = this.snapObstacle(p);
+                o.x = r1(sp.x); o.y = r1(sp.y);
+                d.moved = true;
                 break;
             }
             case 'dot': {
@@ -479,4 +535,13 @@ function bez(p0: Pt, p1: Pt, p2: Pt, p3: Pt, t: number): Pt {
         x: u * u * u * p0.x + 3 * u * u * t * p1.x + 3 * u * t * t * p2.x + t * t * t * p3.x,
         y: u * u * u * p0.y + 3 * u * u * t * p1.y + 3 * u * t * t * p2.y + t * t * t * p3.y
     };
+}
+
+/** Where segments a0-a1 and b0-b1 cross, if they do. */
+function segCross(a0: Pt, a1: Pt, b0: Pt, b1: Pt): Pt | null {
+    const dax = a1.x - a0.x, day = a1.y - a0.y, dbx = b1.x - b0.x, dby = b1.y - b0.y;
+    const den = dax * dby - day * dbx;
+    if (Math.abs(den) < 1e-9) return null;
+    const t = ((b0.x - a0.x) * dby - (b0.y - a0.y) * dbx) / den, u = ((b0.x - a0.x) * day - (b0.y - a0.y) * dax) / den;
+    return t >= 0 && t <= 1 && u >= 0 && u <= 1 ? { x: a0.x + dax * t, y: a0.y + day * t } : null;
 }

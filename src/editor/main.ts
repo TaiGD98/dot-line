@@ -4,9 +4,9 @@ import './editor.css';
 import { strokeFrame, suggest, worldSize } from '../core/generator';
 import { MIN_BOARD, strokeTargets, strokeWorldSize } from '../core/strokemode';
 import { OverlapCandidate, PATTERN_STYLES, PatternStyle, crossChecks, crossCounts, generateOverlap } from '../core/overlap';
-import { Check, DEFAULT_RADIUS, Dot, Level, MIN_RADIUS, Pair, dataChecks, isBigDot, mainRadius, newLevel, nextPairId, parseLevel, setDotSize } from '../core/level';
+import { Check, DEFAULT_RADIUS, Dot, LOCK_TAGS, Level, LockObstacle, MIN_RADIUS, Pair, dataChecks, isBigDot, mainRadius, newLevel, nextLockId, nextPairId, parseLevel, setDotSize } from '../core/level';
 import { PALETTE } from '../core/palette';
-import { smoothPath, translatePath } from '../core/path';
+import { samplePath, smoothPath, translatePath } from '../core/path';
 import { SolveResult, solve } from '../core/solver';
 import { Canvas, CanvasHost, Tool } from './canvas';
 import { clear, debounce, h, logo, pref, setPref } from './dom';
@@ -468,7 +468,7 @@ class App {
             field('Status', select(['WIP', 'PROD', 'ARCHIVE'], this.level.status ?? 'WIP', (v) => set(() => { this.level.status = v as Level['status']; }))),
             field('Difficulty', select(['none', '1', '2', '3', '4', '5'], this.level.difficulty ? String(this.level.difficulty) : 'none', (v) => set(() => { this.level.difficulty = v === 'none' ? null : +v; }))),
             field('Category', h('input', { value: this.level.category ?? '', onchange: (e: Event) => set(() => { this.level.category = (e.target as HTMLInputElement).value; }) })),
-            field('Tutorial', select(['none', 'tap', 'collision', 'zoom'], this.level.tutorial ?? 'none', (v) => set(() => { if (v === 'none') delete this.level.tutorial; else this.level.tutorial = v as Level['tutorial']; }))));
+            field('Tutorial', select(['none', 'tap', 'collision', 'zoom', 'rope', 'lock'], this.level.tutorial ?? 'none', (v) => set(() => { if (v === 'none') delete this.level.tutorial; else this.level.tutorial = v as Level['tutorial']; }))));
     }
 
     // ---------- generator ----------
@@ -706,6 +706,14 @@ class App {
             this.inspector.append(h('label', { class: 'field', title: 'Base = a line of the drawing (generator part 1). X / T = cross lines of the overlap (part 2): Generate overlap replaces them.' }, h('span', {}, 'Line type'),
                 h('select', { onchange: (e: Event) => { const v = (e.target as HTMLSelectElement).value; if (v === 'mixed') return; this.begin(); for (const p of sel) { if (v === 'base') delete p.cross; else p.cross = v as 'x' | 't'; } this.end(true); } },
                     [['base', 'Base line'], ['x', 'X cross (crosses lines)'], ['t', 'T cross (dot on a line)'], ...(kind.size > 1 ? [['mixed', 'Mixed']] : [])].map(([v, label]) => h('option', { value: v, selected: kind.size > 1 ? v === 'mixed' : kind.has(v as 'base') }, label)))));
+            // Obstacle: the line is a rope that blocks any other pair's ball (GDD 3.12).
+            const ropes = sel.filter((p) => p.rope).length;
+            const ropeBox = h('input', { type: 'checkbox', checked: ropes === sel.length, onchange: (e: Event) => {
+                const on = (e.target as HTMLInputElement).checked;
+                this.begin(); for (const p of sel) { if (on) p.rope = true; else delete p.rope; } this.end(true);
+            } }) as HTMLInputElement;
+            ropeBox.indeterminate = ropes > 0 && ropes < sel.length;
+            this.inspector.append(h('label', { class: 'check', title: 'Rope: the line is a braided rope in its colour; any other pair\'s ball that crosses it bumps back. The pair\'s own balls run along it as usual; it goes when the pair is cleared.' }, ropeBox, 'Rope (blocks other balls)'));
             this.inspector.append(h('div', { class: 'row gap wrap' },
                 h('button', { title: 'Round the selected lines: removes kinks and wobbles, rounds every corner', onclick: () => { this.begin(); for (const p of sel) p.path = smoothPath(p.path); this.end(true); } }, 'Smooth'),
                 h('button', { title: 'Copy (Ctrl/Cmd+D)', onclick: () => this.duplicate() }, 'Copy'),
@@ -727,6 +735,24 @@ class App {
                 this.end(true);
                 this.renderGenerator();
             } })));
+
+        // Locks and keys (GDD 3.13): add a lock with its key, move them on the canvas (they snap to lines and crossings).
+        this.inspector.append(section('Locks and keys'));
+        const locks = this.level.obstacles.filter((o): o is LockObstacle => o.type === 'lock');
+        for (const l of locks) {
+            const col = LOCK_TAGS[locks.indexOf(l) % LOCK_TAGS.length];
+            this.inspector.append(h('div', { class: 'row gap' },
+                h('span', { style: { color: col, fontWeight: '700' } }, `${l.id} · K${l.id.slice(1)}`),
+                h('button', { class: 'danger', title: 'Remove this lock and its key', onclick: () => { this.begin(); this.level.obstacles = this.level.obstacles.filter((o) => (o.type === 'lock' ? o.id : o.lock) !== l.id); this.end(true); } }, 'Remove')));
+        }
+        this.inspector.append(h('button', { title: 'A lock (square) on the middle of the selected line, or of the board, and its key (round) next to it. Drag them onto lines: a lock blocks the balls of every line through it; any ball that runs over the key opens it.', onclick: () => {
+            const p = sel[0], at = p ? samplePath(p.path, 5)[Math.floor(samplePath(p.path, 5).length / 2)] : { x: 0, y: 0 };
+            this.begin();
+            const id = nextLockId(this.level);
+            this.level.obstacles.push({ type: 'lock', id, x: Math.round(at.x), y: Math.round(at.y) }, { type: 'key', lock: id, x: Math.round(at.x + 60), y: Math.round(at.y) });
+            this.end(true);
+        } }, 'Add lock and key'));
+        this.inspector.append(h('div', { class: 'muted small' }, 'Drag a lock (square) or key (round) onto a line; near a crossing it snaps onto it. A lock blocks the balls of every line through it; any ball running over the key opens it.'));
 
         this.inspector.append(section('Level checks'));
         for (const c of this.checks()) {

@@ -8,7 +8,7 @@ import { Level } from '../core/level';
 import { miniature } from './mini';
 
 type Tutorial = NonNullable<Level['tutorial']>;
-const TUTORIALS: [string, string][] = [['', 'No tutorial'], ['tap', 'Tap a dot'], ['collision', 'Bumping'], ['zoom', 'Pinch to zoom']];
+const TUTORIALS: [string, string][] = [['', 'No tutorial'], ['tap', 'Tap a dot'], ['collision', 'Bumping'], ['zoom', 'Pinch to zoom'], ['rope', 'Ropes'], ['lock', 'Locks and keys']];
 
 /** What the centre shows: the game's play order, or one collection of the open chapter. */
 type Open = { kind: 'game' } | { kind: 'col'; index: number };

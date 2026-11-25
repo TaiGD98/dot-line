@@ -28,6 +28,12 @@ export interface Pair {
      * 'x' = crosses other lines, both dots in empty space; 't' = one dot sits on another pair's line.
      */
     cross?: 'x' | 't';
+    /**
+     * Obstacle "rope" (GDD 3.12): the pair's line is a braided rope in its colour that blocks any other
+     * pair's ball crossing it (or passing closer than ROPE_HALF plus the ball's hitbox). The pair's own
+     * balls run along it as usual; it goes when the pair is cleared.
+     */
+    rope?: boolean;
 }
 
 export interface Level {
@@ -43,11 +49,37 @@ export interface Level {
     /** Generator input: the source image/SVG file, its world rectangle (for the editor overlay) and settings. */
     source?: { image?: string; rect?: { x: number; y: number; w: number; h: number }; pairs?: number; colors?: number; difficulty?: number; x?: number; t?: number; pattern?: string; mode?: 'strokes' | 'cut'; /** Radius of the normal dots. */ dot?: number; /** Round details become big dots. */ big?: boolean };
     /** Tutorial shown by the game on this level. */
-    tutorial?: 'tap' | 'collision' | 'zoom';
+    tutorial?: 'tap' | 'collision' | 'zoom' | 'rope' | 'lock';
     pairs: Pair[];
-    /** Reserved for future obstacles (always empty for now). */
-    obstacles: unknown[];
+    /** Obstacles placed on lines: locks and their keys (GDD 3.13). */
+    obstacles: Obstacle[];
 }
+
+/**
+ * A lock (GDD 3.13), a point on the board: it sits on every line passing through it (LOCK_ON px; a
+ * crossing of lines, a rope too) and stops the balls of those pairs from running past it while it is
+ * locked (they bump as on a ball). Other balls are not stopped. It goes when it is opened, or when every
+ * pair it sits on has left the board.
+ */
+export interface LockObstacle { type: 'lock'; id: string; x: number; y: number }
+/**
+ * The key of a lock, a point on the board: any ball that runs over it takes it (it flies into its lock
+ * and opens it). A pair whose line runs over it takes it when it leaves the board (cleared or cut).
+ */
+export interface KeyObstacle { type: 'key'; lock: string; x: number; y: number }
+/** A lock sits on a line passing this close to it. */
+export const LOCK_ON = 10;
+/** Tag colours of locks and their keys (one per lock, in the level's order): gold, blue, purple, green. */
+export const LOCK_TAGS = ['#f2a531', '#3aa0e0', '#a865e8', '#3cb868'];
+
+/** A new lock id (L1, L2, …). */
+export function nextLockId(level: Level): string {
+    const used = new Set(level.obstacles.filter((o) => o.type === 'lock').map((o) => (o as LockObstacle).id));
+    let n = 1;
+    while (used.has(`L${n}`)) n++;
+    return `L${n}`;
+}
+export type Obstacle = LockObstacle | KeyObstacle;
 
 export const DEFAULT_RADIUS = 16;
 /** Smallest dot allowed (designer): the generator's dot size and the editor's sliders stop here. */
@@ -174,6 +206,20 @@ export interface Check {
 /** Basic data checks (editor spec 1.3). Solvability is added by the solver. */
 export function dataChecks(level: Level): Check[] {
     const out: Check[] = [];
+    // Locks and keys (GDD 3.13): a lock must sit on a line and have a key that some line runs over.
+    const locks = level.obstacles.filter((o): o is LockObstacle => o.type === 'lock');
+    if (locks.length) {
+        const lines = new Map(level.pairs.map((p) => [p.id, samplePath(p.path, 5)]));
+        const onLine = (q: Pt, d: (p: Pair) => number) => level.pairs.filter((p) => distToLine(q, lines.get(p.id)!) < d(p)).map((p) => p.id);
+        const bad: string[] = [];
+        for (const l of locks) {
+            const key = level.obstacles.find((o): o is KeyObstacle => o.type === 'key' && o.lock === l.id);
+            if (!onLine(l, () => LOCK_ON).length) bad.push(`${l.id}: lock on no line`);
+            if (!key) bad.push(`${l.id}: no key`);
+            else if (!onLine(key, (p) => Math.min(p.a.r, p.b.r)).length) bad.push(`${l.id}: no line runs over its key`);
+        }
+        out.push(bad.length ? { level: 'warn', text: `Locks: ${bad.join('; ')}` } : { level: 'ok', text: `${locks.length} lock${locks.length > 1 ? 's' : ''}, each on a line, with a key on a line` });
+    }
     const broken = level.pairs.filter((p) => !p.a || !p.b || p.path.length < 2 || dist(p.path[0], p.a) > 1 || dist(p.path[p.path.length - 1], p.b) > 1);
     out.push(broken.length
         ? { level: 'warn', text: `Line not joined to both dots: ${broken.map((p) => p.id).join(', ')}`, pairs: broken.map((p) => p.id) }
@@ -219,4 +265,14 @@ export function nextPairId(level: Level): string {
     const ids = new Set(level.pairs.map((p) => p.id));
     while (ids.has(`p${n}`)) n++;
     return `p${n}`;
+}
+
+function distToLine(q: Pt, pts: Pt[]): number {
+    let best = Infinity;
+    for (let i = 1; i < pts.length; i++) {
+        const a = pts[i - 1], b = pts[i], dx = b.x - a.x, dy = b.y - a.y, l2 = dx * dx + dy * dy;
+        const t = l2 ? Math.max(0, Math.min(1, ((q.x - a.x) * dx + (q.y - a.y) * dy) / l2)) : 0;
+        best = Math.min(best, Math.hypot(a.x + dx * t - q.x, a.y + dy * t - q.y));
+    }
+    return best;
 }

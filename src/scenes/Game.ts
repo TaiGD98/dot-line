@@ -1,9 +1,9 @@
 import * as Phaser from 'phaser';
-import { Level, Pair, levelBounds } from '../core/level';
+import { KeyObstacle, LOCK_TAGS as LOCK_TAG_HEX, Level, LockObstacle, Pair, levelBounds, mainRadius } from '../core/level';
 import { COMPLETED_LINE, colour, hexToInt, themeColours } from '../core/palette';
 import { nearPairs } from '../core/generator';
 import { Pt, arcLengths, dist, distToPolyline, pointAt } from '../core/path';
-import { BlockModel, HIT_SCALE, Side } from '../core/solver';
+import { BlockModel, HIT_SCALE, Side, ropeReach, solve } from '../core/solver';
 import { fromEditor, levels } from '../game/source';
 import { Session, clearSession, readSession, writeSession } from '../game/session';
 import { tuning } from '../game/tuning';
@@ -11,7 +11,7 @@ import { onSettings, settings } from '../game/settings';
 import { theme } from '../game/theme';
 import { FLUFFY, FLUFFY_BG, JELLY, MAGIC, WATER, onLookChange, takeAutoplay } from '../game/mode';
 import { paintGloss, paintGlossy, paintWater } from './ballart';
-import { WATER_FRAMES, hasUi, preloadUi, recolour, uiKey, waterFrames } from './uiart';
+import { WATER_FRAMES, hasUi, hexOf, preloadUi, recolour, uiKey, waterFrames } from './uiart';
 import { Face, MINI_FACES, ballFill, hasArt, patternWorld, ballTexture, faceFrame, heartTexture, key as fluffyKey, makeFluffy, preloadFluffy, widthOf } from './fluffy';
 import { DOOR_OPEN, Door, DoorState, ORB_FILL, orbTexture } from './Door';
 
@@ -60,7 +60,8 @@ const PATTERN_SPEED = 4;
 /** Jelly stretch spring (stiffness, damping: well under critical, so it overshoots and wobbles). */
 const SPRING = { k: 320, c: 8 };
 /** Jelly merge: the two dots press together (s), then the merged blob jiggles (s) and pops. */
-const PRESS = 0.16, JIGGLE = 0.4;
+/** Jelly: the two balls press into each other (s), then stay merged into one blob (tuning.jellyHold, dev panel) and pop. */
+const PRESS = 0.16, jiggle = () => tuning.jellyHold;
 
 /** Jelly stretch of one dot along `angle`: d = 0 round, d > 0 longer along the travel direction. */
 interface Stretch {
@@ -131,6 +132,8 @@ export class Game extends Phaser.Scene {
     private level!: Level;
     private model!: BlockModel;
     private alive = new Set<string>();
+    /** Pair ids in the order their lines are drawn: those cleared later in the solution first, so lines of pairs cleared earlier lie on top. */
+    private drawOrder: string[] = [];
     private movers = new Map<string, Mover>();
     private lines = new Map<string, { a: Pt[]; b: Pt[]; accA: number[]; accB: number[] }>();
     private gfx!: Phaser.GameObjects.Graphics;
@@ -142,9 +145,25 @@ export class Game extends Phaser.Scene {
     /** Pairs that already bumped once (drawn with white stripes): their next bumps cost no heart. */
     private marked = new Set<string>();
     private wobbles = new Map<string, Wobble>();
+    /** Ropes shivering after a ball ran into them: time since, and where it hit. */
+    private ropeShakes = new Map<string, { t: number; at: Pt }>();
+    /** Locks whose key has been taken: open (GDD 3.13). */
+    private opened = new Set<string>();
+    /** Lock and key pictures on the board, by lock id; locks shaking after a bump (time since). */
+    private lockPics = new Map<string, Phaser.GameObjects.Container>();
+    private keyPics = new Map<string, Phaser.GameObjects.Container>();
+    private lockShakes = new Map<string, number>();
+    /** Where a lock / key point falls along each line (from dot a), worked out once. */
+    private alongCache = new Map<string, number>();
+    /** Graphics the lines are drawn on, bottom up (a rope picture goes between two of them). */
+    private lineLayers: Phaser.GameObjects.Graphics[] = [];
+    /** Rope pictures (texture repeated along the line), per pair. */
+    private ropePics = new Map<string, Phaser.GameObjects.Rope>();
     private trails = new Map<string, Pt[]>();
     /** Fluffy: the sparkle emitter of each moving ball, and the time since its last sparkle. */
     private sparks = new Map<string, { fx: Phaser.GameObjects.Particles.ParticleEmitter; t: number }>();
+    /** Jelly: the trail emitter of each running ball, the way it is going (backwards) and where it was. */
+    private drips = new Map<string, { fx: Phaser.GameObjects.Particles.ParticleEmitter; t: number; dir: number; at: Pt }>();
     private stretches = new Map<string, Stretch>();
     /** Each pair's colour as the level has it (the shown colour may be swapped for the theme: recolour). */
     private levelColours = new Map<string, string>();
@@ -203,8 +222,9 @@ export class Game extends Phaser.Scene {
         AWAKE = FLUFFY && hasArt('face-awake');
         this.bg = undefined;
         this.bodies = []; this.faces = []; this.orbs = []; this.balls = []; this.shells = [];
-        for (const s of this.sparks.values()) s.fx.destroy();
+        for (const s of [...this.sparks.values(), ...this.drips.values()]) s.fx.destroy();
         this.sparks.clear();
+        this.drips.clear();
         onLookChange(() => this.rebuildLook());
         makeFluffy(this);
         // Background: the fluffy faces pattern (chosen apart from the balls), else the plain board colour.
@@ -213,6 +233,11 @@ export class Game extends Phaser.Scene {
         const off = onSettings(() => this.applyTheme());
         this.events.once('shutdown', off);
         this.gfx = this.add.graphics();
+        // A restart (new look) destroyed the old line layers and rope pictures.
+        this.lineLayers = [];
+        this.ropePics = new Map();
+        this.lockPics = new Map();
+        this.keyPics = new Map();
         this.mapL = this.add.graphics().setDepth(3).setVisible(false);
         this.mapR = this.add.graphics().setDepth(3).setVisible(false);
         this.overG = this.add.graphics().setDepth(2);
@@ -278,8 +303,11 @@ export class Game extends Phaser.Scene {
         this.levelColours = new Map(this.level.pairs.map((p) => [p.id, p.color]));
         this.nearLines = undefined;
         this.recolour();
-        this.model = new BlockModel(this.level.pairs);
+        this.model = new BlockModel(this.level.pairs, this.level.obstacles);
+        this.opened.clear();
         this.alive = new Set(this.level.pairs.map((p) => p.id));
+        const sol = solve(this.level);
+        this.drawOrder = [...sol.stuck, ...[...sol.order].reverse()];
         this.movers.clear();
         this.lines.clear();
         for (const p of this.level.pairs) {
@@ -287,15 +315,20 @@ export class Game extends Phaser.Scene {
             const b = [...a].reverse();
             this.lines.set(p.id, { a, b, accA: arcLengths(a), accB: arcLengths(b) });
         }
+        this.makeObstaclePics();
         this.hearts = HEARTS;
         this.over = false;
         this.nudge = null;
         this.marked.clear();
         this.freeBump = this.level.tutorial === 'collision';
         this.wobbles.clear();
+        this.ropeShakes.clear();
+        for (const r of this.ropePics.values()) r.destroy();
+        this.ropePics.clear();
         this.trails.clear();
-        for (const s of this.sparks.values()) s.fx.destroy();
+        for (const s of [...this.sparks.values(), ...this.drips.values()]) s.fx.destroy();
         this.sparks.clear();
+        this.drips.clear();
         this.stretches.clear();
         this.merges = [];
         this.hugs = [];
@@ -493,14 +526,22 @@ export class Game extends Phaser.Scene {
         if (l) this.loadLevel(l);
     }
 
-    /** Dot the tutorial hand points at: an open dot ('tap') or a dot that will bump ('collision'). */
-    tutorialTarget(kind: 'tap' | 'collision'): Pt | null {
+    /** Dot the tutorial hand points at: an open dot ('tap'), a dot that will bump ('collision'), a dot a rope holds back ('rope'). */
+    tutorialTarget(kind: 'tap' | 'collision' | 'rope' | 'lock'): Pt | null {
         const pairs = [...this.alive].map((id) => this.pair(id)).filter((p) => !this.movers.has(p.id));
-        if (kind === 'tap') {
-            for (const p of pairs) { const side = this.model.openSide(p, this.alive); if (side) return p[side]; }
+        if (kind === 'lock') {
+            // A ball that can go and has a key on its way.
+            for (const p of pairs) if ([...this.keyPics.keys()].some((id) => !this.opened.has(id) && this.model.takersOfKey(id).includes(p.id))) { const side = this.model.openSide(p, this.alive, this.opened); if (side) return p[side]; }
+            // No key holder can go yet: show a key still on the board.
+            for (const [id, c] of this.keyPics) if (!this.opened.has(id) && c.visible) return { x: c.x, y: c.y };
+        } else if (kind === 'rope') {
+            for (const p of pairs) for (const side of ['a', 'b'] as const)
+                if (this.model.blockers(p, side, this.alive, this.opened).some((id) => this.level.pairs.find((q) => q.id === id)?.rope)) return p[side];
+        } else if (kind === 'tap') {
+            for (const p of pairs) { const side = this.model.openSide(p, this.alive, this.opened); if (side) return p[side]; }
         } else {
-            for (const p of pairs) if (!this.model.isOpen(p, 'a', this.alive)) return p.a;
-            for (const p of pairs) if (!this.model.isOpen(p, 'b', this.alive)) return p.b;
+            for (const p of pairs) if (!this.model.isOpen(p, 'a', this.alive, this.opened)) return p.a;
+            for (const p of pairs) if (!this.model.isOpen(p, 'b', this.alive, this.opened)) return p.b;
         }
         return null;
     }
@@ -531,7 +572,7 @@ export class Game extends Phaser.Scene {
      */
     private saveSession() {
         if (fromEditor || MAGIC || !this.level || this.over) return;
-        writeSession({ level: levels.levelNumber(), id: this.level.id, alive: [...this.alive], marked: [...this.marked], hearts: this.hearts });
+        writeSession({ level: levels.levelNumber(), id: this.level.id, alive: [...this.alive], marked: [...this.marked], hearts: this.hearts, opened: [...this.opened] });
     }
 
     /** Go on with a level left in the middle: the cleared pairs are gone (no effects), marks and hearts as they were. */
@@ -540,6 +581,10 @@ export class Game extends Phaser.Scene {
         for (const id of [...this.alive]) if (!keep.has(id)) this.alive.delete(id);
         this.marked = new Set(s.marked.filter((id) => keep.has(id)));
         this.hearts = Math.max(1, Math.min(HEARTS, s.hearts));
+        // Keys taken: their locks are open (no lock, no key on the board); locks and keys of cleared pairs are gone.
+        for (const id of s.opened ?? []) this.opened.add(id);
+        for (const [id, c] of this.lockPics) if (this.opened.has(id) || !this.model.pairsOfLock(id).some((q) => this.alive.has(q))) { c.destroy(); this.lockPics.delete(id); }
+        for (const [id, c] of this.keyPics) if (this.opened.has(id) || !this.lockPics.has(id)) { c.destroy(); this.keyPics.delete(id); }
         this.emitState();
     }
 
@@ -591,7 +636,7 @@ export class Game extends Phaser.Scene {
     /** Hint: random open pair, zoom to 1.5x on its dot, then nudge it along its line. */
     hint() {
         if (this.over || this.doorBusy) return;
-        const open = [...this.alive].filter((id) => !this.movers.has(id)).map((id) => this.pair(id)).map((p) => ({ p, side: this.model.openSide(p, this.alive) })).filter((x) => x.side);
+        const open = [...this.alive].filter((id) => !this.movers.has(id)).map((id) => this.pair(id)).map((p) => ({ p, side: this.model.openSide(p, this.alive, this.opened) })).filter((x) => x.side);
         if (!open.length) return;
         const { p, side } = open[Math.floor(Math.random() * open.length)];
         const dot = p[side!];
@@ -715,12 +760,12 @@ export class Game extends Phaser.Scene {
                 if (dd < p[side].r + slack && (!best || dd < best.d)) best = { p, side, d: dd };
             }
         }
-        if (!best) { if (FLUFFY) this.ghostBalls(w); return; }
+        if (!best) { if (FLUFFY) this.ghostBalls(w); else if (JELLY) this.jellyGhosts(w); return; }
         this.events.emit('tapped');
         const ln = this.lines.get(best.p.id)!;
         this.movers.set(best.p.id, {
             side: best.side,
-            open: this.model.isOpen(best.p, best.side, this.alive),
+            open: this.model.isOpen(best.p, best.side, this.alive, this.opened),
             pts: best.side === 'a' ? ln.a : ln.b,
             acc: best.side === 'a' ? ln.accA : ln.accB,
             s: 0,
@@ -730,6 +775,8 @@ export class Game extends Phaser.Scene {
         if (this.nudge?.id === best.p.id) this.nudge = null;
         // Fluffy: a little puff of fur where the ball was tapped.
         if (FLUFFY) this.furPuff(w, best.p[best.side].r, -Math.PI / 2, best.p.color, 180, 0, [11, 15]);
+        // Jelly: a few blobs of jelly pop off the tapped ball.
+        if (JELLY) { const d = best.p[best.side]; this.jellyBits(d, d.r, best.p.color, { n: [6, 8], speed: [4, 9] }); }
     }
 
     // ---------- simulation ----------
@@ -769,11 +816,12 @@ export class Game extends Phaser.Scene {
             const speed = tuning.startSpeed + tuning.accel * (m.t + dt / 2);
             m.t += dt;
             let left = speed * dt;
-            let hit: { key: string; pos: Pt } | null = null;
+            let hit: { key: string; pos: Pt; r: number } | null = null;
             while (left > 0 && m.s < end) {
                 const step = Math.min(left, STEP);
                 m.s = Math.min(end, m.s + step);
                 left -= step;
+                this.pickKeys(p, m);
                 if (!m.open && (hit = this.hits(p, m))) break;
             }
             if (hit) {
@@ -783,12 +831,14 @@ export class Game extends Phaser.Scene {
                 // Elastic bump on both dots (and a short buzz, if vibration is on and the device has it).
                 if (settings.vibrate) navigator.vibrate?.(35);
                 this.wobbles.set(`${id}:${m.side}`, { t: 0, amp: WOBBLE.mover, angle });
-                this.wobbles.set(hit.key, { t: 0, amp: WOBBLE.hit, angle });
-                // Droplets in each dot's colour, splashing away from where they touched.
-                const [hid, hside] = hit.key.split(':') as [string, Side];
+                // Droplets in each one's colour, splashing away from where they touched; a rope shivers there.
+                const [hid, hside, hlock] = hit.key.split(':');
                 const other = this.pair(hid);
+                if (hside === 'rope') this.ropeShakes.set(hid, { t: 0, at: hit.pos });
+                else if (hside === 'lock') this.lockShakes.set(hlock, 0);
+                else this.wobbles.set(hit.key, { t: 0, amp: WOBBLE.hit, angle });
                 this.splash(at, p[m.side].r, angle + Math.PI, p.color);
-                this.splash(hit.pos, other[hside].r, angle, other.color);
+                this.splash(hit.pos, hit.r, angle, other.color);
                 // Marked (striped) pairs bump for free; the first bump costs a heart and marks the pair.
                 if (this.freeBump) {
                     // Tutorial: the first bump is free (the HUD says the next one costs a heart).
@@ -806,7 +856,11 @@ export class Game extends Phaser.Scene {
                 const to = m.side === 'a' ? 'b' : 'a';
                 const at = pointAt(m.pts, m.acc, m.s), before = pointAt(m.pts, m.acc, Math.max(0, m.s - 8));
                 const dir = at.x === before.x && at.y === before.y ? Math.atan2(p[to].y - at.y, p[to].x - at.x) : Math.atan2(at.y - before.y, at.x - before.x);
-                if (!FLUFFY) {
+                if (JELLY) {
+                    // Jelly: a big burst of blobs from both balls as they meet.
+                    this.jellyBits(at, p[m.side].r, p.color, { n: [14, 18], speed: [6, 14] });
+                    this.jellyBits(p[to], p[to].r, p.color, { n: [10, 14], speed: [6, 14] });
+                } else if (!FLUFFY) {
                     this.splash(at, p[m.side].r, dir + Math.PI, p.color);
                     this.splash(p[to], p[to].r, dir, p.color);
                 }
@@ -816,6 +870,8 @@ export class Game extends Phaser.Scene {
             }
         }
         for (const [k, w] of this.wobbles) { w.t += dt; if (w.t > WOBBLE.life) this.wobbles.delete(k); }
+        for (const [k, s] of this.ropeShakes) { s.t += dt; if (s.t > 0.6) this.ropeShakes.delete(k); }
+        for (const [k, t] of this.lockShakes) { if (t + dt > 0.5) this.lockShakes.delete(k); else this.lockShakes.set(k, t + dt); }
         if (JELLY) this.stepJelly(dt);
         if (FLUFFY) this.stepFluffy(dt);
         else if (FLUFFY_BG) this.scrollPattern(dt);
@@ -877,6 +933,7 @@ export class Game extends Phaser.Scene {
     }
 
     private stepJelly(dt: number) {
+        this.stepDrips(dt);
         for (const [key, s] of this.stretches) {
             const [id, side] = key.split(':');
             const m = this.movers.get(id);
@@ -888,7 +945,7 @@ export class Game extends Phaser.Scene {
         }
         for (const mg of [...this.merges]) {
             mg.t += dt;
-            if (mg.t >= PRESS + JIGGLE) {
+            if (mg.t >= PRESS + jiggle()) {
                 this.merges.splice(this.merges.indexOf(mg), 1);
                 const c = this.mergeCentre(mg);
                 this.pop(c, Math.hypot(mg.ra, mg.rb) * 1.15, hexToInt(colour(mg.pair.color)?.base ?? COMPLETED_LINE));
@@ -917,9 +974,14 @@ export class Game extends Phaser.Scene {
     }
 
     /** Blocked movers collide with any dot that has a hitbox (open pairs in motion have none). */
-    private hits(p: Pair, m: Mover): { key: string; pos: Pt } | null {
+    private hits(p: Pair, m: Mover): { key: string; pos: Pt; r: number } | null {
         const pos = pointAt(m.pts, m.acc, m.s);
         const r = p[m.side].r;
+        // A closed lock on its own line stops the ball.
+        for (const l of this.model.locksOn(p.id)) {
+            if (this.opened.has(l.id)) continue;
+            if (m.s >= this.alongFrom(p.id, l, m.side) - (r * HIT_SCALE + this.obstacleSize() * 0.5)) return { key: `${p.id}:lock:${l.id}`, pos: { x: l.x, y: l.y }, r: 4 };
+        }
         for (const id of this.alive) {
             if (id === p.id) continue;
             const o = this.pair(id);
@@ -927,10 +989,243 @@ export class Game extends Phaser.Scene {
             if (om && om.open) continue;
             for (const side of ['a', 'b'] as const) {
                 const q = this.dotPos(o, side);
-                if (dist(pos, q) < (r + o[side].r) * HIT_SCALE) return { key: `${o.id}:${side}`, pos: q };
+                if (dist(pos, q) < (r + o[side].r) * HIT_SCALE) return { key: `${o.id}:${side}`, pos: q, r: o[side].r };
+            }
+            // A rope (what is left of it while its own ball runs) blocks any other ball.
+            if (o.rope) {
+                const near = nearestOn(this.ropeLine(o), pos);
+                if (near.d < ropeReach(r)) return { key: `${o.id}:rope`, pos: near.p, r: 4 };
             }
         }
         return null;
+    }
+
+    /**
+     * A rope drawn with its picture (src/assets/ui/rope.png, grey, recoloured to the pair's colour): the
+     * texture repeats along the line, one repeat every ROPE_TILE px, ROPE_W px wide. `shake`: it shivers there.
+     */
+    private ropePicture(id: string, pts: Pt[], name: string, depth: number, shake?: { t: number; at: Pt }) {
+        // Shiver: points near the hit swing sideways, fading out along the rope and in time.
+        let line = pts;
+        if (shake) {
+            const amp = 5 * Math.exp(-shake.t * 7) * Math.sin(shake.t * 45);
+            line = pts.map((q, i) => {
+                const a = pts[Math.max(0, i - 1)], b = pts[Math.min(pts.length - 1, i + 1)];
+                const l = Math.hypot(b.x - a.x, b.y - a.y) || 1, k = amp * Math.exp(-dist(q, shake.at) / 40);
+                return { x: q.x - ((b.y - a.y) / l) * k, y: q.y + ((b.x - a.x) / l) * k };
+            });
+        }
+        // No two points on top of each other (the rope's edges come from the direction between points).
+        const clean: Pt[] = [];
+        for (const q of line) if (!clean.length || dist(clean[clean.length - 1], q) > 0.5) clean.push(q);
+        let r = this.ropePics.get(id);
+        if (clean.length < 2) { r?.setVisible(false); return; }
+        const key = this.ropeTexture(colour(name)?.base ?? COMPLETED_LINE);
+        // The picture is 64 px high; the rope object is scaled so it is ROPE_W wide on the board.
+        const k = ROPE_W / 64, acc = arcLengths(clean);
+        if (!r || r.texture.key !== key) {
+            r?.destroy();
+            r = this.add.rope(0, 0, key, undefined, clean.map((q) => ({ x: q.x / k, y: q.y / k })) as Phaser.Math.Vector2[]).setScale(k);
+            this.ropePics.set(id, r);
+        }
+        const rope = r;
+        // Repeat the texture along the line (u grows with the length) instead of stretching it once.
+        rope.updateUVs = function (this: Phaser.GameObjects.Rope) {
+            const uv = this.uv;
+            for (let i = 0; i < this.points.length; i++) {
+                const u = (acc[i] ?? 0) / ROPE_TILE;
+                uv[i * 4] = u; uv[i * 4 + 1] = 0; uv[i * 4 + 2] = u; uv[i * 4 + 3] = 1;
+            }
+            return this;
+        };
+        rope.setPoints(clean.map((q) => ({ x: q.x / k, y: q.y / k })) as Phaser.Math.Vector2[]);
+        rope.updateVertices();
+        rope.setDepth(depth).setVisible(true);
+    }
+
+    /** The rope picture in a colour, made once; its texture repeats sideways. */
+    private ropeTexture(hex: string): string {
+        const key = recolour(this, 'rope', hex, 0.6);
+        this.textures.get(key).source[0].setWrap(Phaser.Textures.WrapMode.REPEAT, Phaser.Textures.WrapMode.CLAMP_TO_EDGE);
+        return key;
+    }
+
+    // ---------- locks and keys (GDD 3.13) ----------
+
+    private lockOf(id: string): LockObstacle | undefined {
+        return this.level.obstacles.find((o): o is LockObstacle => o.type === 'lock' && o.id === id);
+    }
+
+    private keyOf(lockId: string): KeyObstacle | undefined {
+        return this.level.obstacles.find((o): o is KeyObstacle => o.type === 'key' && o.lock === lockId);
+    }
+
+    /** Distance along a pair's line, from its dot `a`, to the point of the line nearest to `q`. */
+    private alongA(id: string, q: Pt): number {
+        const k = `${id}@${q.x},${q.y}`;
+        let s = this.alongCache.get(k);
+        if (s === undefined) {
+            const ln = this.lines.get(id)!;
+            let best = Infinity;
+            s = 0;
+            for (let i = 1; i < ln.a.length; i++) {
+                const a = ln.a[i - 1], b = ln.a[i], dx = b.x - a.x, dy = b.y - a.y, l2 = dx * dx + dy * dy;
+                const t = l2 ? Phaser.Math.Clamp(((q.x - a.x) * dx + (q.y - a.y) * dy) / l2, 0, 1) : 0;
+                const d = Math.hypot(a.x + dx * t - q.x, a.y + dy * t - q.y);
+                if (d < best) { best = d; s = ln.accA[i - 1] + Math.sqrt(l2) * t; }
+            }
+            this.alongCache.set(k, s);
+        }
+        return s;
+    }
+
+    /** The same, from the dot a ball starts at. */
+    private alongFrom(id: string, q: Pt, side: Side): number {
+        const s = this.alongA(id, q);
+        return side === 'a' ? s : this.lines.get(id)!.accA.at(-1)! - s;
+    }
+
+    /** Size of a lock / key badge: a bit bigger than a normal dot. */
+    private obstacleSize(): number {
+        return mainRadius(this.level.pairs) * 2.8;
+    }
+
+    /** A lock and its key share a tag colour (the lock's place in the level's list). */
+    private tagColour(lockId: string): number {
+        const i = this.level.obstacles.filter((o) => o.type === 'lock').findIndex((o) => (o as LockObstacle).id === lockId);
+        return LOCK_TAGS[Math.max(0, i) % LOCK_TAGS.length];
+    }
+
+    /** The lock and key badges of the level (keys keyed by their lock's id). */
+    private makeObstaclePics() {
+        for (const c of [...this.lockPics.values(), ...this.keyPics.values()]) c.destroy();
+        this.lockPics.clear();
+        this.keyPics.clear();
+        this.lockShakes.clear();
+        this.alongCache.clear();
+        const size = this.obstacleSize();
+        for (const o of this.level.obstacles) {
+            const lock = o.type === 'lock' ? o.id : o.lock;
+            const g = this.add.graphics(), col = this.tagColour(lock), parts: Phaser.GameObjects.GameObject[] = [g];
+            // The picture (src/assets/ui/lock.png, key.png: grey, recoloured to the tag colour), on its own
+            // (no badge); without it, a lock / key drawn in code on a round badge.
+            if (hasUi(o.type) && this.textures.exists(uiKey(o.type))) {
+                parts.push(this.add.image(0, 0, recolour(this, o.type, hexOf(col))).setDisplaySize(size * 0.9, size * 0.9));
+            } else if (o.type === 'lock') drawLockBadge(g, size, col);
+            else drawKeyBadge(g, size, col);
+            const c = this.add.container(o.x, o.y, parts).setDepth(0.9).setVisible(false);
+            (o.type === 'lock' ? this.lockPics : this.keyPics).set(lock, c);
+        }
+    }
+
+    /** Shown once the intro has drawn a line through it (or no line is drawing); hidden while the board is empty. */
+    private obstacleShown(q: Pt, pairs: string[]): boolean {
+        if ((MAGIC && this.phase === 'closing') || this.introHeld) return false;
+        if (!pairs.length) return [...this.alive].every((id) => this.introAt(id) === null);
+        return pairs.some((id) => { const run = this.introAt(id); return run === null || run >= this.alongA(id, q); });
+    }
+
+    /** Badges follow the intro, locks shake after a bump, keys bob. */
+    private drawObstacles(time: number) {
+        for (const [id, c] of this.lockPics) {
+            const l = this.lockOf(id);
+            if (!l) continue;
+            const sh = this.lockShakes.get(id);
+            c.setVisible(this.obstacleShown(l, this.model.pairsOfLock(id))).setPosition(l.x + (sh !== undefined ? Math.sin(sh * 50) * 5 * Math.exp(-sh * 7) : 0), l.y);
+        }
+        let i = 0;
+        for (const [id, c] of this.keyPics) {
+            i++;
+            if (c.getData('flying')) continue;
+            const k = this.keyOf(id);
+            if (!k) continue;
+            c.setVisible(this.obstacleShown(k, this.model.takersOfKey(id))).setPosition(k.x, k.y + Math.sin(time * 3 + i) * 2.5).setAngle(Math.sin(time * 2 + i) * 8);
+        }
+    }
+
+    /** Any running ball takes a key it passes over. */
+    private pickKeys(p: Pair, m: Mover) {
+        if (!this.keyPics.size) return;
+        const at = pointAt(m.pts, m.acc, m.s), r = p[m.side].r;
+        for (const [id, c] of this.keyPics) {
+            if (this.opened.has(id) || c.getData('flying')) continue;
+            const k = this.keyOf(id);
+            if (k && dist(at, k) < r) this.takeKey(k);
+        }
+    }
+
+    /** The key is taken: its lock is open at once; the key flies over to it in an arc, spinning, and the lock springs open. */
+    private takeKey(k: KeyObstacle) {
+        this.opened.add(k.lock);
+        this.emitState();
+        const key = this.keyPics.get(k.lock), lock = this.lockPics.get(k.lock);
+        if (!key) return;
+        const col = this.tagColour(k.lock);
+        this.burst(key.x, key.y, col, 10);
+        if (!lock) { this.keyPics.delete(k.lock); this.fadeOut(key); return; }
+        key.setData('flying', true).setDepth(3).setVisible(true);
+        const from = { x: key.x, y: key.y }, to = { x: lock.x, y: lock.y };
+        const lift = Math.max(60, dist(from, to) * 0.35), f = { t: 0 };
+        this.tweens.add({
+            targets: f, t: 1, duration: 560, ease: 'Sine.easeInOut',
+            onUpdate: () => {
+                const t = f.t;
+                key.setPosition(from.x + (to.x - from.x) * t, from.y + (to.y - from.y) * t - Math.sin(Math.PI * t) * lift);
+                key.setAngle(360 * t).setScale(1 + 0.35 * Math.sin(Math.PI * t));
+            },
+            onComplete: () => { key.destroy(); this.keyPics.delete(k.lock); this.openLock(k.lock); }
+        });
+    }
+
+    /** The lock springs open: a burst in its colour, it swells and fades away. */
+    private openLock(id: string) {
+        const lock = this.lockPics.get(id);
+        if (!lock) return;
+        this.lockPics.delete(id);
+        this.burst(lock.x, lock.y, this.tagColour(id), 16);
+        if (settings.vibrate) navigator.vibrate?.(20);
+        this.tweens.add({ targets: lock, scale: 1.6, alpha: 0, duration: 320, ease: 'Quad.easeOut', onComplete: () => lock.destroy() });
+    }
+
+    /**
+     * A pair leaves (cleared or cut): it takes the keys on its line (its ball ran over them, or nothing
+     * else could); a lock goes once every pair it sits on has left, and its key with it.
+     */
+    private obstaclesOnRemove(p: Pair) {
+        for (const [id, c] of this.keyPics) {
+            if (this.opened.has(id) || c.getData('flying')) continue;
+            const k = this.keyOf(id);
+            if (k && this.model.takersOfKey(id).includes(p.id)) this.takeKey(k);
+        }
+        this.dropLeftLocks();
+    }
+
+    /** Locks whose pairs have all left the board go (fading), and their keys if not taken. */
+    private dropLeftLocks() {
+        for (const [id, c] of this.lockPics) {
+            const on = this.model.pairsOfLock(id);
+            if (!on.length || on.some((q) => this.alive.has(q))) continue;
+            this.lockPics.delete(id);
+            this.fadeOut(c);
+            const k = this.keyPics.get(id);
+            if (k && !k.getData('flying')) { this.keyPics.delete(id); this.fadeOut(k); }
+        }
+    }
+
+    private fadeOut(c: Phaser.GameObjects.Container) {
+        this.tweens.add({ targets: c, alpha: 0, scale: 0.6, duration: 250, onComplete: () => c.destroy() });
+    }
+
+    private burst(x: number, y: number, col: number, n: number) {
+        const fx = this.add.particles(x, y, 'spark', { speed: { min: 50, max: 200 }, lifespan: { min: 200, max: 420 }, scale: { start: 0.6, end: 0 }, tint: [0xffffff, col], emitting: false }).setDepth(3);
+        fx.explode(n);
+        this.time.delayedCall(500, () => fx.destroy());
+    }
+
+    /** A rope's line as it is now: shortened behind its own running ball. */
+    private ropeLine(o: Pair): Pt[] {
+        const m = this.movers.get(o.id);
+        return m ? [pointAt(m.pts, m.acc, m.s), ...m.pts.filter((_, i) => m.acc[i] > m.s)] : this.model.line(o.id);
     }
 
     /**
@@ -939,6 +1234,8 @@ export class Game extends Phaser.Scene {
      */
     private splash(at: Pt, r: number, angle: number, name: string) {
         if (FLUFFY) return this.furPuff(at, r, angle, name);
+        // Jelly: more blobs than a tap, off the far side of the ball.
+        if (JELLY && this.jellyKey(name)) return this.jellyBits(at, r, name, { n: [10, 14], angle, spread: 70, from: 0.7, speed: [6, 13] });
         const c = colour(name);
         const base = hexToInt(c?.base ?? COMPLETED_LINE), light = hexToInt(c?.gradient ?? '#ffffff');
         const deg = Phaser.Math.RadToDeg(angle);
@@ -955,6 +1252,83 @@ export class Game extends Phaser.Scene {
         fx.explode(Phaser.Math.Between(6, 9));
         this.time.delayedCall(700, () => fx.destroy());
     }
+
+    /** Jelly: the picture of a blob of jelly in a colour (the Jelly ball recoloured, made once per colour), if there is one. */
+    private jellyKey(name: string): string | null {
+        if (!hasUi('ball-jelly') || !this.textures.exists(uiKey('ball-jelly'))) return null;
+        return recolour(this, 'ball-jelly', colour(name)?.base ?? COMPLETED_LINE, 1);
+    }
+
+    /**
+     * Jelly: little blobs of jelly in the ball's colour fly off, fall, tumble and shrink away. `angle` and
+     * `spread`: a fan (degrees either side; 180 = all round); `from`: start this far out (× r); `speed` × r.
+     */
+    private jellyBits(at: Pt, r: number, name: string, o: { n: [number, number]; angle?: number; spread?: number; from?: number; speed?: [number, number]; size?: number; alpha?: number; depth?: number }) {
+        const key = this.jellyKey(name);
+        if (!key) return;
+        const angle = o.angle ?? -Math.PI / 2, deg = Phaser.Math.RadToDeg(angle), spread = o.spread ?? 180, from = o.from ?? 0;
+        const k = (r * (o.size ?? 0.55)) / (this.textures.get(key).getSourceImage() as HTMLCanvasElement).width;
+        const [s0, s1] = o.speed ?? [5, 11];
+        const fx = this.add.particles(at.x + Math.cos(angle) * r * from, at.y + Math.sin(angle) * r * from, key, {
+            angle: { min: deg - spread, max: deg + spread }, speed: { min: r * s0, max: r * s1 }, gravityY: r * 32,
+            lifespan: { min: 450, max: 850 }, ...blobOps(k, 0.2, r), alpha: { start: o.alpha ?? 1, end: 0.3 }, emitting: false
+        });
+        fx.setDepth(o.depth ?? 1.3);
+        fx.explode(Phaser.Math.Between(o.n[0], o.n[1]));
+        this.time.delayedCall(950, () => fx.destroy());
+    }
+
+    /** Jelly: a tap on empty board throws up a few blobs of jelly in the level's colours, which fall away. */
+    private jellyGhosts(at: Pt) {
+        const names = [...new Set(this.level.pairs.map((p) => p.color))];
+        if (!names.length) return;
+        // The same size on screen whatever the zoom (GHOST_R screen px).
+        const r = GHOST_R / this.cameras.main.zoom;
+        for (let i = Phaser.Math.Between(5, 7); i > 0; i--)
+            this.jellyBits(at, r, names[Phaser.Math.Between(0, names.length - 1)], { n: [1, 1], spread: 70, speed: [9, 16], size: 0.7, alpha: 0.85, depth: 0.4 });
+    }
+
+    /**
+     * Jelly: a running ball flings small blobs of jelly behind it (a trail), one every DRIP_EVERY s: thrown
+     * backwards and up, they fall in an arc, stretched along their way. None on the way back after a bump.
+     * One emitter per moving ball.
+     */
+    private stepDrips(dt: number) {
+        const DRIP_EVERY = 0.05;
+        for (const [id, m] of this.movers) {
+            if (!this.alive.has(id)) continue;
+            const p = this.pair(id), r = p[m.side].r, pos = this.dotPos(p, m.side);
+            let s = this.drips.get(id);
+            if (!s) {
+                const key = this.jellyKey(p.color);
+                if (!key) return;
+                const k = (r * 0.6) / (this.textures.get(key).getSourceImage() as HTMLCanvasElement).width;
+                const st = { fx: null as unknown as Phaser.GameObjects.Particles.ParticleEmitter, t: 0, dir: 0, at: pos };
+                st.fx = this.add.particles(0, 0, key, {
+                    // Backwards from the way the ball runs, up to 60° either side.
+                    angle: { onEmit: () => Phaser.Math.RadToDeg(st.dir) + Phaser.Math.Between(-60, 60) },
+                    speed: { min: r * 2.5, max: r * 6 }, gravityY: r * 38, lifespan: { min: 450, max: 750 },
+                    ...blobOps(k, 0.2, r), alpha: { start: 1, end: 0.25 }, emitting: false
+                });
+                st.fx.setDepth(0.95);
+                this.drips.set(id, (s = st));
+            }
+            if (dist(pos, s.at) > 0.5) s.dir = Math.atan2(s.at.y - pos.y, s.at.x - pos.x);
+            s.at = pos;
+            s.t += dt;
+            if (m.returning) { s.t = 0; continue; }
+            for (; s.t >= DRIP_EVERY; s.t -= DRIP_EVERY) {
+                const a = Math.random() * Math.PI * 2, d = r * Math.random() * 0.4;
+                s.fx.emitParticleAt(pos.x + Math.cos(a) * d, pos.y + Math.sin(a) * d, 1);
+            }
+        }
+        for (const [id, s] of this.drips) {
+            if (this.movers.has(id) && this.alive.has(id)) continue;
+            this.drips.delete(id);
+            this.time.delayedCall(800, () => s.fx.destroy());
+        }
+    }
+
 
     /**
      * Fluffy: a few tufts of fur (the ball's colour) fly off and fade. A bump: off its far side (a fan of
@@ -1047,6 +1421,7 @@ export class Game extends Phaser.Scene {
         this.movers.delete(p.id);
         this.alive.delete(p.id);
         this.trails.delete(p.id);
+        this.obstaclesOnRemove(p);
         if (!this.alive.size) this.setCutting(false);
         this.emitState();
         if (!this.alive.size) {
@@ -1055,7 +1430,7 @@ export class Game extends Phaser.Scene {
             // The board stays empty (no picture behind the end screen); the end screen comes once the
             // splash has settled.
             if (MAGIC) { this.events.emit('allCleared'); this.openDoor(); }
-            else this.time.delayedCall(JELLY ? 500 + (PRESS + JIGGLE) * 1000 : FLUFFY ? 500 + hugEnd() * 1000 + 300 : 500, () => this.events.emit('win'));
+            else this.time.delayedCall(JELLY ? 500 + (PRESS + jiggle()) * 1000 : FLUFFY ? 500 + hugEnd() * 1000 + 300 : 500, () => this.events.emit('win'));
         }
     }
 
@@ -1091,39 +1466,60 @@ export class Game extends Phaser.Scene {
     private draw() {
         const g = this.gfx;
         g.clear();
+        this.drawObstacles(this.time.now / 1000);
         // Magic: while the leaves slide in, the board is empty. Any look: while the intro waits for the
         // new-look pop-ups, the board is empty too (the balls show once the pop-ups are closed).
         if ((MAGIC && this.phase === 'closing') || this.introHeld) {
             this.overG.clear();
-            for (const o of [...this.orbs, ...this.balls, ...this.shells, ...this.bodies, ...this.faces]) o.setVisible(false);
+            for (const l of this.lineLayers) l.clear();
+            for (const o of [...this.orbs, ...this.balls, ...this.shells, ...this.bodies, ...this.faces, ...this.ropePics.values()]) o.setVisible(false);
             return;
         }
         // Lines are drawn in their colour only, with no edge (even a light line on the light board).
-        const stroke = (pts: Pt[], col: number, w = LINE_WIDTH, alpha = 1) => {
+        const stroke = (gg: Phaser.GameObjects.Graphics, pts: Pt[], col: number, w = LINE_WIDTH, alpha = 1) => {
             if (pts.length < 2) return;
-            g.lineStyle(w, col, alpha);
-            g.beginPath();
-            g.moveTo(pts[0].x, pts[0].y);
-            for (let i = 1; i < pts.length; i++) g.lineTo(pts[i].x, pts[i].y);
-            g.strokePath();
-            g.fillStyle(col, alpha);
-            g.fillCircle(pts[0].x, pts[0].y, w / 2);
-            g.fillCircle(pts[pts.length - 1].x, pts[pts.length - 1].y, w / 2);
+            gg.lineStyle(w, col, alpha);
+            gg.beginPath();
+            gg.moveTo(pts[0].x, pts[0].y);
+            for (let i = 1; i < pts.length; i++) gg.lineTo(pts[i].x, pts[i].y);
+            gg.strokePath();
+            gg.fillStyle(col, alpha);
+            gg.fillCircle(pts[0].x, pts[0].y, w / 2);
+            gg.fillCircle(pts[pts.length - 1].x, pts[pts.length - 1].y, w / 2);
         };
-        for (const id of this.alive) {
+        // Lines of pairs cleared earlier in the solution lie on top of those cleared later. Lines go on
+        // layers under the dots; a rope picture sits between the layer below it and a new layer above it.
+        for (const l of this.lineLayers) l.clear();
+        let layer = 0;
+        const layerG = (i: number) => (this.lineLayers[i] ??= this.add.graphics().setDepth(LINE_DEPTH + i * 0.002));
+        let gg = layerG(0);
+        const shown = new Set<string>();
+        for (const id of this.drawOrder) {
+            if (!this.alive.has(id)) continue;
             const p = this.pair(id);
             const col = hexToInt(colour(p.color)?.base ?? COMPLETED_LINE);
             const m = this.movers.get(id);
-            if (m) {
+            if (p.rope) {
+                // The rope as it is: drawn out in the intro, shortened behind its own running ball.
+                const run = this.introAt(id);
+                const ln = this.lines.get(id)!;
+                const pts = run !== null ? [...ln.a.filter((_, i) => ln.accA[i] < run), pointAt(ln.a, ln.accA, run)] : this.ropeLine(p);
+                if (hasUi('rope') && this.textures.exists(uiKey('rope'))) {
+                    this.ropePicture(id, pts, p.color, LINE_DEPTH + (layer * 2 + 1) * 0.001, this.ropeShakes.get(id));
+                    shown.add(id);
+                    gg = layerG(++layer);
+                } else drawRope(gg, pts, col, this.ropeShakes.get(id));
+            } else if (m) {
                 // The line shortens behind the moving dot.
                 const rest = [pointAt(m.pts, m.acc, m.s), ...m.pts.filter((_, i) => m.acc[i] > m.s)];
-                stroke(rest, col, lineWidth(p), 1);
+                stroke(gg, rest, col, lineWidth(p), 1);
             } else if (this.introAt(id) !== null) {
                 // Intro: the line is drawn out behind the running dot.
                 const ln = this.lines.get(id)!, s = this.introAt(id)!;
-                stroke([...ln.a.filter((_, i) => ln.accA[i] < s), pointAt(ln.a, ln.accA, s)], col, lineWidth(p), 1);
-            } else stroke(this.model.line(id), col, lineWidth(p), 1);
+                stroke(gg, [...ln.a.filter((_, i) => ln.accA[i] < s), pointAt(ln.a, ln.accA, s)], col, lineWidth(p), 1);
+            } else stroke(gg, this.model.line(id), col, lineWidth(p), 1);
         }
+        for (const [id, r] of this.ropePics) if (!shown.has(id)) r.setVisible(false);
         // Trails behind moving dots.
         for (const [id, t] of this.trails) {
             if (!this.alive.has(id)) continue;
@@ -1281,7 +1677,7 @@ export class Game extends Phaser.Scene {
         const t = mg.t - PRESS;
         const e = 0.38 * Math.exp(-t * 6) * Math.cos(t * 30);
         // Swells a little just before it pops.
-        const grow = 1 + 0.12 * Math.max(0, (t - JIGGLE * 0.6) / (JIGGLE * 0.4));
+        const grow = 1 + 0.12 * Math.max(0, (t - jiggle() * 0.6) / (jiggle() * 0.4));
         const r = Math.hypot(mg.ra, mg.rb) * grow;
         return [one(c, r, 1 + e, 1 / (1 + e))];
     }
@@ -1362,4 +1758,131 @@ function drawStripes(g: Phaser.GameObjects.Graphics, local: (x: number, y: numbe
 function shade(c: number, f: number): number {
     const r = Math.round(((c >> 16) & 255) * f), g = Math.round(((c >> 8) & 255) * f), b = Math.round((c & 255) * f);
     return (r << 16) | (g << 8) | b;
+}
+
+/** The point of a polyline nearest to `q`, and how far it is. */
+function nearestOn(pts: Pt[], q: Pt): { p: Pt; d: number } {
+    let best = { p: pts[0] ?? q, d: pts[0] ? dist(pts[0], q) : Infinity };
+    for (let i = 1; i < pts.length; i++) {
+        const a = pts[i - 1], b = pts[i], dx = b.x - a.x, dy = b.y - a.y, l2 = dx * dx + dy * dy;
+        const t = l2 ? Phaser.Math.Clamp(((q.x - a.x) * dx + (q.y - a.y) * dy) / l2, 0, 1) : 0;
+        const p = { x: a.x + dx * t, y: a.y + dy * t }, d = dist(p, q);
+        if (d < best.d) best = { p, d };
+    }
+    return best;
+}
+
+/** Rope look: drawn width, and the gap between the twists of its braid (drawn in code, no picture). */
+const ROPE_W = 13, ROPE_TWIST = 9;
+/** Rope picture: board length of one repeat of the texture (256 × 64 px shown ROPE_W wide). */
+const ROPE_TILE = 256 * (ROPE_W / 64);
+/** Depth of the lines (under the dots, which are at 1, and the board's drawing at 0). */
+const LINE_DEPTH = -0.5;
+
+/**
+ * A rope (obstacle, Pair.rope): a thick braided line in the pair's colour: a dark edge, the colour,
+ * and dark slanted twists along it. `shake`: a ball ran into it there, it shivers a moment.
+ */
+function drawRope(g: Phaser.GameObjects.Graphics, pts: Pt[], col: number, shake?: { t: number; at: Pt }) {
+    if (pts.length < 2) return;
+    const acc = arcLengths(pts), len = acc[acc.length - 1];
+    // Shiver: points near the hit swing sideways, fading out along the rope and in time.
+    let line = pts;
+    if (shake) {
+        const amp = 5 * Math.exp(-shake.t * 7) * Math.sin(shake.t * 45);
+        line = pts.map((q, i) => {
+            const a = pts[Math.max(0, i - 1)], b = pts[Math.min(pts.length - 1, i + 1)];
+            const l = Math.hypot(b.x - a.x, b.y - a.y) || 1, k = amp * Math.exp(-dist(q, shake.at) / 40);
+            return { x: q.x - ((b.y - a.y) / l) * k, y: q.y + ((b.x - a.x) / l) * k };
+        });
+    }
+    const dark = shade(col, 0.62);
+    const path = (w: number, c: number) => {
+        g.lineStyle(w, c, 1);
+        g.beginPath();
+        g.moveTo(line[0].x, line[0].y);
+        for (let i = 1; i < line.length; i++) g.lineTo(line[i].x, line[i].y);
+        g.strokePath();
+        g.fillStyle(c, 1);
+        g.fillCircle(line[0].x, line[0].y, w / 2);
+        g.fillCircle(line[line.length - 1].x, line[line.length - 1].y, w / 2);
+    };
+    path(ROPE_W + 3, dark);
+    path(ROPE_W, col);
+    // The braid: short dark strokes slanted across the rope, one every ROPE_TWIST px.
+    g.lineStyle(2.6, dark, 1);
+    const sh = shake ? line : pts, half = ROPE_W / 2 - 1;
+    for (let s = ROPE_TWIST / 2; s < len; s += ROPE_TWIST) {
+        const c = pointAt(sh, acc, s), n = pointAt(sh, acc, Math.min(len, s + 1));
+        let tx = n.x - c.x, ty = n.y - c.y;
+        const l = Math.hypot(tx, ty) || 1;
+        tx /= l; ty /= l;
+        // Across the rope (normal), leaning forward along it.
+        const ax = -ty * half + tx * half * 0.7, ay = tx * half + ty * half * 0.7;
+        g.lineBetween(c.x - ax, c.y - ay, c.x + ax, c.y + ay);
+    }
+    // A soft light line along the top for roundness.
+    g.lineStyle(2, 0xffffff, 0.35);
+    g.beginPath();
+    g.moveTo(line[0].x, line[0].y - ROPE_W * 0.22);
+    for (let i = 1; i < line.length; i++) g.lineTo(line[i].x, line[i].y - ROPE_W * 0.22);
+    g.strokePath();
+}
+
+/** Tag colours of locks and their keys (core/level.ts LOCK_TAGS) as numbers. */
+const LOCK_TAGS = LOCK_TAG_HEX.map((c) => parseInt(c.slice(1), 16));
+
+/** Round white badge with a ring in the tag colour (locks and keys sit on lines, over them). */
+function badge(g: Phaser.GameObjects.Graphics, size: number, col: number) {
+    g.fillStyle(0x000000, 0.12).fillCircle(0, size * 0.06, size * 0.52);
+    g.fillStyle(0xffffff, 1).fillCircle(0, 0, size * 0.5);
+    g.lineStyle(size * 0.07, col, 1).strokeCircle(0, 0, size * 0.45);
+}
+
+/** A padlock in the tag colour: grey shackle, coloured body, dark keyhole. */
+function drawLockBadge(g: Phaser.GameObjects.Graphics, size: number, col: number) {
+    badge(g, size, col);
+    const w = size * 0.46, h = size * 0.34, top = -size * 0.02;
+    g.lineStyle(size * 0.07, 0x8d93a3, 1);
+    g.beginPath();
+    g.arc(0, top, w * 0.3, Math.PI, 0, false);
+    g.strokePath();
+    g.lineBetween(-w * 0.3, top, -w * 0.3, top + h * 0.2);
+    g.lineBetween(w * 0.3, top, w * 0.3, top + h * 0.2);
+    g.fillStyle(col, 1).fillRoundedRect(-w / 2, top, w, h, size * 0.06);
+    g.fillStyle(0xffffff, 0.35).fillRoundedRect(-w / 2 + size * 0.03, top + size * 0.03, w - size * 0.06, h * 0.25, size * 0.03);
+    g.fillStyle(shade(col, 0.45), 1).fillCircle(0, top + h * 0.42, size * 0.045);
+    g.fillRect(-size * 0.018, top + h * 0.42, size * 0.036, h * 0.32);
+}
+
+/** A key in the tag colour: round bow, shaft and two teeth, leaning. */
+function drawKeyBadge(g: Phaser.GameObjects.Graphics, size: number, col: number) {
+    badge(g, size, col);
+    const k = size, dark = shade(col, 0.7);
+    const ang = -Math.PI / 5, ca = Math.cos(ang), sa = Math.sin(ang);
+    const P = (x: number, y: number) => ({ x: (x * ca - y * sa) * k, y: (x * sa + y * ca) * k });
+    const bow = P(-0.17, 0);
+    g.lineStyle(k * 0.075, col, 1).strokeCircle(bow.x, bow.y, k * 0.1);
+    const s0 = P(-0.07, 0), s1 = P(0.24, 0);
+    g.lineStyle(k * 0.07, col, 1).lineBetween(s0.x, s0.y, s1.x, s1.y);
+    for (const x of [0.13, 0.21]) { const a = P(x, 0), b = P(x, 0.09); g.lineStyle(k * 0.06, col, 1).lineBetween(a.x, a.y, b.x, b.y); }
+    g.fillStyle(dark, 1).fillCircle(bow.x, bow.y, k * 0.035);
+}
+
+/** Jelly: size on screen (game px) of the blobs thrown up by a tap on empty board, whatever the zoom. */
+const GHOST_R = 18;
+
+/**
+ * Emitter settings for a blob of jelly: it shrinks from k to k × end over its life, and stretches a little
+ * along the way it flies (more when faster), turned to face it.
+ */
+function blobOps(k: number, end: number, r: number) {
+    type P = Phaser.GameObjects.Particles.Particle;
+    const size = (t: number) => k + (k * end - k) * t;
+    const stretch = (p: P) => Math.min(0.25, Math.hypot(p.velocityX, p.velocityY) / (r * 40));
+    return {
+        scaleX: { onEmit: () => k, onUpdate: (p: P, _key: string, t: number) => size(t) * (1 + stretch(p)) },
+        scaleY: { onEmit: () => k, onUpdate: (p: P, _key: string, t: number) => size(t) * (1 - stretch(p) * 0.4) },
+        rotate: { onEmit: () => 0, onUpdate: (p: P) => Phaser.Math.RadToDeg(Math.atan2(p.velocityY, p.velocityX)) }
+    };
 }

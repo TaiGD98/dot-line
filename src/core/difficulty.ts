@@ -34,7 +34,7 @@ export function difficulty(level: Level): DifficultyMetrics {
     const pairs = level.pairs.length;
     const colours = new Set(level.pairs.map((p) => p.color)).size;
     const sim = solve(level);
-    const model = new BlockModel(level.pairs);
+    const model = new BlockModel(level.pairs, level.obstacles ?? []);
     const alive = new Set(level.pairs.map((p) => p.id));
     let trapped = 0;
     for (const p of level.pairs) for (const side of ['a', 'b'] as const) if (!model.isOpen(p, side, alive)) trapped++;

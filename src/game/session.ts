@@ -11,6 +11,8 @@ export interface Session {
     alive: string[];
     marked: string[];
     hearts: number;
+    /** Locks whose key was taken (open). */
+    opened?: string[];
 }
 
 export function readSession(): Session | null {

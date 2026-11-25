@@ -1426,6 +1426,7 @@
     },
     {
       "id": "p10",
+      "rope": true,
       "color": "pink",
       "a": {
         "x": -112.1,
@@ -3181,7 +3182,20 @@
       ]
     }
   ],
-  "obstacles": [],
+  "obstacles": [
+    {
+      "type": "lock",
+      "id": "L1",
+      "x": -151,
+      "y": 283.6
+    },
+    {
+      "type": "key",
+      "lock": "L1",
+      "x": -14.6,
+      "y": -350.6
+    }
+  ],
   "source": {
     "image": "c5-018-vase-twist.png",
     "rect": {

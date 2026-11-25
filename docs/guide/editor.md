@@ -59,7 +59,7 @@ Editor chạy trong trình duyệt, là một trang riêng trong cùng project V
 }
 ```
 
-Trường tuỳ chọn: `tutorial` (`tap`, `collision`, `zoom`: game hiện bàn tay và dòng hướng dẫn), `source.rect` (vị trí ảnh gốc trong editor).
+Trường tuỳ chọn: `tutorial` (`tap`, `collision`, `zoom`, `rope`, `lock`: game hiện bàn tay và dòng hướng dẫn), `rope: true` trên một cặp (dây thừng chặn bóng khác, GDD 3.12), `obstacles` (ổ khóa và chìa, GDD 3.13), `source.rect` (vị trí ảnh gốc trong editor).
 
 Bắt buộc: `schema`, `version`, `id`, `name`, `pairs` (mỗi cặp: `id`, `color`, `a`, `b`, `path`). Điểm đầu và cuối của `path` trùng với tâm `a` và `b`. `source` chỉ có khi level được tạo từ ảnh.
 

@@ -24,7 +24,7 @@ Kế hoạch ban đầu (M1 bản chơi đầu, M2 kích thước hạt và HUD,
 | Booster Hint, Cut và Play on: giới hạn số lượt, nối quảng cáo (hiện dùng không giới hạn) | [Rules](./rules) |
 | Chơi thử trên điện thoại thật: tốc độ hạt, pinch zoom | [Rules](./rules) |
 | Fluffy: mặt "thức" cho cặp đã va chạm và bàn tay tutorial lông xù (chờ ảnh `awake-hand.png`) | [Fluffy assets](../guide/fluffy-assets) |
-| Obstacle (chưa chốt ý tưởng) | _TBD_ |
+| Thêm dây thừng và ổ khóa (obstacle) cho nhiều level hơn | [Rules 3.12, 3.13](./rules#_3-12-obstacle-day-thung) |
 
 ## 4.3 Known issues {#known-issues}
 

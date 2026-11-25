@@ -4093,7 +4093,21 @@
       ]
     }
   ],
-  "obstacles": [],
+  "tutorial": "lock",
+  "obstacles": [
+    {
+      "type": "lock",
+      "id": "L1",
+      "x": 229.3,
+      "y": -145.4
+    },
+    {
+      "type": "key",
+      "lock": "L1",
+      "x": 184.5,
+      "y": -92.5
+    }
+  ],
   "source": {
     "image": "c5-001-pumpkin.png",
     "rect": {

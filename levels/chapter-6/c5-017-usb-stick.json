@@ -1227,7 +1227,32 @@
       ]
     }
   ],
-  "obstacles": [],
+  "obstacles": [
+    {
+      "type": "lock",
+      "id": "L1",
+      "x": 239.7,
+      "y": -70.3
+    },
+    {
+      "type": "lock",
+      "id": "L2",
+      "x": 90,
+      "y": 61.6
+    },
+    {
+      "type": "key",
+      "lock": "L1",
+      "x": -339.1,
+      "y": 277.5
+    },
+    {
+      "type": "key",
+      "lock": "L2",
+      "x": -228.7,
+      "y": 307.5
+    }
+  ],
   "source": {
     "image": "c5-017-usb-stick.png",
     "rect": {

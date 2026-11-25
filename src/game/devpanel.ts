@@ -2,7 +2,10 @@
 // and the light on the balls. Changes apply at once; Confirm writes the values into the code
 // (src/game/tuning.ts) through the dev server (vite.config.ts, /__dev/tuning). On the published site
 // Confirm can't touch the code, so the values just stay in this browser.
-import { FLUFFY } from './mode';
+import { FLUFFY, JELLY } from './mode';
+
+/** Jelly: the press before the balls merge (Game.ts PRESS), shown next to the merged time. */
+const PRESS_S = 0.16;
 import { Tunable, TUNABLE, changed, codeValue, forgetSaved, setTunable, tuning } from './tuning';
 
 interface Slider { k: Tunable; label: string; min: number; max: number; step: number; show: (v: number) => string }
@@ -70,6 +73,11 @@ export function mountDevPanel() {
     body.append(section('Speed', [
         { k: 'moveSpeed', label: `${tuning.startSpeed} →`, min: 300, max: 3000, step: 50, show: (v) => `${v} px/s in 1 s` }
     ]));
+    if (JELLY) {
+        body.append(section('Pair touch → pop', [
+            { k: 'jellyHold', label: 'Merged', min: 0.05, max: 2, step: 0.05, show: (v) => `${v.toFixed(2)} s (+ ${PRESS_S} s press)` }
+        ]));
+    }
     if (FLUFFY) {
         body.append(section('Pair touch → hearts', [
             { k: 'hugHold', label: 'Wait', min: 0, max: 2, step: 0.05, show: (v) => `${v.toFixed(2)} s` }
